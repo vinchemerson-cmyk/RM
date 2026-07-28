@@ -1,0 +1,22 @@
+# 构建产物
+/build/
+/cmake-build-*/
+/CMakeFiles/
+/CMakeCache.txt
+/cmake_install.cmake
+/compile_commands.json
+*.elf
+*.hex
+*.bin
+*.map
+*.o
+*.obj
+*.d
+*.su
+
+# IDE 与系统文件
+/.idea/
+/.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
