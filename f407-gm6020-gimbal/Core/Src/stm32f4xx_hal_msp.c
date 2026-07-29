@@ -16,6 +16,14 @@
   *
   ******************************************************************************
   */
+/**
+ * ===========================================================================
+ * @note  本文件由 STM32CubeMX 自动生成，包含所有外设的 MSP (MCU Support Package)
+ *        初始化与反初始化代码。自定义外设引脚配置（CAN1/CAN2/USART6/USART3）的
+ *        MSP 实现已移至各自的 .c 文件中（如 can.c 的 HAL_CAN_MspInit 等），
+ *        此处保留 CubeMX 生成的默认结构。
+ * ===========================================================================
+ */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -70,6 +78,8 @@ void HAL_MspInit(void)
   __HAL_RCC_PWR_CLK_ENABLE();
 
   /* System interrupt init*/
+  /* PendSV_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(PendSV_IRQn, 15, 0);
 
   /* USER CODE BEGIN MspInit 1 */
 

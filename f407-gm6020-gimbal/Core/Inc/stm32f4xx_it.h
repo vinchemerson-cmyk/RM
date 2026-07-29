@@ -26,6 +26,18 @@ extern "C" {
 #endif
 
 /* Private includes ----------------------------------------------------------*/
+/**
+ * ===========================================================================
+ * @note  CubeMX 自动生成的中断向量声明。项目自定义中断:
+ *          DMA1_Stream1_IRQHandler — DBUS DMA 接收完成中断 (优先级 0)
+ *          USART3_IRQHandler       — DBUS 串口中断 (优先级 ?)
+ *          USART6_IRQHandler       — 调试串口中断 (优先级 5)
+ *          TIM6_DAC_IRQHandler     — HAL 时基中断 (优先级 15, 替代 SysTick)
+ *          OTG_FS_IRQHandler       — USB OTG FS 中断 (优先级 5)
+ *        Cortex-M4 系统异常 (NMI/HardFault/MemManage/BusFault/UsageFault):
+ *          由 CMSIS 启动文件 (startup_stm32f407xx.s) 自动关联。
+ * ===========================================================================
+ */
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
@@ -51,12 +63,10 @@ void HardFault_Handler(void);
 void MemManage_Handler(void);
 void BusFault_Handler(void);
 void UsageFault_Handler(void);
-void SVC_Handler(void);
 void DebugMon_Handler(void);
-void PendSV_Handler(void);
-void SysTick_Handler(void);
 void DMA1_Stream1_IRQHandler(void);
 void USART3_IRQHandler(void);
+void TIM6_DAC_IRQHandler(void);
 void OTG_FS_IRQHandler(void);
 /* USER CODE BEGIN EFP */
 
