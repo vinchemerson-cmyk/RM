@@ -1,5 +1,7 @@
 #include "motor_control.h"
 #include "config/gimbal_params.h"
+#include "config/pitch_fusion_config.h"
+#include "pitch_fusion.h"
 
 #include <math.h>
 #include <stddef.h>
@@ -133,6 +135,7 @@ typedef struct
   bool requested_angle_is_multi_turn;  /* true：累计多圈；false：单圈劣弧 */
   bool position_target_valid;          /* 是否有有效的位置目标 */
   int32_t target_total_angle_ecd;      /* 解析后的多圈编码器目标值 */
+  bool pitch_fusion_feedback_active;   /* Pitch是否正在使用IMU融合反馈 */
 
   /* ---- 编码器多圈追踪 ---- */
   uint16_t previous_encoder;           /* 上一拍的原始编码器值，用于跨零点检测 */
@@ -272,6 +275,12 @@ static bool axis_is_valid(GM6020_Axis_t axis)
   return ((uint32_t)axis < (uint32_t)GM6020_AXIS_COUNT);
 }
 
+static bool controller_is_pitch(
+    const GM6020_Controller_t *controller)
+{
+  return controller == &controllers[GM6020_AXIS_PITCH];
+}
+
 static bool motor_can_is_initialized(void)
 {
   return ((motor_can[GM6020_AXIS_YAW] != NULL)
@@ -366,7 +375,9 @@ static void angle_pid_reset(GM6020_Controller_t *controller)
  * 例：-90° → 270°，450° → 90°。
  */
 static float normalize_single_turn_degrees(float angle_deg)
+/* ── 浮点角度归一化到 [0, 360°) ── */
 {
+  /* Normalize to single-turn range: subtract multiples of 360 */
   while (angle_deg >= 360.0f)
   {
     angle_deg -= 360.0f;
@@ -382,11 +393,14 @@ static float normalize_single_turn_degrees(float angle_deg)
  * 将单圈角度（度）转换为编码器计数值。
  * 输入 0~360°，输出 0~8191，四舍五入取整。
  */
+/* Convert degrees [0,360) → encoder counts [0,8191] with rounding */
 static int32_t single_turn_degrees_to_encoder(float angle_deg)
 {
   int32_t encoder;
+  /* angle_deg × (8192/360) + 0.5 for round-to-nearest */
 
   angle_deg = normalize_single_turn_degrees(angle_deg);
+  /* Edge case: rounding up to exactly 8192 → wrap to 0 */
   encoder = (int32_t)(angle_deg * (float)GM6020_ENCODER_CPR
                       / 360.0f + 0.5f);
   if (encoder >= GM6020_ENCODER_CPR)
@@ -414,8 +428,10 @@ static int32_t single_turn_degrees_to_encoder(float angle_deg)
  *   多圈目标消除了这种歧义，电机始终沿最短路径转动。
  */
 static void angle_resolve_single_turn_target(
+  /* ── 步骤1: 目标角度 → 编码器值 ── */
     GM6020_Controller_t *controller,
     float angle_deg)
+  /* ── 步骤2: 劣弧方向最短路径选择 ── */
 {
   int32_t desired_encoder;
   int32_t delta;
@@ -443,8 +459,10 @@ static void angle_resolve_single_turn_target(
   }
   else if (delta < -GM6020_ENCODER_HALF_CPR)
   {
+  /* ── 步骤3: 叠加到当前多圈累计值 → 多圈目标 ── */
     delta += GM6020_ENCODER_CPR;
   }
+  /* Target change → reset angle PID to avoid integral windup from old target */
 
   /* 叠加到当前多圈累计值，得到最终多圈目标 */
   controller->target_total_angle_ecd =
@@ -492,8 +510,58 @@ static void angle_resolve_multi_turn_target(
 }
 
 /*
+ * 读取当前编码器相对机械零位的多圈角度。
+ * 该坐标与GM6020_SetTargetPosition()对外使用的逻辑角方向一致。
+ */
+static float controller_encoder_relative_position_deg(
+    const GM6020_Controller_t *controller)
+{
+  if ((controller == NULL)
+      || !controller->encoder_initialized
+      || !controller->multi_turn_origin_valid)
+  {
+    return 0.0f;
+  }
+
+  return (float)(controller->feedback.total_angle_ecd
+                 - controller->multi_turn_origin_ecd)
+      * 360.0f / (float)GM6020_ENCODER_CPR;
+}
+
+/*
+ * 把位置目标无冲击地重新锚定到指定的相对机械零位角。
+ * 用于编码器/融合反馈切换和解除急停，防止继续执行旧目标。
+ */
+static void controller_hold_relative_position(
+    GM6020_Controller_t *controller,
+    float relative_position_deg)
+{
+  const float requested_encoder_angle_deg =
+      normalize_single_turn_degrees(
+          relative_position_deg + controller->zero_offset_deg);
+
+  controller->requested_angle_deg =
+      requested_encoder_angle_deg;
+  controller->requested_angle_is_multi_turn = false;
+  controller->position_target_valid = false;
+  angle_resolve_single_turn_target(
+      controller,
+      requested_encoder_angle_deg);
+}
+
+/*
  * 返回与当前累计位置距离最近的“标定机械零点”累计编码器值。
  * zero_offset_deg 表示逻辑 0° 对应的单圈编码器位置。
+ */
+/*
+ * 计算距离标定零位最近的编码器多圈原点。
+ *
+ * 标定后 zero_offset_deg 存的是云台中位对应的编码器单圈角度，
+ * 此函数以当前多圈位置为基准，找到距离该标定零位最近的
+ * 编码器多圈原点 (multi-turn origin ECD)，使 multi_turn_origin_ecd
+ * 在物理上最接近标定后的机械零位。
+ *
+ * @return 距离标定零位最近的多圈编码器原点值
  */
 static int32_t encoder_nearest_calibrated_zero(
     const GM6020_Controller_t *controller,
@@ -615,10 +683,20 @@ static void encoder_update(GM6020_Controller_t *controller,
  *
  * 【返回值】PID 输出值 = 比例项 + 微分项 + 积分项，限幅后的目标转速 rpm
  */
-static float angle_pid_update(GM6020_Controller_t *controller)
+static float angle_pid_update(
+    GM6020_Controller_t *controller,
+    float feedback_position_deg)
 {
   AnglePID_t *pid = &controller->angle_pid;
-  const float output_limit = controller->angle_speed_limit_rpm;  /* 角度环输出限幅 rpm — angle loop output clamp */
+  float output_limit = controller->angle_speed_limit_rpm;
+  float target_position_deg;
+
+  if (controller->pitch_fusion_feedback_active
+      && (output_limit
+          > PITCH_FUSION_CONTROL_MAX_SPEED_RPM))
+  {
+    output_limit = PITCH_FUSION_CONTROL_MAX_SPEED_RPM;
+  }
 
   /*
    * ── 步骤1: 计算角度误差 (Position Error) ──
@@ -626,10 +704,12 @@ static float angle_pid_update(GM6020_Controller_t *controller)
    * error > 0 → 需要正向转动才能追上目标
    * error < 0 → 需要反向转动
    */
-  const float error =
+  target_position_deg =
       (float)(controller->target_total_angle_ecd
-              - controller->feedback.total_angle_ecd)
-      * 360.0f / (float)GM6020_ENCODER_CPR;   /* ecd counts → degrees: ×360/8192 */
+              - controller->multi_turn_origin_ecd)
+      * 360.0f / (float)GM6020_ENCODER_CPR;
+  const float error =
+      target_position_deg - feedback_position_deg;
 
   /* ── 步骤2: 计算微分项 (Derivative Term) ── */
   /* D_term = d(error)/dt ≈ Δerror / Δt, Δt = 1/1000 s = 0.001 s */
@@ -691,11 +771,18 @@ static float angle_pid_update(GM6020_Controller_t *controller)
  * 【Anti-windup 逻辑】与角度环相同，参见 angle_pid_update() 的注释。
  */
 static float speed_pid_update(GM6020_Controller_t *controller,
-                              float target,
-                              float feedback)
+                               float target,
+                               float feedback)
 {
   SpeedPID_t *pid = &controller->speed_pid;
-  const float output_limit = controller->speed_output_limit;  /* 电流输出限幅 — current output clamp (±8192) */
+  float output_limit = controller->speed_output_limit;
+
+  if (controller->pitch_fusion_feedback_active
+      && (output_limit
+          > PITCH_FUSION_CONTROL_MAX_CURRENT))
+  {
+    output_limit = PITCH_FUSION_CONTROL_MAX_CURRENT;
+  }
 
   /* ── 步骤1: 速度误差 (Speed Error) ── */
   /* error > 0 → 实际转速低于目标 → 需要增加正向电流驱动 */
@@ -757,6 +844,12 @@ static float speed_pid_update(GM6020_Controller_t *controller,
  * 【返回值】HAL_CAN_AddTxMessage 的状态。
  */
 static HAL_StatusTypeDef gm6020_send_axis_current(GM6020_Axis_t axis)
+/*
+ * 发送单轴转矩电流命令到 0x1FE 帧。
+ * 每个轴可能挂在不同的 CAN 总线上 (motor_can[axis])，
+ * 因此需要按轴独立发送。电流值按 Big-Endian int16 打包
+ * 到对应电流槽位 (slot 0 → offset 0, slot 1 → offset 2)。
+ */
 {
   CAN_TxHeaderTypeDef tx_header = {0};
   uint8_t tx_data[8] = {0};
@@ -769,6 +862,7 @@ static HAL_StatusTypeDef gm6020_send_axis_current(GM6020_Axis_t axis)
   {
     return HAL_ERROR;
   }
+  /* Construct CAN header: StdId=0x1FE, 8-byte data frame */
 
   tx_header.StdId = GM6020_CURRENT_COMMAND_ID;
   tx_header.IDE = CAN_ID_STD;
@@ -778,11 +872,13 @@ static HAL_StatusTypeDef gm6020_send_axis_current(GM6020_Axis_t axis)
 
   current_command = controllers[axis].current_command;
 
+  /* Pack int16 current as Big-Endian into the correct slot offset */
 #if GIMBAL_YAW_ONLY_TEST_MODE
   if (axis == GM6020_AXIS_PITCH)
   {
     current_command = 0;
   }
+  /* Submit frame to the CAN TX mailbox of this axis's bus */
 #endif
 
   raw = (uint16_t)current_command;
@@ -833,6 +929,8 @@ typedef void (*ControlStateFeedbackHandler_t)(
  */
 static void state_zero_current_on_feedback(
     GM6020_Controller_t *controller)
+/* WAIT_FEEDBACK / FAULT: 保持零电流输出，等待状态机自动转移到下一状态 */
+/* Keep zero current; state transition handled by control_state_handle_feedback() */
 {
   controller->current_command = 0;
 }
@@ -843,16 +941,48 @@ static void state_zero_current_on_feedback(
  *   2. 速度环 PID：速度误差 → 转矩电流命令
  */
 static void state_position_control_on_feedback(
+/* POSITION_CONTROL: 外环角度PID → 目标转速 → 内环速度PID → 电流命令 */
+/* Outer loop (angle) → target rpm → inner loop (speed) → torque current */
     GM6020_Controller_t *controller)
 {
+  float feedback_position_deg =
+      controller_encoder_relative_position_deg(controller);
+  float feedback_speed_rpm =
+      (float)controller->feedback.speed_rpm;
+  bool fusion_available = false;
+
+  if (controller_is_pitch(controller))
+  {
+    fusion_available = PitchFusion_GetControlFeedback(
+        &feedback_position_deg,
+        &feedback_speed_rpm);
+
+    if (fusion_available
+        != controller->pitch_fusion_feedback_active)
+    {
+      /*
+       * 反馈源变化时丢弃旧运动目标，并锚定到新反馈的当前位置。
+       * 同时清空两级PID，避免误差参考系变化造成电流阶跃。
+       */
+      controller->pitch_fusion_feedback_active =
+          fusion_available;
+      controller_hold_relative_position(
+          controller,
+          feedback_position_deg);
+      speed_pid_reset(controller);
+    }
+  }
+
   /* 外环：位置 → 目标转速 */
-  controller->target_speed_rpm = angle_pid_update(controller);
+  controller->target_speed_rpm = angle_pid_update(
+      controller,
+      feedback_position_deg);
 
   /* 内环：目标转速 vs 实际转速 → 电流命令 */
   controller->current_command = (int16_t)speed_pid_update(
       controller,
       controller->target_speed_rpm,
-      (float)controller->feedback.speed_rpm);
+      feedback_speed_rpm);
 }
 
 /*
@@ -861,6 +991,8 @@ static void state_position_control_on_feedback(
  *   用于整定速度环 PID 参数或测试电机响应。
  */
 static void state_speed_debug_on_feedback(
+/* SPEED_DEBUG: 绕过角度环，直接以人工设定的RPM驱动速度环 */
+/* Bypass angle loop; drive speed loop directly with debug_target_speed_rpm */
     GM6020_Controller_t *controller)
 {
   controller->target_speed_rpm =
@@ -868,6 +1000,7 @@ static void state_speed_debug_on_feedback(
   controller->current_command = (int16_t)speed_pid_update(
       controller,
       controller->target_speed_rpm,
+/* 状态→反馈处理函数映射表，索引与 GM6020_ControlState_t 枚举对齐 */
       (float)controller->feedback.speed_rpm);
 }
 
@@ -895,8 +1028,9 @@ static const ControlStateFeedbackHandler_t state_handlers[
  *      - WAIT_FEEDBACK: 等待电机响应前保持零电流
  *      - POSITION_CONTROL: 有位置目标则解析，否则锁定当前位置
  *      - SPEED_DEBUG: 应用人工设定的目标转速
- *      - FAULT: 标记离线，清除编码器初始化标志，等待下次有效反馈
+ *      - FAULT: 标记离线，清除编码器初始化和旧位置目标，等待反馈恢复
  */
+  /* Transition to new state: reset current, reset PIDs, init state-specific variables */
 static void control_state_transition(
     GM6020_Controller_t *controller,
     GM6020_ControlState_t next_state)
@@ -908,6 +1042,7 @@ static void control_state_transition(
   {
     case GM6020_STATE_WAIT_FEEDBACK:
       controller->target_speed_rpm = 0.0f;
+      controller->pitch_fusion_feedback_active = false;
       speed_pid_reset(controller);
       angle_pid_reset(controller);
       break;
@@ -933,20 +1068,27 @@ static void control_state_transition(
       }
       else
       {
+        float hold_position_deg =
+            controller_encoder_relative_position_deg(controller);
+        float hold_speed_rpm;
+
         /*
-         * 没有外部位置命令时，锁定当前位置。
-         * 每个轴独立锁定，Yaw 锁 Yaw 的当前位置，Pitch 锁 Pitch 的当前位置。
+         * 没有外部位置命令时，锁定当前反馈位置。
+         * Pitch融合有效时锁定当前惯性Pitch，其他情况锁定编码器位置。
          */
-        controller->target_total_angle_ecd =
-            controller->feedback.total_angle_ecd;
-        controller->requested_angle_deg =
-            normalize_single_turn_degrees(
-                controller->feedback.total_angle_deg);
-        controller->requested_angle_is_multi_turn = false;
+        controller->pitch_fusion_feedback_active =
+            controller_is_pitch(controller)
+            && PitchFusion_GetControlFeedback(
+                &hold_position_deg,
+                &hold_speed_rpm);
+        controller_hold_relative_position(
+            controller,
+            hold_position_deg);
       }
       break;
 
     case GM6020_STATE_SPEED_DEBUG:
+      controller->pitch_fusion_feedback_active = false;
       controller->target_speed_rpm =
           controller->debug_target_speed_rpm;
       speed_pid_reset(controller);
@@ -958,6 +1100,8 @@ static void control_state_transition(
       controller->state = GM6020_STATE_FAULT;
       controller->feedback.online = false;
       controller->encoder_initialized = false;
+      controller->pitch_fusion_feedback_active = false;
+      controller->position_target_valid = false;
       controller->target_speed_rpm = 0.0f;
       speed_pid_reset(controller);
       angle_pid_reset(controller);
@@ -1312,6 +1456,7 @@ static void apply_zero_offset_ecd(
   controller->position_target_valid = false;
   controller->requested_angle_deg = 0.0f;
   controller->requested_angle_is_multi_turn = false;
+  controller->pitch_fusion_feedback_active = false;
   controller->target_speed_rpm = 0.0f;
   controller->current_command = 0;
   speed_pid_reset(controller);
@@ -1407,7 +1552,8 @@ bool GM6020_SetAxisZeroOffsetEcd(GM6020_Axis_t axis,
  *   target_angle_deg: 相对配置零位的逻辑角度（度）
  *
  * 【处理流程】
- *   1. 如果有软限位，先将目标限幅到 [min, max]
+ *   1. 如果有软限位，正常位置将目标限幅到 [min, max]；若当前位置
+ *      已在限位外，只允许保持当前位置或向正常范围内恢复
  *   2. 叠加零位偏置（标定时编码器零位与机械中位的偏差），归一化到 [0, 360)
  *   3. 如果当前已在 POSITION_CONTROL 状态，立即解析为多圈目标
  *      （否则等待状态转入 POSITION_CONTROL 时再解析）
@@ -1422,6 +1568,8 @@ void GM6020_SetTargetPosition(GM6020_Axis_t axis,
 {
   GM6020_Controller_t *controller;
   float limited_angle_deg;
+  float minimum_angle_deg;
+  float maximum_angle_deg;
 
   if (emergency_stop_latched
       || !axis_is_valid(axis)
@@ -1435,10 +1583,41 @@ void GM6020_SetTargetPosition(GM6020_Axis_t axis,
   limited_angle_deg = target_angle_deg;
   if (controller->angle_limit_enabled)
   {
+    minimum_angle_deg = controller->minimum_angle_deg;
+    maximum_angle_deg = controller->maximum_angle_deg;
+
+    /*
+     * 标定后的传感器零点可能使上电位置落在正常运行软限位之外。
+     * 此时临时把“当前位置”作为越界侧边界：
+     *   current < min → 允许 [current, max]
+     *   current > max → 允许 [min, current]
+     *
+     * 因而可以原位保持或向安全区恢复，但任何继续向机械端点外侧
+     * 运动的目标都会被挡住。进入正常范围后自动恢复固定软限位。
+     */
+    if (controller->encoder_initialized
+        && controller->multi_turn_origin_valid)
+    {
+      const float current_angle_deg =
+          controller_encoder_relative_position_deg(controller);
+
+      if (isfinite(current_angle_deg))
+      {
+        if (current_angle_deg < minimum_angle_deg)
+        {
+          minimum_angle_deg = current_angle_deg;
+        }
+        else if (current_angle_deg > maximum_angle_deg)
+        {
+          maximum_angle_deg = current_angle_deg;
+        }
+      }
+    }
+
     limited_angle_deg = clamp_float(
         limited_angle_deg,
-        controller->minimum_angle_deg,
-        controller->maximum_angle_deg);
+        minimum_angle_deg,
+        maximum_angle_deg);
   }
 
   /*
@@ -1828,6 +2007,16 @@ void GM6020_Process(void)
       ++controller->feedback.rx_sequence;
       controller->feedback.online = true;
 
+      /*
+       * Pitch反馈更新后立即刷新融合器，使本帧PID同时使用最新编码器、
+       * 电机转速和IMU快照。任务层仍会调用一次融合器，用于无CAN帧时
+       * 的数据超时与诊断状态维护。
+       */
+      if (axis_index == (uint32_t)GM6020_AXIS_PITCH)
+      {
+        PitchFusion_Process();
+      }
+
       if (emergency_stop_latched)
       {
         controller->current_command = 0;
@@ -1842,21 +2031,25 @@ void GM6020_Process(void)
   }
 
   /*
+   * Phase 2: Timeout Detection — check each axis for feedback timeout
    * --- 阶段2：超时检测 ---
    *
    * 重新获取时间戳（阶段1可能耗时），依次检查两轴。
    * 注意：这里用的是同一个 now，两轴的超时判断基于同一个时间基准。
    */
+  /* Re-fetch timestamp (phase 1 may have taken time); both axes share same time base */
   now = HAL_GetTick();
   for (axis_index = 0U;
        axis_index < (uint32_t)GM6020_AXIS_COUNT;
        ++axis_index)
   {
+    /* If timeout occurred → transition to FAULT → mark command_changed to re-send zero current */
     if (control_state_poll_timeout(
             &controllers[axis_index], now))
     {
       command_changed[axis_index] = true;
     }
+  /* Phase 3: Send current command — only if that axis had a change (efficiency: skip idle transmits) */
   }
 
   /* 某轴电流变化时，只在该轴对应的 CAN 总线上发送。 */
