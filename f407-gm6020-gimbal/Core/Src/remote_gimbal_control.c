@@ -5,12 +5,16 @@
  * ===========================================================================
  *
  * 控制方式：
- *   CH0 → Yaw 目标角速度 → 积分得到 Yaw 多圈位置目标
+ *   GIMBAL_YAW_ONLY_TEST_MODE=1：
+ *     CH0 → Yaw目标RPM，绕过角度环，直接调试速度环
+ *   GIMBAL_YAW_ONLY_TEST_MODE=0：
+ *     CH0 → Yaw 目标角速度 → 积分得到 Yaw 多圈位置目标
  *   CH1 → Pitch 目标角速度 → 积分得到 Pitch 单圈位置目标
  *   CH2 → 底盘横移速度 vy
  *   CH3 → 底盘前进速度 vx
  *   S1上挡 → 云台与底盘急停；S1中/下挡 → 解除急停（临时映射）
  *   S2上/中/下挡 → 底盘跟随/不跟随/小陀螺模式
+ *   S1下+S2上：拨轮下=连发、拨轮上边沿=单发；S1下+S2中+拨轮下=退弹
  *
  * 每个轴独立检查以下接管条件：
  *   - DBUS 最近100 ms内收到过合法帧；
@@ -25,8 +29,11 @@
 #include "remote_gimbal_control.h"
 
 #include "chassis_can.h"
+#include "config/control_tuning.h"
 #include "config/gimbal_params.h"
 #include "dbus.h"
+#include "dual_m3508.h"
+#include "feeder_motor.h"
 #include "gimbal_calibration.h"
 #include "motor_control.h"
 #include "pitch_fusion.h"
@@ -62,18 +69,19 @@
  * 死区 (Deadzone): 去中心值 ±30 内不动作，滤除摇杆回中抖动。
  * DBUS 去中心值范围约 -660 ~ +660，30/660 ≈ 4.5% 死区。
  */
-#define REMOTE_GIMBAL_DEADZONE             30    /* 死区阈值 — deadzone threshold (centered units) */
+#define REMOTE_GIMBAL_DEADZONE TUNE_PITCH_REMOTE_DEADZONE
 
 /*
  * 满量程 (Full Scale): 去中心值的最大幅值。
  * DBUS 通道值 364~1684 → 去中心 = -660 ~ +660。
  */
-#define REMOTE_GIMBAL_FULL_SCALE           660   /* 满量程 — full scale (centered units) */
+#define REMOTE_GIMBAL_FULL_SCALE TUNE_PITCH_REMOTE_FULL_SCALE
 
 /* ─── 角速度映射 (Angular Rate Mapping) ─── */
 /* 满杆时对应的云台逻辑目标角速度 (°/s) */
 #define REMOTE_GIMBAL_YAW_MAX_RATE_DPS    180.0f /* Yaw 满杆角速度 — max yaw rate (degrees/sec) */
-#define REMOTE_GIMBAL_PITCH_MAX_RATE_DPS   60.0f /* Pitch 满杆角速度 — max pitch rate (degrees/sec) */
+#define REMOTE_GIMBAL_PITCH_MAX_RATE_DPS \
+    TUNE_PITCH_REMOTE_MAX_RATE_DPS
 
 /*
  * 安装方向修正 (Mounting Direction Correction)。
@@ -120,6 +128,7 @@ typedef struct
   bool axis_active[GM6020_AXIS_COUNT]; /* 各轴独立接管激活标志 */
   bool pitch_fusion_was_ready; /* Pitch反馈源变化时重新锚定遥控目标 */
   uint8_t last_s1_position;    /* 上次S1挡位，用于中/下挡解除沿检测 */
+  uint8_t feeder_dial_zone;    /* 带迟滞的拨轮区域：0中、1下、2上 */
 } RemoteGimbalControlContext_t;
 
 static RemoteGimbalControlContext_t remote_control;
@@ -143,6 +152,57 @@ static float clamp_float(float value, float minimum, float maximum)
     return maximum;
   }
   return value;
+}
+
+static float approach_float(float current, float target,
+                            float maximum_step)
+{
+  if (current < target - maximum_step)
+  {
+    return current + maximum_step;
+  }
+  if (current > target + maximum_step)
+  {
+    return current - maximum_step;
+  }
+  return target;
+}
+
+enum
+{
+  FEEDER_DIAL_CENTER = 0U,
+  FEEDER_DIAL_DOWN,
+  FEEDER_DIAL_UP
+};
+
+static uint8_t update_feeder_dial_zone(
+    const DBUS_Data_t *dbus_data)
+{
+  int32_t dial;
+
+  if ((dbus_data == NULL) || !dbus_data->dial_valid)
+  {
+    remote_control.feeder_dial_zone = FEEDER_DIAL_CENTER;
+    return FEEDER_DIAL_CENTER;
+  }
+
+  dial = (int32_t)dbus_data->centered_dial
+      * TUNE_DBUS_DIAL_DOWN_DIRECTION;
+  if ((dial <= TUNE_DBUS_DIAL_RELEASE_THRESHOLD)
+      && (dial >= -TUNE_DBUS_DIAL_RELEASE_THRESHOLD))
+  {
+    remote_control.feeder_dial_zone = FEEDER_DIAL_CENTER;
+  }
+  else if (dial >= TUNE_DBUS_DIAL_TRIGGER_THRESHOLD)
+  {
+    remote_control.feeder_dial_zone = FEEDER_DIAL_DOWN;
+  }
+  else if (dial <= -TUNE_DBUS_DIAL_TRIGGER_THRESHOLD)
+  {
+    remote_control.feeder_dial_zone = FEEDER_DIAL_UP;
+  }
+
+  return remote_control.feeder_dial_zone;
 }
 
 /*
@@ -211,7 +271,18 @@ static void process_temporary_s1_safety(
     if (!GM6020_IsEmergencyStopped())
     {
       (void)GM6020_EmergencyStop();
+    }
+    if (!ChassisCAN_IsEmergencyStopped())
+    {
       (void)ChassisCAN_EmergencyStop();
+    }
+    if (!FeederMotor_IsEmergencyStopped())
+    {
+      (void)FeederMotor_EmergencyStop();
+    }
+    if (!DualM3508_IsEmergencyStopped())
+    {
+      (void)DualM3508_EmergencyStop();
     }
   }
   else if (((s1_position == DBUS_SWITCH_MIDDLE)
@@ -220,6 +291,11 @@ static void process_temporary_s1_safety(
   {
     GM6020_ClearEmergencyStop();
     ChassisCAN_ClearEmergencyStop();
+    FeederMotor_ClearEmergencyStop();
+    if (DualM3508_IsEmergencyStopped())
+    {
+      DualM3508_ClearEmergencyStop();
+    }
   }
 
   remote_control.last_s1_position = s1_position;
@@ -293,11 +369,101 @@ static void process_chassis_control(
 }
 
 /*
+ * 仅S1下+S2上（正常发射模式）请求启动双M3508摩擦轮。
+ * 退弹模式和其他挡位均关闭摩擦轮。
+ * 故障锁存由DualM3508模块内部处理，必须回到S1中挡后才允许复位。
+ */
+static void process_friction_control(
+    const DBUS_Data_t *dbus_data)
+{
+  bool enabled;
+
+  if ((dbus_data == NULL)
+      || !dbus_data->online
+      || !dbus_data->last_frame_valid)
+  {
+    DualM3508_DisableUntilOff();
+    return;
+  }
+
+  enabled =
+      !GM6020_IsEmergencyStopped()
+      && !DualM3508_IsEmergencyStopped()
+      && (dbus_data->switch_value[REMOTE_GIMBAL_S1_INDEX]
+          == DBUS_SWITCH_DOWN)
+      && (dbus_data->switch_value[
+              REMOTE_CHASSIS_MODE_SWITCH_INDEX]
+          == DBUS_SWITCH_UP);
+
+  DualM3508_SetEnabled(enabled);
+}
+
+/*
+ * 拨弹盘拨轮映射：
+ *   S1下 + S2上 + 拨轮下 -> 连发
+ *   S1下 + S2上 + 拨轮上 -> 中心到上方边沿触发单发
+ *   S1下 + S2中 + 拨轮下 -> 低速反转退弹（摩擦轮关闭）
+ *   其他有效组合          -> NEUTRAL
+ *   DBUS/拨轮无效或S1非下 -> DISABLE
+ */
+static void process_feeder_control(
+    const DBUS_Data_t *dbus_data)
+{
+  FeederRemoteCommand_t command = FEEDER_REMOTE_DISABLE;
+  uint8_t dial_zone = FEEDER_DIAL_CENTER;
+
+  if ((dbus_data != NULL)
+      && dbus_data->online
+      && dbus_data->last_frame_valid
+      && dbus_data->dial_valid
+      && !GM6020_IsEmergencyStopped()
+      && (dbus_data->switch_value[REMOTE_GIMBAL_S1_INDEX]
+          == DBUS_SWITCH_DOWN))
+  {
+    dial_zone = update_feeder_dial_zone(dbus_data);
+    switch (dbus_data->switch_value[
+        REMOTE_CHASSIS_MODE_SWITCH_INDEX])
+    {
+      case DBUS_SWITCH_UP:
+        if (dial_zone == FEEDER_DIAL_DOWN)
+        {
+          command = FEEDER_REMOTE_CONTINUOUS;
+        }
+        else if (dial_zone == FEEDER_DIAL_UP)
+        {
+          command = FEEDER_REMOTE_SINGLE;
+        }
+        else
+        {
+          command = FEEDER_REMOTE_NEUTRAL;
+        }
+        break;
+      case DBUS_SWITCH_MIDDLE:
+        command =
+            (dial_zone == FEEDER_DIAL_DOWN)
+            ? FEEDER_REMOTE_REVERSE
+            : FEEDER_REMOTE_NEUTRAL;
+        break;
+      case DBUS_SWITCH_DOWN:
+      default:
+        command = FEEDER_REMOTE_NEUTRAL;
+        break;
+    }
+  }
+  else
+  {
+    (void)update_feeder_dial_zone(NULL);
+  }
+
+  FeederMotor_SetRemoteCommand(command);
+}
+
+/*
  * 判断指定轴是否具备遥控器接管条件。
  *
  * 四个必要条件全部满足才返回true：
  *   1. DBUS 在线 (dbus_data->online) — 接收机有信号
- *   2. 指定轴零位标定完成 — 逻辑角度0°对应该轴开机位置
+ *   2. 指定轴零位标定完成 — 逻辑角度0°对应传感器零点
  *   3. 云台未急停 — 没有被锁存式急停阻止
  *   4. 指定轴在线 — 收到该轴有效CAN反馈
  *
@@ -346,6 +512,8 @@ void RemoteGimbalControl_Init(void)
   remote_control.pitch_fusion_was_ready = false;
   remote_control.last_s1_position =
       REMOTE_GIMBAL_SWITCH_UNKNOWN;
+  remote_control.feeder_dial_zone =
+      FEEDER_DIAL_CENTER;
 }
 
 /*
@@ -353,8 +521,8 @@ void RemoteGimbalControl_Init(void)
  *
  * 【控制流程】
  *   1. 分别检查两轴接管条件，不满足的轴单独deactivate
- *   2. 某轴首次接管 → 从该轴实时位置建立积分起点
- *   3. 已接管轴 → normalize_channel → 角速度积分 → 限幅 → 下传目标
+ *   2. Yaw-only模式下：CH0直接映射目标RPM，进入纯速度环调试
+ *   3. 双轴模式下：从实时位置建立积分起点，再积分角速度下传位置目标
  *
  * 【积分公式】
  *   new_target = old_target + normalized * direction * max_rate * (delta_ms / 1000)
@@ -376,11 +544,20 @@ void RemoteGimbalControl_Process(void)
   uint32_t delta_ms;
   float yaw_input;
   float pitch_input;
+#if GIMBAL_YAW_ONLY_TEST_MODE
+  float yaw_target_speed_rpm;
+#else
+  float yaw_rate_dps;
+#endif
+  float pitch_rate_dps;
+  float previous_target_deg;
   float pitch_feedback_deg;
   float pitch_feedback_rpm;
 
   process_temporary_s1_safety(dbus_data);
   process_chassis_control(dbus_data);
+  process_friction_control(dbus_data);
+  process_feeder_control(dbus_data);
 
   yaw_available = remote_axis_is_available(
       dbus_data, GM6020_AXIS_YAW);
@@ -405,10 +582,23 @@ void RemoteGimbalControl_Process(void)
   if (!yaw_available)
   {
     remote_control.axis_active[GM6020_AXIS_YAW] = false;
+#if GIMBAL_YAW_ONLY_TEST_MODE
+    /*
+     * DBUS、标定或Yaw反馈任一条件失效时，先把速度目标清零。
+     * 反馈超时和急停仍由电机控制层进一步强制零电流。
+     */
+    GM6020_SetSpeedDebugTarget(
+        GM6020_AXIS_YAW, 0.0f);
+#else
+    GM6020_SetPositionFeedforward(
+        GM6020_AXIS_YAW, 0.0f, 0.0f);
+#endif
   }
   if (!pitch_available)
   {
     remote_control.axis_active[GM6020_AXIS_PITCH] = false;
+    GM6020_SetPositionFeedforward(
+        GM6020_AXIS_PITCH, 0.0f, 0.0f);
   }
 
   delta_ms = (uint32_t)(now - remote_control.last_process_ms);
@@ -425,6 +615,30 @@ void RemoteGimbalControl_Process(void)
 
   if (yaw_available)
   {
+#if GIMBAL_YAW_ONLY_TEST_MODE
+    yaw_input = normalize_channel(
+        dbus_data->centered_channel[
+            REMOTE_GIMBAL_YAW_CHANNEL]);
+    yaw_target_speed_rpm =
+        yaw_input
+        * REMOTE_GIMBAL_YAW_DIRECTION
+        * YAW_REMOTE_SPEED_DEBUG_MAX_RPM;
+
+    /*
+     * 首次接管或其他模块退出速度模式后，从0 RPM重新进入速度调试，
+     * 随后把当前CH0映射结果提交给速度环。角度环在该模式下完全绕过。
+     */
+    if (!remote_control.axis_active[GM6020_AXIS_YAW]
+        || (GM6020_GetControlMode(GM6020_AXIS_YAW)
+            != GM6020_MODE_SPEED_DEBUG))
+    {
+      GM6020_EnterSpeedDebug(
+          GM6020_AXIS_YAW, 0.0f);
+      remote_control.axis_active[GM6020_AXIS_YAW] = true;
+    }
+    GM6020_SetSpeedDebugTarget(
+        GM6020_AXIS_YAW, yaw_target_speed_rpm);
+#else
     if (!remote_control.axis_active[GM6020_AXIS_YAW])
     {
       if (GM6020_GetMultiTurnPosition(
@@ -435,6 +649,8 @@ void RemoteGimbalControl_Process(void)
         GM6020_SetMultiTurnTargetPosition(
             GM6020_AXIS_YAW,
             remote_control.yaw_target_deg);
+        GM6020_SetPositionFeedforward(
+            GM6020_AXIS_YAW, 0.0f, 0.0f);
       }
     }
     else if (delta_ms > 0U)
@@ -442,10 +658,13 @@ void RemoteGimbalControl_Process(void)
       yaw_input = normalize_channel(
           dbus_data->centered_channel[
               REMOTE_GIMBAL_YAW_CHANNEL]);
-      remote_control.yaw_target_deg +=
+      yaw_rate_dps =
           yaw_input
           * REMOTE_GIMBAL_YAW_DIRECTION
-          * REMOTE_GIMBAL_YAW_MAX_RATE_DPS
+          * REMOTE_GIMBAL_YAW_MAX_RATE_DPS;
+      previous_target_deg = remote_control.yaw_target_deg;
+      remote_control.yaw_target_deg +=
+          yaw_rate_dps
           * (float)delta_ms
           / 1000.0f;
       remote_control.yaw_target_deg = clamp_float(
@@ -455,7 +674,15 @@ void RemoteGimbalControl_Process(void)
       GM6020_SetMultiTurnTargetPosition(
           GM6020_AXIS_YAW,
           remote_control.yaw_target_deg);
+      yaw_rate_dps =
+          (remote_control.yaw_target_deg - previous_target_deg)
+          * 1000.0f / (float)delta_ms;
+      GM6020_SetPositionFeedforward(
+          GM6020_AXIS_YAW,
+          yaw_rate_dps / 6.0f,
+          0.0f);
     }
+#endif
   }
 
   if (pitch_available)
@@ -482,6 +709,8 @@ void RemoteGimbalControl_Process(void)
         GM6020_SetTargetPosition(
             GM6020_AXIS_PITCH,
             remote_control.pitch_target_deg);
+        GM6020_SetPositionFeedforward(
+            GM6020_AXIS_PITCH, 0.0f, 0.0f);
       }
     }
     else if (delta_ms > 0U)
@@ -489,12 +718,31 @@ void RemoteGimbalControl_Process(void)
       pitch_input = normalize_channel(
           dbus_data->centered_channel[
               REMOTE_GIMBAL_PITCH_CHANNEL]);
-      remote_control.pitch_target_deg +=
+      pitch_rate_dps =
           pitch_input
           * REMOTE_GIMBAL_PITCH_DIRECTION
-          * REMOTE_GIMBAL_PITCH_MAX_RATE_DPS
-          * (float)delta_ms
-          / 1000.0f;
+          * REMOTE_GIMBAL_PITCH_MAX_RATE_DPS;
+      previous_target_deg = remote_control.pitch_target_deg;
+      if (pitch_input != 0.0f)
+      {
+        remote_control.pitch_target_deg +=
+            pitch_rate_dps
+            * (float)delta_ms
+            / 1000.0f;
+      }
+      else
+      {
+        /*
+         * 摇杆回中后，目标只负责平滑回到传感器水平0°。
+         * 目标到达0°后保持不变；车辆颠簸引起的实际角度和角速度变化
+         * 由1 kHz融合反馈立即进入两级PID，不受此回正斜坡限制。
+         */
+        remote_control.pitch_target_deg = approach_float(
+            remote_control.pitch_target_deg,
+            TUNE_PITCH_LEVEL_TARGET_DEG,
+            TUNE_PITCH_LEVEL_RETURN_RATE_DPS
+              * (float)delta_ms / 1000.0f);
+      }
       remote_control.pitch_target_deg = clamp_float(
           remote_control.pitch_target_deg,
           REMOTE_GIMBAL_PITCH_MIN_DEG,
@@ -502,6 +750,14 @@ void RemoteGimbalControl_Process(void)
       GM6020_SetTargetPosition(
           GM6020_AXIS_PITCH,
           remote_control.pitch_target_deg);
+      pitch_rate_dps =
+          (remote_control.pitch_target_deg
+           - previous_target_deg)
+          * 1000.0f / (float)delta_ms;
+      GM6020_SetPositionFeedforward(
+          GM6020_AXIS_PITCH,
+          pitch_rate_dps / 6.0f,
+          0.0f);
     }
   }
 }
