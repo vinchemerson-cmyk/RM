@@ -1,0 +1,26 @@
+# CMake build directories
+/build/
+/cmake-build-*/
+/out/
+
+# Build artifacts created outside the build directories
+*.elf
+*.hex
+*.bin
+*.map
+*.o
+*.obj
+*.d
+*.su
+
+# Local CMake and Ninja state
+/CMakeFiles/
+/CMakeCache.txt
+/build.ninja
+/.ninja_deps
+/.ninja_log
+
+# CubeMX and editor backup files
+*.bak
+*.tmp
+*~
