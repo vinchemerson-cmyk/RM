@@ -37,9 +37,14 @@ add_executable(${CMAKE_PROJECT_NAME}
         Robot/RobotConfig.hpp
         appTasks/BUZZER/buzzer_task.cpp
         appTasks/BUZZER/buzzer_task.h
-        BSP/BUZZER.cpp
-        BSP/BUZZER.h
-        Robot/Robot.h)
+        BSP/BUZZER/BUZZER.cpp
+        BSP/BUZZER/BUZZER.h
+        Robot/Robot.h
+        appTasks/LED/led_task.cpp
+        appTasks/LED/led_task.h
+        BSP/can/can.cpp
+        BSP/can/can.h
+        BSP/can/canConfig.h)
 
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)

@@ -1,0 +1,8 @@
+//
+// Created by 19923 on 2026/9/25.
+//
+
+#ifndef INFANTRY_H723_LED_TASK_H
+#define INFANTRY_H723_LED_TASK_H
+
+#endif //INFANTRY_H723_LED_TASK_H
