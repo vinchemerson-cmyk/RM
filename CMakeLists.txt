@@ -33,18 +33,20 @@ enable_language(C ASM)
 
 # Create an executable object type
 add_executable(${CMAKE_PROJECT_NAME}
-        Robot/Robot.cpp
-        Robot/RobotConfig.hpp
-        appTasks/BUZZER/buzzer_task.cpp
-        appTasks/BUZZER/buzzer_task.h
+        Application/Robot.cpp
+        Application/RobotConfig.hpp
+        Application/tasks/BUZZER/buzzer_task.cpp
+        Application/tasks/BUZZER/buzzer_task.h
         BSP/BUZZER/BUZZER.cpp
         BSP/BUZZER/BUZZER.h
-        Robot/Robot.h
-        appTasks/LED/led_task.cpp
-        appTasks/LED/led_task.h
+        Application/Robot.h
+        Application/tasks/LED/led_task.cpp
+        Application/tasks/LED/led_task.h
         BSP/can/can.cpp
         BSP/can/can.h
-        BSP/can/canConfig.h)
+        BSP/can/canConfig.h
+        Application/chassis/chassic.cpp
+        Application/chassis/chassic.h)
 
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
@@ -62,9 +64,8 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
-        ${CMAKE_CURRENT_SOURCE_DIR}/Robot
+        ${CMAKE_CURRENT_SOURCE_DIR}/Application
         ${CMAKE_CURRENT_SOURCE_DIR}/BSP
-        ${CMAKE_CURRENT_SOURCE_DIR}/appTasks
 )
 
 # Add project symbols (macros)

@@ -5,4 +5,8 @@
 #ifndef INFANTRY_H723_LED_TASK_H
 #define INFANTRY_H723_LED_TASK_H
 
+namespace appTasks
+{
+    void CreateLedTask();
+}
 #endif //INFANTRY_H723_LED_TASK_H
