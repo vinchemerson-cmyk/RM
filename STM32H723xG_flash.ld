@@ -227,6 +227,16 @@ SECTIONS
   } >DTCMRAM
   PROVIDE( __non_tls_bss_start = ADDR(.bss) );
 
+  /* DMA1 cannot access DTCM. Keep UART DMA instance buffers in AXI SRAM. */
+  .axi_bss (NOLOAD) : ALIGN(32)
+  {
+    _saxi_bss = .;
+    *(.axi_bss)
+    *(.axi_bss*)
+    . = ALIGN(32);
+    _eaxi_bss = .;
+  } >RAM_D1
+
   PROVIDE( __bss_start = __tbss_start );
   PROVIDE( __bss_size = __bss_end - __bss_start );
 

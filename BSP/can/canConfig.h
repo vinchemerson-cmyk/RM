@@ -1,3 +1,8 @@
+/**
+ * @file canConfig.h
+ * @brief 定义 CAN 设备的句柄、收发配置和实例参数。
+ */
+
 //
 // Created by 19923 on 2026/9/25.
 //

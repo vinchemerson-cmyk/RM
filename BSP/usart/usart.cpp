@@ -1,7 +1,11 @@
-#include "usart.hpp"
-#include "memory_layout.h"
+/**
+ * @file usart.cpp
+ * @brief 保存串口实例表并转发 HAL 串口回调。
+ */
 
-DMA_BUFFER
+#include "usart.hpp"
+
+__attribute__((section(".axi_bss")))
 std::array<usart, usartConfig::MAX_INSTANCE> usart::_usart_instance_table{};
 
 // -------- HAL 中断回调 --------

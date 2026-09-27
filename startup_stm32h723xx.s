@@ -95,6 +95,20 @@ LoopFillZerobss:
   cmp r2, r4
   bcc FillZerobss
 
+/* Zero DMA-accessible AXI SRAM before static constructors and main. */
+  ldr r2, =_saxi_bss
+  ldr r4, =_eaxi_bss
+  movs r3, #0
+  b LoopFillZeroAxi
+
+FillZeroAxi:
+  str r3, [r2]
+  adds r2, r2, #4
+
+LoopFillZeroAxi:
+  cmp r2, r4
+  bcc FillZeroAxi
+
 /* Call static constructors */
     bl __libc_init_array
 /* Call the application's entry point.*/

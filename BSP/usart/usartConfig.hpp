@@ -1,3 +1,8 @@
+/**
+ * @file usartConfig.hpp
+ * @brief 定义 UART 收发缓冲区、回调和注册配置。
+ */
+
 #ifndef USART_CONFIG_HPP
 #define USART_CONFIG_HPP
 

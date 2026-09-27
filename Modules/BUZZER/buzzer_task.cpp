@@ -1,3 +1,8 @@
+/**
+ * @file buzzer_task.cpp
+ * @brief 创建蜂鸣器 FreeRTOS 任务并周期控制鸣响。
+ */
+
 //
 // Created by 19923 on 2026/9/24.
 //

@@ -1,3 +1,8 @@
+/**
+ * @file usart.hpp
+ * @brief 封装 UART DMA 收发、实例注册和中断分发。
+ */
+
 #ifndef USART_HPP
 #define USART_HPP
 

@@ -1,3 +1,8 @@
+/**
+ * @file pwmConfig.hpp
+ * @brief 定义 PWM 设备注册所需的属性和 HAL 依赖。
+ */
+
 #ifndef PWM_CONFIG_HPP
 #define PWM_CONFIG_HPP
 

@@ -1,0 +1,32 @@
+/**
+ * @file Bmi088.h
+ * @brief 声明 BMI088 初始化入口。
+ */
+
+//
+// Created by 19923 on 2026/9/26.
+//
+
+#ifndef INFANTRY_H723_BMI088_H
+#define INFANTRY_H723_BMI088_H
+
+#include "main.h"
+
+/**
+ * @brief 通过 SPI2 DMA 读取 BMI088 芯片 ID，必须从 FreeRTOS 任务调用。
+ * @return HAL_OK 表示两个芯片 ID 均匹配。
+ */
+HAL_StatusTypeDef BMI088_Init();
+
+/** @brief 将加速度计切换到正常模式，以启用片内温度传感器。 */
+HAL_StatusTypeDef BMI088_EnableTemperature();
+
+/**
+ * @brief 读取加速度计片内温度。
+ * @param temperatureCelsius 成功时写入摄氏温度。
+ * @return HAL_OK 表示读取有效；未启用、SPI 出错或读到无效编码时返回 HAL_ERROR。
+ * @note 温度寄存器约每 1.28 秒更新一次。
+ */
+HAL_StatusTypeDef BMI088_ReadTemperature(float* temperatureCelsius);
+
+#endif //INFANTRY_H723_BMI088_H

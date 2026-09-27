@@ -1,10 +1,20 @@
+/**
+ * @file Robot.cpp
+ * @brief 按板卡配置初始化日志、通信和应用任务。
+ */
+
 //
 // Created by 19923 on 2026/9/24.
 //
 
 #include "Robot.h"
 #include "RobotConfig.hpp"
-#include "tasks/BUZZER/buzzer_task.h"
+#include "BUZZER/buzzer_task.h"
+#include "communication/usb_serial_task.h"
+#include "communication/uart_serial_task.h"
+#include "communication/interboard.h"
+#include "main.h"
+#include "log/bsp_log.h"
 
 namespace Infantry
 {
@@ -21,6 +31,15 @@ void InfantryInit(void)
     {
         return;
     }
+
+    BSPLogInit();
+
+    if (InfantryInitialization::ENABLE_USB_SERIAL)
+        serialTasks::CreateUsbSerialTask();
+    if (InfantryInitialization::ENABLE_UART_SERIAL)
+        serialTasks::CreateUartSerialTask();
+    if (InfantryInitialization::ENABLE_INTERBOARD && !interboard::Start())
+        Error_Handler();
 
     //检查蜂鸣器是否初始化
     if (InfantryInitialization::ENABLE_BUZZER)

@@ -35,18 +35,43 @@ enable_language(C ASM)
 add_executable(${CMAKE_PROJECT_NAME}
         Application/Robot.cpp
         Application/RobotConfig.hpp
-        Application/tasks/BUZZER/buzzer_task.cpp
-        Application/tasks/BUZZER/buzzer_task.h
+        Modules/BUZZER/buzzer_task.cpp
+        Modules/BUZZER/buzzer_task.h
         BSP/BUZZER/BUZZER.cpp
         BSP/BUZZER/BUZZER.h
         Application/Robot.h
-        Application/tasks/LED/led_task.cpp
-        Application/tasks/LED/led_task.h
+        Modules/LED/led_task.cpp
+        Modules/LED/led_task.h
         BSP/can/can.cpp
         BSP/can/can.h
         BSP/can/canConfig.h
         Application/chassis/chassic.cpp
-        Application/chassis/chassic.h)
+        Application/chassis/chassic.h
+        Modules/imu/Bmi088.cpp
+        Modules/imu/Bmi088.h
+        Modules/imu/Bmi088Heater.cpp
+        Modules/imu/Bmi088Heater.h
+        Modules/algorithm/pid.cpp
+        Modules/algorithm/pid.h
+        Modules/communication/usb_serial_task.cpp
+        Modules/communication/usb_serial_task.h
+        Modules/communication/uart_serial_task.cpp
+        Modules/communication/uart_serial_task.h
+        Modules/communication/interboard.cpp
+        Modules/communication/interboard.h
+        BSP/usart/usart.cpp
+        Modules/message_center/message_center.c
+        BSP/log/bsp_log.c
+        Middlewares/Third_Party/SEGGER/RTT/SEGGER_RTT.c
+        Middlewares/Third_Party/SEGGER/RTT/SEGGER_RTT_printf.c
+        Modules/motor/dji/dji.cpp
+        Modules/motor/dji/dji.h
+        Modules/motor/motor_common.cpp
+        Modules/motor/motor_common.h
+        Modules/motor/other_motors.cpp
+        Modules/motor/other_motors.h
+        Application/shoot/shoot.cpp
+        Application/shoot/shoot.h)
 
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
@@ -65,7 +90,11 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
         ${CMAKE_CURRENT_SOURCE_DIR}/Application
+        ${CMAKE_CURRENT_SOURCE_DIR}/Modules
         ${CMAKE_CURRENT_SOURCE_DIR}/BSP
+        ${CMAKE_CURRENT_SOURCE_DIR}/BSP/log
+        ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/SEGGER/RTT
+        ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/SEGGER/Config
 )
 
 # Add project symbols (macros)

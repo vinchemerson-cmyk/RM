@@ -1,3 +1,8 @@
+/**
+ * @file delay.hpp
+ * @brief 基于 HAL 时基提供微秒和毫秒级等待工具。
+ */
+
 #ifndef DELAY_HPP
 #define DELAY_HPP
 

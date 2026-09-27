@@ -1,3 +1,8 @@
+/**
+ * @file microsecond_clock.cpp
+ * @brief 将 DWT 周期计数累加为可回绕的微秒时钟。
+ */
+
 #include "microsecond_clock.hpp"
 
 extern "C"

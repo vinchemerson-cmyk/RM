@@ -1,5 +1,31 @@
+/**
+ * @file can.cpp
+ * @brief 分发专用 FDCAN 接收回调，并实现 CAN 设备接口。
+ */
+
 #include "can.h"
 #include "canConfig.h"
+
+namespace {
+FDCAN_HandleTypeDef* dedicated_handle = nullptr;
+CanDedicatedRxHandler dedicated_handler = nullptr;
+}
+
+/** @brief 保存独占 FDCAN 控制器及其接收处理回调。 */
+void CAN_SetDedicatedRxHandler(FDCAN_HandleTypeDef* handle, CanDedicatedRxHandler handler)
+{
+    dedicated_handle = handle;
+    dedicated_handler = handler;
+}
+
+/** @brief 优先把匹配的 FIFO 事件交给独占模块。 */
+bool CAN_DispatchDedicatedRx(FDCAN_HandleTypeDef* handle, uint32_t fifo)
+{
+    if (handle != dedicated_handle || dedicated_handler == nullptr)
+        return false;
+    dedicated_handler(handle, fifo);
+    return true;
+}
 
 template class CAN_<canConfig::classicCan>;  // 显式实例化 — classicCan
 template class CAN_<canConfig::Fdcan>;       // 显式实例化 — Fdcan
@@ -16,6 +42,8 @@ extern "C" {
 	void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 	{
 		if ((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) == 0)
+			return;
+		if (CAN_DispatchDedicatedRx(hfdcan, FDCAN_RX_FIFO0))
 			return;
 
 		// 经典CAN
@@ -35,6 +63,8 @@ extern "C" {
 	void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
 	{
 		if ((RxFifo1ITs & FDCAN_IT_RX_FIFO1_NEW_MESSAGE) == 0)
+			return;
+		if (CAN_DispatchDedicatedRx(hfdcan, FDCAN_RX_FIFO1))
 			return;
 
 		// 经典CAN

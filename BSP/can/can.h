@@ -1,3 +1,8 @@
+/**
+ * @file can.h
+ * @brief 定义 CAN 设备封装及专用接收回调接口。
+ */
+
 //
 // Created by 19923 on 2026/9/25.
 //
@@ -12,6 +17,14 @@
 #include "fdcan.h"
 #include "main.h"
 
+// 双板通信等模块可以独占一条 FDCAN 控制器，并直接处理其接收 FIFO。
+using CanDedicatedRxHandler = void (*)(FDCAN_HandleTypeDef*, uint32_t);
+/** @brief 注册专用接收处理器；传入空指针可清除绑定。 */
+void CAN_SetDedicatedRxHandler(FDCAN_HandleTypeDef* handle, CanDedicatedRxHandler handler);
+/** @brief 若句柄匹配，则转发 FIFO 接收事件。 @return 是否已由专用处理器接管。 */
+bool CAN_DispatchDedicatedRx(FDCAN_HandleTypeDef* handle, uint32_t fifo);
+
+/** @brief 按经典 CAN 或 CAN FD 配置管理静态实例表和 HAL 收发。 */
 template <typename canType>
 class CAN_
 {

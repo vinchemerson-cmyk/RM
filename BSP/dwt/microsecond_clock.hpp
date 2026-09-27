@@ -1,3 +1,8 @@
+/**
+ * @file microsecond_clock.hpp
+ * @brief 声明基于 DWT 的微秒时钟接口。
+ */
+
 #ifndef MICROSECOND_CLOCK_HPP
 #define MICROSECOND_CLOCK_HPP
 

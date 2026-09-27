@@ -1,3 +1,8 @@
+/**
+ * @file usbConfig.hpp
+ * @brief 定义 USB CDC 实例的缓冲区、回调和注册配置。
+ */
+
 #ifndef USB_CONFIG_HPP
 #define USB_CONFIG_HPP
 

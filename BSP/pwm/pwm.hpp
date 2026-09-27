@@ -1,3 +1,8 @@
+/**
+ * @file pwm.hpp
+ * @brief 封装定时器 PWM 通道的注册、输出和资源管理。
+ */
+
 #ifndef PWM_HPP
 #define PWM_HPP
 

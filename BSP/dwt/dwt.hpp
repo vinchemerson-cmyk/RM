@@ -1,3 +1,8 @@
+/**
+ * @file dwt.hpp
+ * @brief 封装 Cortex-M DWT 周期计数器及耗时测量。
+ */
+
 #ifndef DWT_HPP
 #define DWT_HPP
 

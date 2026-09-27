@@ -1,3 +1,8 @@
+/**
+ * @file usb.hpp
+ * @brief 封装 USB CDC 设备注册、接收和发送。
+ */
+
 #ifndef USB_HPP
 #define USB_HPP
 
