@@ -1,3 +1,17 @@
+/**
+ * @file pid_test.cpp
+ * @brief PIDInstance 的宿主机 (host) 单元测试, 断言失败即以非零码退出。
+ *
+ * 编译运行 (无 CMake 目标, 直接用 g++ 手动编译, 必须同时链接 pid.cpp):
+ *   g++ -std=c++17 -I Modules tests/pid_test.cpp Modules/algorithm/pid.cpp \
+ *       -o build/pid_test && ./build/pid_test
+ *
+ * 覆盖场景:
+ *   1. 电机型 PID (双向输出): P/I/D 叠加数值、Reset() 清历史;
+ *   2. 加热器型 PID (单向 0~1 输出): 正向饱和、误差反向后退饱和;
+ *   3. 非法参数拒绝 (输出区间不含 0)、Disable() 后输出恒为 0、
+ *      dt<=0 与 NaN 输入的失败安全行为。
+ */
 #include "algorithm/pid.h"
 
 #include <cassert>

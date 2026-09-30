@@ -90,6 +90,10 @@ namespace canConfig
             uint32_t rx_id{};
 
             void (*can_callback_func)(Attribute*){};
+            void*  module_handle{};
+
+            // 本实例的反馈帧进入哪个 RX FIFO; 默认 FIFO0.
+            fifo use_fifo{fifo::CAN_RX_FIFO};
         };
     };
 
@@ -120,6 +124,7 @@ namespace canConfig
         {
             uint32_t tx_id{};
             uint32_t rx_id{};
+            fifo     use_fifo{};
 
             void (*can_callback_func)(Attribute*){};
             void*  module_handle{};

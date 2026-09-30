@@ -32,15 +32,17 @@ constexpr osThreadAttr_t taskAttributes = {
 
 bool ValidConfig(const Config& config)
 {
-    if (!std::isfinite(config.target_celsius) || !std::isfinite(config.cutoff_celsius) ||
-        config.target_celsius <= -40.0F || config.target_celsius >= config.cutoff_celsius ||
-        config.cutoff_celsius > 85.0F || config.pid.output_min != 0.0F ||
+    //非法判定
+    if (!std::isfinite(config.target_temper) || !std::isfinite(config.cutoff_temper) ||
+        config.target_temper <= -40.0F || config.target_temper >= config.cutoff_temper ||
+        config.cutoff_temper > 85.0F || config.pid.output_min != 0.0F ||
         config.pid.output_max > 1.0F)
         return false;
     PIDInstance candidate;
     return candidate.Configure(config.pid);
 }
 
+    //零输出
 void ZeroOutput()
 {
     if (heaterPwm != nullptr)
@@ -89,7 +91,7 @@ bool Start(const Config& config)
     float initialTemperature{};
     if (BMI088_ReadTemperature(&initialTemperature) != HAL_OK ||
         !std::isfinite(initialTemperature) || initialTemperature < -40.0F ||
-        initialTemperature >= config.cutoff_celsius)
+        initialTemperature >= config.cutoff_temper)
     {
         controller.Disable();
         return false;
@@ -107,15 +109,15 @@ bool Start(const Config& config)
         return false;
     }
 
-    targetCelsius = config.target_celsius;
-    cutoffCelsius = config.cutoff_celsius;
+    targetCelsius = config.target_temper;
+    cutoffCelsius = config.cutoff_temper;
     running = true;
     return true;
 }
 
-bool Update(float dt_seconds)
+bool Update(float dt_s)
 {
-    if (!running || !std::isfinite(dt_seconds) || dt_seconds <= 0.0F || dt_seconds > 3.0F)
+    if (!running || !std::isfinite(dt_s) || dt_s <= 0.0F || dt_s > 3.0F)
     {
         Stop();
         return false;
@@ -130,7 +132,7 @@ bool Update(float dt_seconds)
         return false;
     }
 
-    pwm::setDutyCycle(heaterPwm, controller.Update(targetCelsius, temperature, dt_seconds));
+    pwm::setDutyCycle(heaterPwm, controller.Update(targetCelsius, temperature, dt_s));
     return true;
 }
 

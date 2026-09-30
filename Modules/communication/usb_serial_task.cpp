@@ -1,37 +1,33 @@
 /**
  * @file usb_serial_task.cpp
- * @brief 使用 USB CDC 接收队列和任务实现虚拟串口回环。
+ * @brief USB CDC 虚拟串口周期发送 BMI088 姿态角。
+ *
+ * USB 枚举后每约 10 ms 读取最新姿态并发送一行文本。CDC 发送是异步的，
+ * 静态发送缓冲区只有在上一次发送完成后才会更新。
  */
 
 #include "usb_serial_task.h"
 
-#include <cstring>
+#include <cmath>
+#include <cstdio>
 
 #include "cmsis_os2.h"
+#include "imu/ImuTask.h"
 #include "main.h"
-#include "usb_device.h"
 #include "usbd_cdc.h"
 #include "usbd_cdc_if.h"
+#include "usb_device.h"
 
 extern "C" USBD_HandleTypeDef hUsbDeviceHS;
 
 namespace {
-constexpr uint32_t kPacketSize = 64;
-constexpr uint32_t kQueueDepth = 8;
-
-/** @brief 从 USB 接收回调复制到任务队列的数据包。 */
-struct Packet {
-    uint16_t length;
-    uint8_t data[kPacketSize];
-};
-
-osMessageQueueId_t rxQueue = nullptr;
 osThreadId_t taskHandle = nullptr;
-uint8_t txBuffer[kPacketSize]{}; // CDC 异步发送完成前必须保持有效。
+char txBuffer[96]{};
+char notReadyMessage[] = "IMU not ready\r\n";
 
 constexpr osThreadAttr_t taskAttrs = {
     .name = "UsbSerialTask",
-    .stack_size = 1024U,
+    .stack_size = 2048U,
     .priority = osPriorityNormal,
 };
 
@@ -42,63 +38,74 @@ bool IsConfigured()
            hUsbDeviceHS.pClassData != nullptr;
 }
 
-/** @brief 等待 CDC 发送端点空闲并回传接收队列中的数据。 */
+/** @brief 将角度换成两位小数，避免 newlib-nano 未开启浮点 printf 的问题。 */
+struct FixedAngle
+{
+    char sign;
+    long integer;
+    long fraction;
+};
+
+FixedAngle ToFixedAngle(float degrees)
+{
+    const long hundredths = static_cast<long>(std::fabs(degrees) * 100.0F + 0.5F);
+    return {degrees < 0.0F ? '-' : '+', hundredths / 100L, hundredths % 100L};
+}
+
+/** @brief 以约 100 Hz 发送 Roll、Pitch、Yaw；无有效姿态时每秒提示一次。 */
 void Task(void *argument)
 {
     (void)argument;
-    Packet packet{};
-
-    for (;;) {
-        if (osMessageQueueGet(rxQueue, &packet, nullptr, osWaitForever) != osOK)
-            continue;
-
-        // USB 断开后不等待发送，下一次连接仍可接收新数据。
-        while (IsConfigured()) {
-            auto *cdc = static_cast<USBD_CDC_HandleTypeDef *>(hUsbDeviceHS.pClassData);
-            if (cdc->TxState == 0)
-                break;
-            osDelay(1);
+    const uint32_t tickFrequency = osKernelGetTickFreq();
+    const uint32_t sendTicks = tickFrequency >= 100U ? tickFrequency / 100U : 1U;
+    uint32_t lastNotReadyTick = 0U;
+    for (;;)
+    {
+        if (IsConfigured())
+        {
+            auto* cdc = static_cast<USBD_CDC_HandleTypeDef*>(hUsbDeviceHS.pClassData);
+            if (cdc->TxState == 0U)
+            {
+                imu::AttitudeSample sample{};
+                if (imu::Latest(&sample))
+                {
+                    const FixedAngle roll = ToFixedAngle(sample.roll_deg);
+                    const FixedAngle pitch = ToFixedAngle(sample.pitch_deg);
+                    const FixedAngle yaw = ToFixedAngle(sample.yaw_deg);
+                    const int length = std::snprintf(
+                        txBuffer, sizeof(txBuffer),
+                        "Roll=%c%ld.%02ld,Pitch=%c%ld.%02ld,Yaw=%c%ld.%02ld\r\n",
+                        roll.sign, roll.integer, roll.fraction,
+                        pitch.sign, pitch.integer, pitch.fraction,
+                        yaw.sign, yaw.integer, yaw.fraction);
+                    if (length > 0 && static_cast<size_t>(length) < sizeof(txBuffer))
+                        (void)CDC_Transmit_HS(reinterpret_cast<uint8_t*>(txBuffer),
+                                              static_cast<uint16_t>(length));
+                }
+                else
+                {
+                    const uint32_t now = osKernelGetTickCount();
+                    if (lastNotReadyTick == 0U || now - lastNotReadyTick >= tickFrequency)
+                    {
+                        const uint8_t result = CDC_Transmit_HS(
+                            reinterpret_cast<uint8_t*>(notReadyMessage),
+                            sizeof(notReadyMessage) - 1U);
+                        if (result == USBD_OK)
+                            lastNotReadyTick = now;
+                    }
+                }
+            }
         }
-        if (!IsConfigured())
-            continue;
-
-        std::memcpy(txBuffer, packet.data, packet.length);
-        while (IsConfigured()) {
-            const uint8_t result = CDC_Transmit_HS(txBuffer, packet.length);
-            if (result == USBD_OK || result == USBD_FAIL)
-                break;
-            osDelay(1);
-        }
+        osDelay(sendTicks);
     }
 }
 } // namespace
 
-/** @brief 在 USB 接收回调中将数据分包送入任务队列。 */
-extern "C" void USBSerial_OnReceive(const uint8_t *data, uint32_t length)
-{
-    if (rxQueue == nullptr || data == nullptr)
-        return;
-
-    while (length != 0) {
-        Packet packet{};
-        packet.length = static_cast<uint16_t>(length > kPacketSize ? kPacketSize : length);
-        std::memcpy(packet.data, data, packet.length);
-        if (osMessageQueuePut(rxQueue, &packet, 0, 0) != osOK)
-            return; // 队列满时丢弃剩余数据，避免在 USB 中断中等待。
-        data += packet.length;
-        length -= packet.length;
-    }
-}
-
-/** @brief 创建 USB CDC 回环任务和接收队列；重复调用不重复创建。 */
+/** @brief 创建 USB CDC 姿态发送任务；重复调用不重复创建。 */
 void serialTasks::CreateUsbSerialTask()
 {
     if (taskHandle != nullptr)
         return;
-
-    rxQueue = osMessageQueueNew(kQueueDepth, sizeof(Packet), nullptr);
-    if (rxQueue == nullptr)
-        Error_Handler();
 
     taskHandle = osThreadNew(Task, nullptr, &taskAttrs);
     if (taskHandle == nullptr)

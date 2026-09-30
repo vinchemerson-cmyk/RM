@@ -1,6 +1,11 @@
 /**
  * @file buzzer_task.cpp
  * @brief 创建蜂鸣器 FreeRTOS 任务并周期控制鸣响。
+ *
+ * 结构: CreateBuzzerTask() 先初始化 BSP 蜂鸣器 (TIM12 CH2 PWM) 并
+ * 设置占空比, 再创建 StartBuzzerTask 任务; 任务循环执行
+ * "鸣响 BUZZER_ON_TIME_MS -> 静音 BUZZER_OFF_TIME_MS" 的周期提示音。
+ * 后续可按整车上电解锁/故障状态扩展为提示音模式表。
  */
 
 //

@@ -1,6 +1,17 @@
 /**
  * @file uart_serial_task.cpp
  * @brief 使用 UART7 接收队列和任务实现串口回环。
+ *
+ * 用途: UART DMA 链路自测。UART7 经 BSP usart::Register() 注册
+ * DMA+Idle 接收, 收到数据在中断回调 OnReceive 中按 64 字节分包
+ * 投递到 osMessageQueue; UartSerialTask 阻塞出队后用 DMA 原样发回。
+ *
+ * 关键约束:
+ *   - 任务在第一次循环前才注册串口 (而非 CreateUartSerialTask 时),
+ *     此时调度器已运行, 可安全使用 osDelay;
+ *   - 发送 HAL_BUSY 表示上一次 DMA 尚未完成, 等待 1ms 重试;
+ *   - BSP 会把待发数据复制到 AXI SRAM 的长期缓冲区, DMA 完成前
+ *     不会覆盖, 因此调用方的临时缓冲区可立即复用。
  */
 
 #include "uart_serial_task.h"

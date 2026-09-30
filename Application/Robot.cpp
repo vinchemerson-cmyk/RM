@@ -1,83 +1,56 @@
 /**
  * @file Robot.cpp
- * @brief 按板卡配置初始化日志、通信和应用任务。
+ * @brief 在调度器启动前装配整车已实现的模块。
  */
-
-//
-// Created by 19923 on 2026/9/24.
-//
 
 #include "Robot.h"
 #include "RobotConfig.hpp"
-#include "BUZZER/buzzer_task.h"
-#include "communication/usb_serial_task.h"
-#include "communication/uart_serial_task.h"
-#include "communication/interboard.h"
+
 #include "main.h"
+#include "BUZZER/buzzer_task.h"
+#include "communication/interboard.h"
+#include "communication/uart_serial_task.h"
+#include "communication/usb_serial_task.h"
+#include "gimbal/gimbal.h"
+#include "imu/ImuTask.h"
 #include "log/bsp_log.h"
+#include "rc/rc.h"
+#include "safety/safety.h"
 
-namespace Infantry
-{
-    bool Initialized{};
-}
-
-/**
- * @brief 步兵初始模块
- */
+/** @brief 创建已启用的任务并注册通信接口；重复调用只装配一次。 */
 void InfantryInit(void)
 {
-    //检查步兵是否初始化
-    if (Infantry::Initialized)
-    {
+    static bool initialized = false;
+    if (initialized)
         return;
-    }
 
     BSPLogInit();
 
     if (InfantryInitialization::ENABLE_USB_SERIAL)
         serialTasks::CreateUsbSerialTask();
-    if (InfantryInitialization::ENABLE_UART_SERIAL)
-        serialTasks::CreateUartSerialTask();
+
+    if (InfantryInitialization::ENABLE_IMU)
+        imu::CreateTask();
+
+    // 双板链路独占指定 FDCAN，须先于同一路 CAN 上的其他模块注册。
     if (InfantryInitialization::ENABLE_INTERBOARD && !interboard::Start())
         Error_Handler();
 
-    //检查蜂鸣器是否初始化
+    if (InfantryInitialization::ENABLE_UART_SERIAL)
+        serialTasks::CreateUartSerialTask();
+
     if (InfantryInitialization::ENABLE_BUZZER)
-    {
         appTasks::CreateBuzzerTask();
-        //todo
-    }
 
-    //检查LED是否初始化
-     if (InfantryInitialization::ENABLE_LEDS)
-     {
-         //appTasks::CreateLedsTask();
-         //todo
-     }
+    if (InfantryInitialization::ENABLE_RC)
+        rc::Init();
 
-    //检查摩擦轮是否初始化
-    if (InfantryInitialization::ENABLE_MOTORS_SHOOTER)
-    {
-        //todo
-    }
+    if (InfantryInitialization::ENABLE_SAFETY)
+        safety::Init();
 
-    //检查云台PITCH和YAW是否初始化
-    if (InfantryInitialization::ENABLE_MOTORS_PTYW)
-    {
-        //todo
-    }
+    // 云台任务运行时每周期查询遥控和急停状态。
+    if (InfantryInitialization::ENABLE_GIMBAL)
+        gimbal::Init();
 
-    //检查底盘是否初始化
-    if (InfantryInitialization::ENABLE_CHASSIC)
-    {
-        //todo
-    }
-
-    //检查遥控是否初始化
-    if (InfantryInitialization::ENABLE_ROMOTERS)
-    {
-        //todo
-    }
-
-    Infantry::Initialized = true;
+    initialized = true;
 }

@@ -1,6 +1,13 @@
 /**
  * @file other_motors.h
- * @brief 达妙、MIT 模式、LK9025 和 HT04 的电机配置。
+ * @brief 达妙、MIT 模式、LK9025 和 HT04 的电机配置 (预留接口, 尚未接入驱动)。
+ *
+ * 本文件为非 DJI 电机定义初始化参数结构:
+ *   - 达妙 (DM) 普通模式: 速度环+角度环双 PID, 控制方式配置待补;
+ *   - MIT 模式: 下发 Kp/Kd 刚度阻尼, 由电调内部做位置阻抗控制;
+ *   - LK9025 / HT04: 复用 motor_common.h 的三环 PID 结构。
+ * 这些型号与 DJI 电调的指令帧格式不同, 接入时需要新建对应驱动
+ * (类似 dji.cpp) 并按各自协议打包指令帧, 不复用 DJI_Motor_Control()。
  */
 
 #ifndef INFANTRY_H723_OTHER_MOTORS_H

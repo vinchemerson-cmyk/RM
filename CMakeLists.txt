@@ -40,15 +40,18 @@ add_executable(${CMAKE_PROJECT_NAME}
         BSP/BUZZER/BUZZER.cpp
         BSP/BUZZER/BUZZER.h
         Application/Robot.h
-        Modules/LED/led_task.cpp
-        Modules/LED/led_task.h
         BSP/can/can.cpp
         BSP/can/can.h
         BSP/can/canConfig.h
-        Application/chassis/chassic.cpp
-        Application/chassis/chassic.h
+        Application/gimbal/gimbal.cpp
+        Application/gimbal/gimbal.h
+        Application/gimbal/GimbalConfig.hpp
         Modules/imu/Bmi088.cpp
         Modules/imu/Bmi088.h
+        Modules/imu/AttitudeEstimator.cpp
+        Modules/imu/AttitudeEstimator.h
+        Modules/imu/ImuTask.cpp
+        Modules/imu/ImuTask.h
         Modules/imu/Bmi088Heater.cpp
         Modules/imu/Bmi088Heater.h
         Modules/algorithm/pid.cpp
@@ -59,6 +62,10 @@ add_executable(${CMAKE_PROJECT_NAME}
         Modules/communication/uart_serial_task.h
         Modules/communication/interboard.cpp
         Modules/communication/interboard.h
+        Modules/rc/rc.cpp
+        Modules/rc/rc.h
+        Modules/safety/safety.cpp
+        Modules/safety/safety.h
         BSP/usart/usart.cpp
         Modules/message_center/message_center.c
         BSP/log/bsp_log.c
@@ -68,10 +75,10 @@ add_executable(${CMAKE_PROJECT_NAME}
         Modules/motor/dji/dji.h
         Modules/motor/motor_common.cpp
         Modules/motor/motor_common.h
+        Modules/motor/encoder_angle.h
+        Modules/motor/angle_target.h
         Modules/motor/other_motors.cpp
-        Modules/motor/other_motors.h
-        Application/shoot/shoot.cpp
-        Application/shoot/shoot.h)
+        Modules/motor/other_motors.h)
 
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)

@@ -1,6 +1,25 @@
 /**
  * @file interboard.cpp
  * @brief 通过专用 FDCAN 链路转发消息中心主题并监测双板连接。
+ *
+ * 线路协议 (经典 CAN 标准帧; 云台->底盘 0x301, 底盘->云台 0x302):
+ *   [0]     话题 ID (1..255); 0 保留为心跳帧 (无负载)。
+ *   [1]     高 4 位 = 消息序号 (0..15 循环), 低 4 位 = 分片编号。
+ *   [2..7]  负载分片, 每片最多 kChunkSize=6 字节。
+ *   一个话题固定长度最多 kMaxPayload=48 字节 (8 片); 接收端按
+ *   "序号一致 + 分片连续 + 50ms 内收齐"重组, 任一条件不满足即丢弃
+ *   本轮分片。链路不提供应用层确认/重发, 依赖消息中心的
+ *   "最新值邮箱"语义容忍偶发丢帧。
+ *
+ * 链路状态: 收到任意合法帧即置在线并发布 "interboard/link" 话题;
+ * kOfflineMs 内无帧判定离线, 心跳帧单独以 kHeartbeatMs 周期发送。
+ * 应用读取 LinkStatus 后须自行实现执行器的失联保护。
+ *
+ * 总线占用: 该 FDCAN 控制器由本模块独占, 不经过 CAN_ 模板注册表;
+ * 通过 CAN_SetDedicatedRxHandler() 直接接管 FIFO0 接收中断, 在中断里
+ * 取空硬件 FIFO 后经 osMessageQueue 交给 InterboardTask 处理。
+ * 话题注册必须在调度器启动前完成 (Start() 之后), 两板同 ID 的
+ * 消息长度必须一致: 一端 RegisterTxTopic, 另一端 RegisterRxTopic。
  */
 
 #include "interboard.h"

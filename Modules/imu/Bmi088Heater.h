@@ -14,8 +14,8 @@ namespace bmi088Heater
 struct Config
 {
     PID_Init_Config_s pid{};
-    float target_celsius{};
-    float cutoff_celsius{};
+    float target_temper{};//目标温度
+    float cutoff_temper{};
 };
 
 /**
@@ -35,11 +35,11 @@ bool CreateTask(const Config& config);
 
 /**
  * @brief 读取温度并更新一次 PWM 占空比。
- * @param dt_seconds 距离上一次更新的实际秒数；温度寄存器每约 1.28 秒刷新。
+ * @param dt_s 距离上一次更新的实际秒数；温度寄存器每约 1.28 秒刷新。
  * @return 正常更新时为 true；读取失败、无效输入或过温时关闭加热并返回 false。
  * @note 手动调用模式下，调用方必须保证周期执行；CreateTask() 可提供固定周期。
  */
-bool Update(float dt_seconds);
+bool Update(float dt_s);
 
 /** @brief 将加热 PWM 置零并清空 PID 状态。 */
 void Stop();

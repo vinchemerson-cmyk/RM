@@ -7,8 +7,6 @@
 #define USART_HPP
 
 #include <array>
-#include <cstdint>
-#include <cstring>
 #include "usartConfig.hpp"
 
 class usart
