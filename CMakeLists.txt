@@ -35,6 +35,10 @@ enable_language(C ASM)
 add_executable(${CMAKE_PROJECT_NAME}
         Application/Robot.cpp
         Application/RobotConfig.hpp
+        Application/shoot/shoot.cpp
+        Application/shoot/shoot.h
+        Application/shoot/ShootConfig.hpp
+        Application/shoot/shoot_control.h
         Modules/BUZZER/buzzer_task.cpp
         Modules/BUZZER/buzzer_task.h
         BSP/BUZZER/BUZZER.cpp
@@ -60,6 +64,9 @@ add_executable(${CMAKE_PROJECT_NAME}
         Modules/communication/usb_serial_task.h
         Modules/communication/uart_serial_task.cpp
         Modules/communication/uart_serial_task.h
+        Modules/communication/encoder_serial_task.cpp
+        Modules/communication/encoder_serial_task.h
+        Modules/communication/encoder_telemetry.h
         Modules/communication/interboard.cpp
         Modules/communication/interboard.h
         Modules/rc/rc.cpp

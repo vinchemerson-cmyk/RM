@@ -23,7 +23,7 @@
 #ifndef INFANTRY_H723_CAN_H
 #define INFANTRY_H723_CAN_H
 #include <array>
-#include <sys/_stdint.h>
+#include <cstdint>
 
 #include <cstring>
 #include "canConfig.h"
@@ -288,7 +288,9 @@ class CAN_
             ++(*filter_amount);
 
             // 未命中任何过滤器的标准帧直接丢弃, 不再进入 FIFO.
-            if (HAL_FDCAN_ConfigGlobalFilter(can_handle_instance, FDCAN_REJECT, FDCAN_REJECT,
+            // 全局过滤器只允许 READY 状态配置；后续电机注册时控制器已启动。
+            if (*filter_amount == 1U &&
+                HAL_FDCAN_ConfigGlobalFilter(can_handle_instance, FDCAN_REJECT, FDCAN_REJECT,
                                             FDCAN_REJECT_REMOTE, FDCAN_REJECT_REMOTE) != HAL_OK)
                 Error_Handler();
 

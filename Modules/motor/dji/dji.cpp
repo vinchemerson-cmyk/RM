@@ -7,15 +7,14 @@
  *     MotorFeedbackCallback() 解析 8 字节反馈帧, 维护单圈角度、
  *     转速、连续角度 total_angle 与掉线时间戳。回调只做解析与标量
  *     赋值, 绝不阻塞。
- *   - 控制路径: 上层任务每个周期调 DJI_Motor_Control(), 按型号分组
- *     计算各电机 16 位输出并打包进对应指令帧 (0x1FF/0x2FF/0x200)。
+ *   - 控制路径: 上层任务每个周期调 DJI_Motor_Control(), 按物理总线和指令帧分组
+ *     计算各电机 16 位输出并打包进对应电流指令帧 (GM6020: 0x1FE/0x2FE，C610/C620: 0x200/0x1FF)。
  *     同帧最多 4 台电机, 输出槽位由反馈 ID 决定。
  *
  * 连续角度与重锚 (angle_epoch):
- *   相邻两次反馈间用 13 位编码器增量解卷绕累计 total_angle; 首帧或
- *   超过 kOfflineTimeoutMs 无反馈时"重锚": total_angle 直接取当前
- *   单圈角度, angle_epoch 递增, 且正在用角度环的电机被自动 Disable,
- *   逼迫上层重新同步位置目标 (见 angle_target.h / gimbal)。
+ *   相邻两次反馈间用 13 位编码器增量解卷绕累计 total_angle; 仅首帧
+ *   初始化单圈基准并递增 angle_epoch。测试阶段移除反馈超时重锚和停机；
+ *   中断期间若电机转过半圈以上，恢复后的累计角度可能不准确。
  *
  * 实例管理: 电机实例来自 16 槽静态池 (无动态分配), CAN 回调经
  * can_config.module_handle 直接回指电机实例, 无需额外映射表。
@@ -32,59 +31,44 @@
 #include "cmsis_os2.h"
 #include "main.h"
 #include "motor/encoder_angle.h"
+#include "dji_protocol.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 namespace
 {
-    /** @brief 一条标准帧最多容纳 4 个电机的 16 位输出. */
-    constexpr uint8_t kMotorsPerFrame = 4;
-
-    /** @brief 单个电机的输出占 2 字节. */
-    constexpr uint8_t kBytesPerMotor = 2;
-
     // ===== 修改开始：按 DJI 协议校验完整的 8 字节反馈帧 =====
     /** @brief GM6020、C620 和 C610 的反馈帧 DLC 均为 8 字节。 */
     constexpr uint8_t kFeedbackLength = 8U;
     // ===== 修改结束：反馈帧长度 =====
 
-    /** @brief 连续多久收不到反馈即判定掉线, 单位毫秒. */
-    constexpr uint32_t kOfflineTimeoutMs = 100;
-
     /** @brief M3508 与 M2006 (C620/C610 电调) 的电流指令范围. */
     constexpr float kC620CurrentLimit = 16384.0F;
-
-    /** @brief GM6020 内置电调的电压指令范围. */
-    constexpr float kGM6020VoltageLimit = 25000.0F;
+    constexpr float kC610CurrentLimit = 10000.0F;
 
     /** @brief 每个型号的指令帧 ID 起点、反馈 ID 起点和输出上限. */
     struct MotorTypeSpec
     {
         Motor_Type_e type;
-        uint32_t     command_id_first;  // 该型号第一条指令帧的 ID.
-        uint32_t     feedback_id_first; // 该型号第一个反馈 ID.
-        uint8_t      frame_count;       // 该型号使用的指令帧条数.
         float        output_limit;      // 16 位输出的绝对值上限.
-        const char*  name;              // 日志用的型号名.
     };
 
     /**
  * @brief DJI 两类电调的指令帧与反馈 ID 分配.
- * @note GM6020 使用 0x1FF/0x2FF 与反馈 0x205 起, 其余型号使用 0x200 与反馈 0x201 起.
+ * @note GM6020 使用 0x1FE/0x2FE 电流指令与反馈 0x205 起，其余型号的电流协议不变。
  */
     constexpr MotorTypeSpec kMotorSpecs[] = {
 
         {
-            .type        = GM6020, .command_id_first = 0x1FFU, .feedback_id_first = 0x205U,
-            .frame_count = 2U, .output_limit         = kGM6020VoltageLimit, .name = "GM6020"
+            .type = GM6020, .output_limit = kDjiGm6020CurrentCommandLimit
         },
 
         {
-            .type        = M3508, .command_id_first = 0x200U, .feedback_id_first = 0x201U,
-            .frame_count = 1U, .output_limit        = kC620CurrentLimit, .name   = "M3508"
+            .type = M3508, .output_limit = kC620CurrentLimit
         },
 
         {
-            .type        = M2006, .command_id_first = 0x200U, .feedback_id_first = 0x201U,
-            .frame_count = 1U, .output_limit        = kC620CurrentLimit, .name   = "M2006"
+            .type = M2006, .output_limit = kC610CurrentLimit
         },
     };
 
@@ -116,19 +100,6 @@ namespace
     }
 
     /**
- * @brief 判断反馈是否仍在有效期内.
- * @note 超时判定放在控制周期内做, 使掉线检测不依赖中断.
- */
-    bool FeedbackAlive(const CAN_<canConfig::classicCan>::Instance& instance, const uint32_t now)
-    {
-        // ===== 修改开始：仅完整反馈帧可用于闭环 =====
-        if (instance.output.rx_len != kFeedbackLength)
-            return false;
-        // ===== 修改结束：反馈有效性检查 =====
-        return now - instance.feedback_tick <= kOfflineTimeoutMs;
-    }
-
-    /**
  * @brief 接收回调: 把反馈帧解析进引用该过滤器的电机实例.
  * @param attribute_instance BSP 注册表内的本实例属性.
      * @note 注册属性通过 module_handle 指向电机实例。
@@ -139,6 +110,9 @@ namespace
         if (attribute_instance == nullptr || attribute_instance->module_handle == nullptr)
             return;
         auto* motor    = static_cast<DJI_Motor_s*>(attribute_instance->module_handle);
+        // 首次注册启动 CAN 后可能立即进中断，此时返回句柄尚未写回 motor。
+        if (motor->can_instance == nullptr)
+            return;
         auto& instance = *motor->can_instance;
 
         const uint8_t* data = instance.output.rx_buffer.data();
@@ -163,22 +137,17 @@ namespace
         const float angle_deg = static_cast<float>(static_cast<uint16_t>(raw_angle) & 0x1FFFU) / 8192.0F * 360.0F;
         // RPM 换算为度每秒.
         const float speed_dps = static_cast<float>(raw_speed) * 6.0F;
-        // C620 反馈电流 1 LSB 约为 20A/32768; GM6020 反馈电流同样按 ±20A 满量程解析.
-        const float current_a = static_cast<float>(raw_current) * (20.0F / 32768.0F);
+        // GM6020 按电流模式 ±16384 对应 ±3A；C610/C620 保留原有换算。
+        const float current_a = static_cast<float>(raw_current) *
+            (motor->motor_type == GM6020 ? 3.0F / kDjiGm6020CurrentCommandLimit : 20.0F / 32768.0F);
 
         const uint32_t    tick     = osKernelGetTickCount();
         Motor_Feedback_s& feedback = motor->feedback;
         //收到反馈,长度校验通过
-        const bool        reanchor = !feedback.angle_initialized ||
-                                     tick - feedback.last_update_tick > kOfflineTimeoutMs;
+        const bool        reanchor = !feedback.angle_initialized;
         if (reanchor)
         {
-            // 断线后的首帧可能已跨过半圈；位置环必须等上层重新同步目标。
-            if (feedback.angle_initialized &&
-                (motor->motor_settings.close_loop_type == ANGLE_AND_SPEED_LOOP ||
-                 motor->motor_settings.close_loop_type == ALL_THERE_LOOP))
-                motor->enabled = false;
-            //重锚:直接以当前角度为基准
+            // 首帧建立角度基准；反馈中断后不自动停机或重锚。
             feedback.total_angle       = reverse ? -angle_deg : angle_deg;
             feedback.angle_initialized = true;
             ++feedback.angle_epoch;
@@ -210,19 +179,19 @@ namespace
     /**
  * @brief 按闭环设置计算单个电机的 16 位输出.
  * @return 已限幅并应用方向标志的输出值.
- * @note 掉线或闭环组合非法时返回 0, 保证同帧其他电机不受影响.
+ * @note 闭环组合非法时返回 0；测试模式使用最近一次反馈，不判定掉线。
  */
-    float ComputeOutput(DJI_Motor_s& motor, const float dt_s)
+    float ComputeOutput(DJI_Motor_s& motor, const Motor_Feedback_s& feedback, const float dt_s)
     {
         const Motor_Control_Setting_s& setting    = motor.motor_settings;
         Motor_Controller_s&            controller = motor.controller;
 
         const float speed_feedback = setting.speed_feedback_source == OTHER_FEED
                                          ? *controller.other_speed_feedback_ptr
-                                         : motor.feedback.speed;
+                                         : feedback.speed;
         const float angle_feedback = setting.angle_feedback_source == OTHER_FEED
                                          ? *controller.other_angle_feedback_ptr
-                                         : motor.feedback.total_angle;
+                                         : feedback.total_angle;
         const float speed_feedforward =
             setting.feedforward_flag & SPEED_FEEDFORWARD ? *controller.speed_feedforward_ptr : 0.0F;
         const float current_feedforward =
@@ -278,11 +247,22 @@ DJI_Motor_s* DJI_Motor_Init(const Motor_Init_Config_s& config_instance)
     if (spec == nullptr || config_instance.can_init_config.can_handle == nullptr)
         return nullptr;
 
+    DjiCommandAddress address{};
+    if (!DjiResolveCommand(config_instance.motor_type == GM6020,
+                           config_instance.can_init_config.rx_id, address) ||
+        config_instance.can_init_config.can_handle->Init.FrameFormat != FDCAN_FRAME_CLASSIC)
+        return nullptr;
+
     // 电机实例必须是静态存储, 因为 CAN 回调会长期持有其地址.
     static DJI_Motor_s motor_pool[16];
     static uint8_t     motor_pool_used = 0;
     if (motor_pool_used >= 16U)
         return nullptr;
+
+    for (uint8_t i = 0; i < motor_pool_used; ++i)
+        if (motor_pool[i].can_instance->dependency.hcan == config_instance.can_init_config.can_handle &&
+            motor_pool[i].can_instance->attribute.rx_id == config_instance.can_init_config.rx_id)
+            return nullptr;
 
     DJI_Motor_s& motor = motor_pool[motor_pool_used];
 
@@ -334,7 +314,7 @@ DJI_Motor_s* DJI_Motor_Init(const Motor_Init_Config_s& config_instance)
     // 反馈 ID 决定 CAN 过滤器, 因此由上层在 can_init_config.rx_id 中给出.
     // tx_id 仅作为兜底初值, 实际发送时由 DJI_Motor_Control() 按指令帧覆盖.
     classicCanConfigType can_config = config_instance.can_init_config;
-    can_config.tx_id                = spec->command_id_first;
+    can_config.tx_id                = address.frame_id;
     can_config.can_callback_func    = MotorFeedbackCallback;
     // module_handle 回指本电机, 使回调无需额外全局映射即可找到实例.
     can_config.module_handle        = &motor;
@@ -373,70 +353,63 @@ void DJI_Motor_Disable(DJI_Motor_s* motor)
 
 void DJI_Motor_Control(DJI_Motor_s** motor_list, const uint8_t count, const float dt_s)
 {
-    if (motor_list == nullptr || count == 0 || !(dt_s > 0.0F))
+    if (motor_list == nullptr || count == 0U || !(dt_s > 0.0F))
         return;
-
-    const uint32_t now = osKernelGetTickCount();
-
-    // 按指令帧分组: 同一帧 ID 的电机必须打包进同一帧, 否则后发的会覆盖先发的.
-    for (const MotorTypeSpec& spec : kMotorSpecs)
+    struct CommandFrame
     {
-        for (uint8_t frame_index = 0; frame_index < spec.frame_count; ++frame_index)
+        FDCAN_HandleTypeDef* bus{};
+        CAN_<classicCan>::Instance* sender{};
+        uint32_t id{};
+        std::array<uint8_t, 8> payload{};
+    };
+    // 同一物理总线 + 同一帧 ID 只发送一次，M3508/M2006 可共用 0x200。
+    std::array<CommandFrame, 16> frames{};
+    uint8_t frameCount = 0U;
+    for (uint8_t i = 0; i < count; ++i)
+    {
+        DJI_Motor_s* motor = motor_list[i];
+        if (motor == nullptr || motor->can_instance == nullptr)
+            continue;
+        const MotorTypeSpec* spec = FindSpec(motor->motor_type);
+        DjiCommandAddress address{};
+        if (spec == nullptr || !DjiResolveCommand(motor->motor_type == GM6020,
+                                                  motor->can_instance->attribute.rx_id, address))
+            continue;
+        FDCAN_HandleTypeDef* bus = motor->can_instance->dependency.hcan;
+        uint8_t frameIndex = 0U;
+        while (frameIndex < frameCount &&
+               (frames[frameIndex].bus != bus || frames[frameIndex].id != address.frame_id))
+            ++frameIndex;
+        if (frameIndex == frameCount)
         {
-            const uint32_t frame_id = spec.command_id_first + frame_index;
-
-            std::array<uint8_t, classicCan::DATA_SIZE> payload{};
-            uint8_t                                    packed = 0;
-
-            // 第一遍: 计算各电机输出并填入本帧对应的 2 字节槽位.
-            for (uint8_t i = 0; i < count && packed < kMotorsPerFrame; ++i)
-            {
-                DJI_Motor_s* motor = motor_list[i];
-                // 电机指针无效 / 类型不匹配 / CAN实例为空，则跳过
-                if (motor == nullptr || motor->motor_type != spec.type || motor->can_instance == nullptr)
-                    continue;
-
-                // 反馈 ID 决定该电机在指令帧中的 2 字节槽位.
-                const uint32_t offset = motor->can_instance->attribute.rx_id - spec.feedback_id_first;
-                if (offset >= kMotorsPerFrame || offset / kMotorsPerFrame != frame_index)
-                    continue;
-
-                float output = 0.0F;
-                //电机未使能 / 反馈未存活
-                if (motor->enabled && FeedbackAlive(*motor->can_instance, now))
-                    output = ComputeOutput(*motor, dt_s); //todo 阅读该函数,ComputeOutput()
-
-                const int16_t value = ClampOutput(output, spec.output_limit);
-                const auto    slot  = static_cast<uint8_t>(offset % kMotorsPerFrame);
-
-                //这两行把 16 位电机控制值 value 按大端序拆成高、低两个字节，
-                //写入 CAN 缓冲区第 slot 个电机的两个字节位置（offset 和 offset+1）
-                payload[slot * kBytesPerMotor]     = static_cast<uint8_t>(value >> 8U);
-                payload[slot * kBytesPerMotor + 1] = static_cast<uint8_t>(value & 0xFFU);
-                ++packed;
-            }
-
-            if (packed == 0)
-                continue;
-
-            // 第二遍: 用本帧内第一个可用实例把整帧发出, 成功后不再重复发送.
-            for (uint8_t i = 0; i < count; ++i)
-            {
-                DJI_Motor_s* motor = motor_list[i];
-                if (motor == nullptr || motor->motor_type != spec.type || motor->can_instance == nullptr)
-                    continue;
-
-                const uint32_t offset = motor->can_instance->attribute.rx_id - spec.feedback_id_first;
-                if (offset < spec.frame_count * kMotorsPerFrame || offset / kMotorsPerFrame != frame_index)
-                    continue;
-
-                motor->can_instance->attribute.tx_id = frame_id;
-                classicCan::Input input{};
-                input.tx_len = classicCan::DATA_SIZE;
-                std::memcpy(input.tx_buffer.data(), payload.data(), classicCan::DATA_SIZE);
-                if (motor->can_instance->Transmit(input) == HAL_OK)
-                    break;
-            }
+            if (frameCount >= frames.size())
+                return;
+            frames[frameIndex].bus = bus;
+            frames[frameIndex].sender = motor->can_instance;
+            frames[frameIndex].id = address.frame_id;
+            ++frameCount;
         }
+        taskENTER_CRITICAL();
+        const Motor_Feedback_s feedback = motor->feedback;
+        taskEXIT_CRITICAL();
+        float output = 0.0F;
+        const bool positionLoop = motor->motor_settings.close_loop_type == ANGLE_AND_SPEED_LOOP ||
+                                  motor->motor_settings.close_loop_type == ALL_THERE_LOOP;
+        const bool targetFresh = !positionLoop || motor->motor_settings.angle_epoch == feedback.angle_epoch;
+        // 测试模式不等待首帧，也不因反馈超时置零；无反馈时按零初始化值闭环。
+        if (motor->enabled && targetFresh)
+            output = ComputeOutput(*motor, feedback, dt_s);
+        const uint16_t value = static_cast<uint16_t>(ClampOutput(output, spec->output_limit));
+        frames[frameIndex].payload[address.slot * 2U] = static_cast<uint8_t>(value >> 8U);
+        frames[frameIndex].payload[address.slot * 2U + 1U] = static_cast<uint8_t>(value);
+    }
+    for (uint8_t i = 0; i < frameCount; ++i)
+    {
+        frames[i].sender->attribute.tx_id = frames[i].id;
+        classicCan::Input input{};
+        input.tx_len = classicCan::DATA_SIZE;
+        input.tx_buffer = frames[i].payload;
+        // FIFO 满时本周期不阻塞，下个控制周期重新发送最新值。
+        frames[i].sender->Transmit(input);
     }
 }

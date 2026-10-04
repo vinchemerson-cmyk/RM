@@ -9,6 +9,15 @@
 namespace {
 FDCAN_HandleTypeDef* dedicated_handle = nullptr;
 CanDedicatedRxHandler dedicated_handler = nullptr;
+
+/** @brief 处理进入回调时已排队的帧，HAL 读取失败也不会在中断中无限循环。 */
+template <typename Traits>
+void DrainFifo(FDCAN_HandleTypeDef* handle, uint32_t fifo)
+{
+    uint32_t pending = HAL_FDCAN_GetRxFifoFillLevel(handle, fifo);
+    while (pending-- != 0U)
+        CAN_<Traits>::fifoxCallBack(handle, fifo);
+}
 }
 
 /** @brief 保存独占 FDCAN 控制器及其接收处理回调。 */
@@ -48,10 +57,10 @@ extern "C" {
 
 		// 经典CAN
 		if (hfdcan->Init.FrameFormat == FDCAN_FRAME_CLASSIC)
-			CAN_<canConfig::classicCan>::fifoxCallBack(hfdcan, FDCAN_RX_FIFO0);
+			DrainFifo<canConfig::classicCan>(hfdcan, FDCAN_RX_FIFO0);
 		// FDCAN模式
 		else
-			CAN_<canConfig::Fdcan>::fifoxCallBack(hfdcan, FDCAN_RX_FIFO0);
+			DrainFifo<canConfig::Fdcan>(hfdcan, FDCAN_RX_FIFO0);
 	}
 
 	/**
@@ -69,10 +78,10 @@ extern "C" {
 
 		// 经典CAN
 		if (hfdcan->Init.FrameFormat == FDCAN_FRAME_CLASSIC)
-			CAN_<canConfig::classicCan>::fifoxCallBack(hfdcan, FDCAN_RX_FIFO1);
+			DrainFifo<canConfig::classicCan>(hfdcan, FDCAN_RX_FIFO1);
 		// FDCAN模式
 		else
-			CAN_<canConfig::Fdcan>::fifoxCallBack(hfdcan, FDCAN_RX_FIFO1);
+			DrainFifo<canConfig::Fdcan>(hfdcan, FDCAN_RX_FIFO1);
 	}
 
 }

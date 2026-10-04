@@ -9,10 +9,12 @@ Modules 层是"能力"层: 提供与应用无关的驱动、算法和服务, 不
 | 任务名 | 优先级 | 周期/阻塞点 | 栈 | 源文件 | 说明 |
 |---|---|---|---|---|---|
 | GimbalTask | High | 1ms | 2048 | `Application/gimbal/gimbal.cpp` | 云台两轴控制 (属应用层, 列此备查) |
+| ShootTask | High | 1ms | 3072 | `Application/shoot/shoot.cpp` | 摩擦轮与拨弹，合并一帧 0x200 |
 | SafetyTask | AboveNormal | 1ms | 1024 | `Modules/safety/safety.cpp` | 急停判定 + 掉线监控 |
 | RCTask | AboveNormal | 1ms 轮询 | 2048 | `Modules/rc/rc.cpp` | 仅做超时判定, 解析在 UART 中断内 |
 | InterboardTask | AboveNormal | 2ms 轮询 | 2048 | `Modules/communication/interboard.cpp` | 双板帧处理、心跳、话题转发 |
 | UartSerialTask | Normal | 阻塞于队列 | 2048 | `Modules/communication/uart_serial_task.cpp` | UART7 回环 |
+| EncoderSerialTask | Normal | 50ms | 2048 | `Modules/communication/encoder_serial_task.cpp` | UART7 TX-only pitch目标/实际位置及反馈电流FireWater输出，当前启用 |
 | UsbSerialTask | Normal | 约 10ms | 2048 | `Modules/communication/usb_serial_task.cpp` | USB CDC 姿态角发送 |
 | ImuTask | AboveNormal | 每轮采样后间隔约 2ms | 3072 | `Modules/imu/ImuTask.cpp` | BMI088 六轴采样与姿态解算 |
 | BuzzerTask | Normal | 1s 鸣响 / 1s 静音 | 1024 | `Modules/BUZZER/buzzer_task.cpp` | 周期提示音 |
@@ -45,13 +47,13 @@ Modules 层是"能力"层: 提供与应用无关的驱动、算法和服务, 不
 
 ### dji.cpp / dji.h — DJI 电调驱动 (核心)
 
-支持 GM6020 (0x1FF/0x2FF 电压指令, 反馈 0x205+)、M3508/M2006 (0x200 电流指令, 反馈 0x201+)。
+支持 GM6020 (0x1FE/0x2FE 电流指令，电机内部电流环须开启，反馈 0x205+)、M3508/M2006 (0x200/0x1FF 电流指令, 反馈 0x201+)。GM6020 的电流指令码 ±16384 对应 ±3A；软件速度环输出电流码，不在 MCU 重复启用电流 PID。
 
 - **反馈路径**: CAN 中断 → `MotorFeedbackCallback` 校验 8 字节反馈帧，解析机械角、转速、电流及可用时的温度 → 写入 `motor->feedback`。M2006/C610 的末两字节为保留字节，`temperature = 0` 表示没有温度反馈。回调内完成:
   - 单圈角度 → 度; RPM → °/s (`MOTOR_RPM_TO_DEGREES_PER_SECOND`);
   - **连续角度** `total_angle`: 用 `MotorEncoderDelta` 对相邻反馈解卷绕累加;
-  - **重锚机制**: 首帧或 >100ms 无反馈时, `total_angle` 重置为当前单圈角、`angle_epoch` 递增; 若电机正跑角度环则自动 `Disable`, 逼迫上层重新同步位置目标。这是位置模式安全性的基石。
-- **控制路径**: `DJI_Motor_Control(motor_list, count, dt_s)` 按型号分组, 逐电机算 16 位输出并打包进指令帧 (一帧最多 4 台, 槽位由反馈 ID 决定); 掉线/未使能电机按零输出打包, 不影响同帧其他电机。
+  - **角度基准**: 仅首帧以单圈角初始化 `total_angle` 并递增 `angle_epoch`；测试阶段不做反馈超时重锚或停机，中断期间转过半圈以上会使恢复后的累计角度不准确。
+- **控制路径**: 按物理总线和指令帧 ID 分组，M3508/M2006 合并一帧 `0x200`，不同总线独立。支持 GM6020 ID1..7、C610/C620 ID1..8；GM6020 协议限幅 ±16384、C610 ±10000。云台应用额外限制约±0.5A。未使能电机按零输出打包；无反馈或旧反馈不阻止使能电机发送指令。同帧所有电机必须在同一次控制调用中提交。
 - **实例管理**: 16 槽静态池, 无动态分配; CAN 回调经 `module_handle` 直达实例。
 - 上层职责: 每周期写 `motor_settings.speed`/`.angle` (或 `.current`), 并用 Enable/Disable 控制输出; 反馈 ID 必须唯一且在型号区间内。
 
@@ -61,7 +63,7 @@ Modules 层是"能力"层: 提供与应用无关的驱动、算法和服务, 不
 
 ### angle_target.h / encoder_angle.h — 位置目标 (纯头文件, 可宿主机测试)
 
-- `MotorEncoderDelta(prev, cur)`: 13 位编码器跨 0/8191 边界的最短增量 (±4096 内); 两次反馈间转动超过半圈则无法判定 (驱动层用超时重锚兜底)。
+- `MotorEncoderDelta(prev, cur)`: 13 位编码器跨 0/8191 边界的最短增量 (±4096 内); 两次反馈间转动超过半圈则无法判定。当前测试模式已移除超时重锚，不能保证反馈中断后的累计角度。
 - `MotorAngleTarget`: 位置模式的目标管理器。
   - `Sync()`: 把目标对齐当前实测角度 (启动不自寻零), 校验零点标定与行程, 记录 `angle_epoch`;
   - `Step()`: 按摇杆速率积分目标, 非连续轴限幅在 `[zero+min, zero+max]`;
@@ -74,19 +76,19 @@ Modules 层是"能力"层: 提供与应用无关的驱动、算法和服务, 不
 
 ## rc — 遥控器 (DT7 / DR16 / DBUS)
 
-- **链路**: UART5, 100000 波特, 9 位数据+偶校验 (等价 8E1, 与 SBUS 一致, 勿按 8N1 使用)。BSP 注册 DMA+Idle 接收。
-- **解析**: 帧定位 = 起始字节 0x0F + 结束字节辅助校验; 11 位小端比特流解 16 通道; 通道 0-3 摇杆 (364..1684 → [-1,1]), 通道 4/5 拨杆三档, 通道 6 键鼠合并位段。解析在 **UART 中断内**完成, `last_update_tick` 最后写入 + release/acquire fence 保证任务侧读到完整帧。
+- **链路**: UART5, 100000 波特, 9 位字长+偶校验（8E1）；使用 RoboMaster 18 字节 DBUS。BSP 注册普通模式 DMA+Idle，DMA 实例位于 AXI SRAM。
+- **解析**: 字节 0..5 含四个 11 位摇杆及两个 2 位拨杆；6..13 为鼠标；14..15 为键盘；16..17 为拨轮/保留。无固定帧头，校验通道、拨杆及鼠标按键范围后接受，跨回调保存残帧。任务通过短临界区 `rc::Snapshot()` 读取完整状态。
 - **掉线**: `IsOnline()` = 100ms 内收到过合法帧; 全局状态 `rc::RC` 供所有模块读取。
-- **自恢复**: 接收缓冲区被写满说明帧边界丢失 (上电瞬间/波特率不符), 自动重启接收链路。
+- **自恢复**: 非法候选逐字节滑动重新定位，超过 100ms 无接收则清除残帧；DMA 由 BSP 在回调结束后统一重启。
 - 上层接口: `RightHorizontal/RightVertical/LeftVertical/LeftHorizontal()`、`RC.switch_left/switch_right`、`IsOnline()`。
 
 ## safety — 急停与输出使能
 
-- **触发**: 左右拨杆**同时** DOWN, 经 3ms 去抖 (状态跳变重新计数, 延迟固定)。
-- **解除**: 任一拨杆离开 DOWN 组合即立即恢复, 无需额外操作。
-- **掉线**: 遥控失联直接撤销输出, 恢复收帧后自动重新判定。
+- **急停**: 双拨杆 DOWN 立即撤销输出。
+- **解锁**: 上电及失联恢复后，摇杆居中、双 DOWN 持续至少三个安全判定周期，再离开双 DOWN。
+- **掉线**: 100ms 无合法遥控帧即撤输出和解锁状态；恢复收帧不会自动恢复运动或续发。
 - **接口**: `ShouldOutput()` 是所有执行器输出的总开关 (上电首次判定前返回 false); `IsEStopped()`/`BothDown()` 供状态展示。
-- 上电默认: 拨杆不在 DOWN 组合即为放行状态。
+- 上电默认: 输出关闭。
 
 ## communication/ — 通信
 
@@ -102,9 +104,9 @@ Modules 层是"能力"层: 提供与应用无关的驱动、算法和服务, 不
 
 C 实现, 最新值邮箱 (队列深度 1): `PubRegister/PubPushMessage` 发布, `SubRegister/SubGetMessage` 订阅。发布快于消费时覆盖旧值 — 使用方必须意识到读到的是"最新值"而非"每条消息"。全局话题表最多 12 个, 话题名 ≤32 字符。interboard 的跨板话题即构建在它之上。
 
-### usb_serial_task / uart_serial_task — 串口链路自测
+### usb_serial_task / uart_serial_task / encoder_serial_task — 调试串口
 
-USB CDC 在主机完成配置后，约每 10ms 发送一行 `Roll=+0.00,Pitch=+0.00,Yaw=+0.00`（单位：度）。没有最近 100ms 的有效姿态时，每秒发送一次 `IMU not ready`；收到的 CDC 数据不回传。UART7 仍使用"收 → 队列 → 原样发回"验证链路。
+USB CDC 在主机完成配置后，约每 10ms 发送一行 `Roll=+0.00,Pitch=+0.00,Yaw=+0.00`（单位：度）。没有最近 100ms 的有效姿态时，每秒发送一次 `IMU not ready`；收到的 CDC 数据不回传。UART7 当前由 `EncoderSerialTask` 独占，每50ms通过DMA发送FireWater文本`目标位置,实际位置,实际电流\n`（前两项相对水平零位，单位°；第三项A）；使用整数格式，无浮点printf。反馈超过100ms未更新时后两项显示`0.000`，不改变电机使能。数据复制至BSP的AXI SRAM长期缓冲，DMA BUSY时跳过当前行。旧回环任务保留但关闭，两种UART7任务不可同时启用。操作见 `Application/shoot/README.md`。
 
 ## imu/ — 惯性测量单元
 

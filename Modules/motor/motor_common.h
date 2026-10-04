@@ -85,6 +85,7 @@ struct Motor_Control_Setting_s
     float angle{};
     float speed{};
     float current{};
+    uint32_t angle_epoch{}; // 位置目标对应的反馈版本；重锚后旧位置指令不得发送。
 };
 
 /** @brief 控制器运行时所引用的反馈、前馈和三个 PID 环。 */
@@ -144,7 +145,7 @@ struct Motor_Feedback_s
     float temperature{};
 
     //todo该角度版本号是否该保留
-    uint32_t angle_epoch{}; // 首帧或反馈中断后重锚定时递增，位置目标需同步重置。
+    uint32_t angle_epoch{}; // 首帧建立角度基准时递增；测试阶段反馈中断后不重锚。
     bool angle_initialized{};
     uint32_t last_update_tick{}; // 最近一次收到反馈的 RTOS tick, 用于判定掉线。
 };

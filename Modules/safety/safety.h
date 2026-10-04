@@ -3,9 +3,9 @@
  * @brief 急停与输出使能状态管理。
  *
  * @note 触发方式: 左右拨杆同时拨到 DOWN。
- * @note 解除方式: 只要两个拨杆不再同时在 DOWN, 立即解除, 不需要任何额外操作。
- * @note 遥控掉线同样会撤销输出, 恢复收帧后自动恢复判定。
- * @note 上电时若两个拨杆不在 DOWN, 则处于放行状态。
+ * @note 上电/失联恢复后需摇杆居中、双拨杆 DOWN 至少三个判定周期，然后离开双 DOWN。
+ * @note 遥控掉线撤销输出和解锁状态，不会自动续发。
+ * @note 双 DOWN 急停立即生效；三周期确认用于解锁手势。
  */
 
 #ifndef INFANTRY_H723_SAFETY_H
@@ -15,7 +15,7 @@
 
 namespace safety
 {
-    /** @brief 判定结果需连续成立的最少周期数, 用于滤除拨杆抖动, 单位毫秒。 */
+    /** @brief 解锁手势需连续成立的最少周期数。 */
     static constexpr uint8_t DEBOUNCE_COUNT = 3U;
 
     /** @brief 安全任务轮询周期, 单位毫秒。 */

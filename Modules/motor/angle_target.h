@@ -28,6 +28,28 @@ struct MotorAngleLimits
         return continuous || (calibrated && zero_raw < 8192U &&
                               min_deg > -180.0F && max_deg < 180.0F && min_deg < max_deg);
     }
+
+    /**
+     * @brief 速度调试时端点禁止向外驱动，允许向行程内退回；不是位置保持环。
+     * @param raw 当前原始编码器值，调用方须先确认收到过合法反馈。
+     * @param feedback_reverse 是否反转反馈坐标。
+     * @param speed_dps 反馈坐标中的目标速度；越界或到端点时零目标也撤输出。
+     * @return 标定有效、输入合法且速度方向允许时返回true。
+     */
+    [[nodiscard]] bool AllowsSpeed(uint16_t raw, bool feedback_reverse, float speed_dps) const
+    {
+        if (!IsConfigured() || raw >= 8192U || !std::isfinite(speed_dps))
+            return false;
+        if (continuous)
+            return true;
+        const float relative = static_cast<float>(MotorEncoderDelta(zero_raw, raw)) *
+                               (360.0F / 8192.0F) * (feedback_reverse ? -1.0F : 1.0F);
+        if (relative <= min_deg)
+            return speed_dps > 0.0F;
+        if (relative >= max_deg)
+            return speed_dps < 0.0F;
+        return true;
+    }
 };
 
 /** @brief 记录角度目标及校准零点在连续角度坐标中的偏移。 */

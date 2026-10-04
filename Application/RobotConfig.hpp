@@ -8,9 +8,9 @@
  *   两块板必须使用相反的值, 否则双板链路收不到对方心跳, 永远显示离线。
  *
  * FDCAN 资源分配 (STM32H723 共 3 路 FDCAN):
- *   FDCAN1 : 云台电机 (两台 GM6020, 见 GimbalConfig.hpp)。
- *   FDCAN2 : 双板通信 interboard 独占 (由下方 INFANTRY_INTERBOARD_FDCAN 选择)。
- *   FDCAN3 : 当前空闲, 可分配给底盘/发射电机或裁判系统。
+ *   FDCAN1 : pitch GM6020速度环调试、yaw连续位置控制及两轴编码器反馈。
+ *   FDCAN2 : 两台 M3508 摩擦轮，拨弹当前不注册；双板通信关闭。
+ *   FDCAN3 : 当前空闲；若迁移 DJI 电机到此路，须先将其设为 Classic CAN。
  * 调整 INFANTRY_INTERBOARD_FDCAN 或电机挂载时, 必须同步核对
  * interboard.cpp 的 canHandle 选择与各电机配置中的 kXxxCanHandle。
  */
@@ -34,14 +34,25 @@ namespace InfantryInitialization
     inline constexpr bool ENABLE_IMU            = true;  // BMI088 六轴采样与姿态解算
     inline constexpr bool ENABLE_INTERBOARD     = false;  // 双板 CAN 通信 (interboard::Start, 独占上方选定的 FDCAN)
     inline constexpr bool ENABLE_UART_SERIAL    = false;  // UART7 硬件串口回环任务 (DMA 收 -> 队列 -> DMA 发)
+    inline constexpr bool ENABLE_ENCODER_UART7 = true; // UART7 TX-only pitch目标/实际位置与电流FireWater三通道，每50ms一行。
 
     // ---------- 输入与安全 ----------
-    inline constexpr bool ENABLE_RC            = false; // 遥控 (UART5 DBUS 解析与掉线判定)
-    inline constexpr bool ENABLE_SAFETY        = false; // 急停与使能监控 (依赖遥控)
+    inline constexpr bool ENABLE_RC            = true; // 遥控 (UART5 DBUS 解析与掉线判定)
+    inline constexpr bool ENABLE_SAFETY        = true; // 急停与使能监控 (依赖遥控)
 
     // ---------- 执行器与提示 ----------
-    inline constexpr bool ENABLE_GIMBAL        = false; // yaw/pitch 云台 (两台 GM6020)
+    inline constexpr bool ENABLE_GIMBAL        = true; // pitch速度环调试、yaw连续位置控制及编码器采集。
+    inline constexpr bool ENABLE_SHOOT         = true; // 当前只启用双摩擦轮，见 ShootConfig.hpp
     inline constexpr bool ENABLE_BUZZER        = false; // TIM12 CH2 蜂鸣器任务
+
+    static_assert(!ENABLE_GIMBAL || (ENABLE_RC && ENABLE_SAFETY),
+                  "Gimbal requires remote control and output safety");
+    static_assert(!ENABLE_SHOOT || (ENABLE_RC && ENABLE_SAFETY),
+                  "Shooter requires remote control and output safety");
+    static_assert(!ENABLE_INTERBOARD || !ENABLE_SHOOT || INFANTRY_INTERBOARD_FDCAN != 2,
+                  "FDCAN2 is occupied by friction wheels; interboard cannot share it");
+    static_assert(!ENABLE_ENCODER_UART7 || (ENABLE_GIMBAL && !ENABLE_UART_SERIAL),
+                  "Encoder telemetry requires gimbal and exclusive UART7 ownership");
 }
 
 #endif

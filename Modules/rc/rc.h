@@ -3,7 +3,7 @@
  * @brief DJI DT7 遥控器 (DR16 接收机, DBUS 协议) 的解析与访问接口。
  *
  * @note 接收链路: DT7 -> DR16 接收机 -> UART5 (100000 波特率, 9 位数据, 偶校验)。
- * @note 该串口配置等价于 8 位数据 + 偶校验位, 与 SBUS 协议一致, 不要按 8N1 使用。
+ * @note 串口配置等价于 8E1；RoboMaster DR16 使用 18 字节 DBUS，不是 25 字节 SBUS。
  * @note 掉线判定由本模块维护, 其他模块应通过 rc::IsOnline() 获取安全状态。
  */
 
@@ -14,14 +14,8 @@
 
 namespace rc
 {
-    /** @brief DBUS 单帧长度: 1 起始 + 22 通道 + 1 标志 + 1 结束。 */
-    static constexpr uint8_t FRAME_LENGTH = 25;
-
-    /** @brief DBUS 起始字节。 */
-    static constexpr uint8_t FRAME_HEADER = 0x0FU;
-
-    /** @brief DBUS 结束字节; 取值有时不为 0, 因此解析时不做强校验。 */
-    static constexpr uint8_t FRAME_TAIL = 0x00U;
+    /** @brief RoboMaster DBUS 帧长，无固定帧头或帧尾。 */
+    static constexpr uint8_t FRAME_LENGTH = 18;
 
     /** @brief DBUS 帧中的通道数量。 */
     static constexpr uint8_t CHANNEL_COUNT = 4;
@@ -29,6 +23,8 @@ namespace rc
     /** @brief 摇杆通道的原始值范围。 */
     static constexpr uint16_t CHANNEL_MIN = 364U;
     static constexpr uint16_t CHANNEL_MAX = 1684U;
+    static constexpr uint16_t CHANNEL_CENTER = 1024U;
+    static constexpr uint16_t CHANNEL_DEADBAND = 10U;
 
     /** @brief 归一化后的输出范围。 */
     static constexpr float NORMALIZED_MIN = -1.0F;
@@ -43,23 +39,23 @@ namespace rc
     /** @brief 遥控器右侧拨杆 (控制模式常用)。 */
     enum class Right_Switch_e : uint8_t
     {
-        UP = 0,
-        DOWN = 1,
-        MIDDLE = 2,
+        UP = 1,
+        DOWN = 2,
+        MIDDLE = 3,
     };
 
     /** @brief 遥控器左侧拨杆。 */
     enum class Left_Switch_e : uint8_t
     {
-        UP = 0,
-        DOWN = 1,
-        MIDDLE = 2,
+        UP = 1,
+        DOWN = 2,
+        MIDDLE = 3,
     };
 
     /**
  * @brief 遥控器解析出的全部状态。
- * @note channels 下标对应 SBUS 通道: 0=右摇杆水平, 1=右摇杆垂直, 2=左摇杆垂直, 3=左摇杆水平。
- * @note switch_left/switch_right 直接由原始通道值映射, 因此是枚举而非数值。
+ * @note DBUS 通道: 0=右水平，1=右垂直，2=左水平，3=左垂直。
+ * @note switch_left 为字节 5 的高两位，switch_right 为其第 4、5 位。
  */
     struct RC_Data_s
     {
@@ -68,7 +64,7 @@ namespace rc
         Left_Switch_e  switch_left{};
         Right_Switch_e switch_right{};
 
-        // 键盘与鼠标合并成的 16 位原始值, 便于逐位核对接线/固件差异。
+        // 字节 14、15 的键盘原始位图，保留旧成员名以兼容调用端。
         uint16_t keyboard_mouse_raw{};
 
         // 键盘按键状态, 与遥控器上的丝印一致。
@@ -92,12 +88,18 @@ namespace rc
             bool  middle : 1;
             int16_t x;
             int16_t y;
+            int16_t z;
         } mouse{};
 
+        uint16_t wheel_raw{}; // 最后两字节；旧固件可能保留为 0。
+        bool received{}; // 区分从未收帧与在 tick=0 收到首帧。
         uint32_t last_update_tick{}; // 最近一次收到合法帧的 RTOS tick。
     };
 
     extern RC_Data_s RC; // 全局遥控状态, 由遥控任务解析更新。
+
+    /** @brief 在任务上下文取得完整遥控快照，避免中断更新期间读到混合帧。 */
+    RC_Data_s Snapshot();
 
     /**
      * @brief 把摇杆原始值映射到 [-1, 1]。
