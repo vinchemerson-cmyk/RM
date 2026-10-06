@@ -14,6 +14,12 @@ function(add_logic_test name)
 endfunction()
 
 add_logic_test(pid_test pid_test.cpp ../Modules/algorithm/pid.cpp)
+add_logic_test(lqi_test lqi_test.cpp ../Modules/algorithm/lqi.cpp)
+add_logic_test(lqi_controller_test lqi_controller_test.cpp
+    ../Modules/algorithm/lqi.cpp ../Modules/algorithm/lqi_controller.cpp)
+add_logic_test(gimbal_lqi_test gimbal_lqi_test.cpp
+    ../Modules/algorithm/lqi.cpp ../Modules/algorithm/lqi_controller.cpp ../Modules/algorithm/pid.cpp)
+target_include_directories(gimbal_lqi_test BEFORE PRIVATE stubs ../BSP)
 add_logic_test(angle_target_test angle_target_test.cpp)
 add_logic_test(gimbal_calibration_test gimbal_calibration_test.cpp)
 target_include_directories(gimbal_calibration_test BEFORE PRIVATE stubs ../BSP)

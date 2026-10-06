@@ -1,6 +1,6 @@
 # 云台双轴与双摩擦轮遥控测试
 
-当前目标为STM32H723VGT6。当前配置中pitch和yaw均启用位置模式；yaw连续旋转，pitch位置目标受上下软件边界约束。UART7每50ms输出pitch目标位置、实际位置与电流反馈的FireWater三通道，CAN2双摩擦轮逻辑不变；拨弹与双板通信仍关闭。
+当前目标为STM32H723VGT6。pitch/yaw均使用 LQI，当前 Manual 模式直接装载手填 K，不需要 A/B；可选 BootSolve 模式上电求解一次，届时须先填写模型。yaw连续旋转，pitch受端点方向保护。UART7 FireWater三通道和CAN2双摩擦轮逻辑不变；拨弹与双板通信仍关闭。
 
 ## UART7 pitch FireWater 遥测
 
@@ -27,7 +27,7 @@
 
 两路均为 Classic CAN、1Mbps。以上引脚是当前固件复用配置，板上 CAN 插座对应关系须按实际板卡确认。CAN2的两轮合并一个0x200帧，DATA[4:7]保持零。标定模式下CAN1两个槽位均为零电流。
 
-GM6020仍用电流控制，不发送0x1FF/0x2FF电压帧。两台电机在RoboMaster Assistant中应开启“电流环开关”（官方说明固件>=1.0.11.2，Assistant>=2.7）。当前pitch/yaw都执行角度环串速度环，内部电流环由驱动器完成；电流与PID参数以`../gimbal/GimbalConfig.hpp`为准。两轴仍需实车整定。
+GM6020仍用电流控制，不发送0x1FF/0x2FF电压帧。两台电机在RoboMaster Assistant中应开启“电流环开关”（官方说明固件>=1.0.11.2，Assistant>=2.7）。pitch/yaw使用 LQI 直接计算电流，MCU 不再执行两轴 PID，内部电流环由驱动器完成；模型、Q/R 和积分限幅见 `../gimbal/GimbalConfig.hpp`。
 
 协议依据：[GM6020 官方 v1.4 使用说明](https://rm-static.djicdn.com/tem/17348/RoboMaster%20GM6020%E7%9B%B4%E6%B5%81%E6%97%A0%E5%88%B7%E7%94%B5%E6%9C%BA%E4%BD%BF%E7%94%A8%E8%AF%B4%E6%98%8E20231013.pdf)，第5至7页。
 
@@ -36,7 +36,7 @@ ID 不同应改 `../gimbal/GimbalConfig.hpp` 的 `kPitchMotorFeedbackId` 和 `Sh
 ## 操作
 
 1. 移除弹丸、确认机构可安全运动，摇杆居中，双拨杆 DOWN，保持至少三个安全任务周期（任务每 1ms 更新）。
-2. 左拨杆保持DOWN，右拨杆改UP，解除急停。右摇杆上下推动pitch位置目标、左右推动yaw位置目标；两轴松杆保持目标。先支撑机构短时小幅试拨，仍抖或方向异常立即双DOWN。
+2. 填写两轴模型并确认 RTT 启动日志显示 LQI ready 后，左拨杆保持DOWN，右拨杆改UP解除急停。右摇杆上下推动pitch位置目标、左右推动yaw位置目标；两轴松杆保持目标。方向异常立即双DOWN。
 3. 左拨杆UP，两轮共同爬升至转子1000RPM（用户当前配置1000RPM/s）；左拨杆MIDDLE或DOWN两轮同时关闭。
 4. 右拨杆保持 UP 即可测试；MIDDLE/DOWN 不会驱动拨弹，因为拨弹电机没有注册。
 5. 双拨杆 DOWN 急停全部输出。遥控超过 100ms 无合法帧也立即禁止输出，恢复后重新执行解锁。
@@ -47,7 +47,7 @@ ID 不同应改 `../gimbal/GimbalConfig.hpp` 的 `kPitchMotorFeedbackId` 和 `Sh
 - 双轮保留共同启停、相同目标和爬升，以及“两轮转速都达标才就绪”的联动；未新增转速差交叉补偿。
 - 遥控失联、解锁、双DOWN急停、限幅、非法数值/异常周期检查仍保留。pitch位置模式进入端点保护区后临时用速度环单向向内退回；yaw连续位置模式不变。
 - 移除反馈超时重锚后，反馈中断期间转过半圈以上可能使累计角度失真，不适合直接验证单发位置精度。
-- 摩擦轮关闭后发送零电流，不执行受控减速。用户确认yaw正常、pitch松杆后仍抖。本次仅绕开pitch角度环、降低速度Kp与测试速度，仍未完成实车整定，不稳定时立即急停。
+- 摩擦轮关闭后发送零电流，不执行受控减速。两轴当前用手填 K；切到 BootSolve 后求解失败不会自动回退到手填 K 或 PID。尚未进行板上整定。
 - yaw已启用；恢复拨弹需修改`kEnableFeeder`，旧拨弹ID1已被左轮占用，必须先选择其他拨弹ID，否则编译期校验会拒绝启用。还需重新确认CAN资源、拨盘参数与反馈保护。
 
 ## 验证

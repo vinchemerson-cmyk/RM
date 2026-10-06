@@ -60,6 +60,11 @@ add_executable(${CMAKE_PROJECT_NAME}
         Modules/imu/Bmi088Heater.h
         Modules/algorithm/pid.cpp
         Modules/algorithm/pid.h
+        Modules/algorithm/lqi_config.h
+        Modules/algorithm/lqi.h
+        Modules/algorithm/lqi.cpp
+        Modules/algorithm/lqi_controller.h
+        Modules/algorithm/lqi_controller.cpp
         Modules/communication/usb_serial_task.cpp
         Modules/communication/usb_serial_task.h
         Modules/communication/uart_serial_task.cpp

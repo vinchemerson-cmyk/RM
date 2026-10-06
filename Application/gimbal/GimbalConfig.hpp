@@ -12,6 +12,8 @@
 #include "fdcan.h"
 #include "main.h"
 #include "algorithm/pid.h"
+#include "algorithm/lqi_config.h"
+#include "algorithm/lqi.h"
 #include "motor/angle_target.h"
 #include "motor/dji/dji_protocol.h"
 
@@ -25,7 +27,7 @@
  *   2. 每台 GM6020 的电调 ID 决定其反馈 ID: ID1->0x205, ID2->0x206, ID3->0x207, ID4->0x208。
  *      用户确认 yaw=ID2, pitch=ID1。反馈 ID 必须唯一, 且必须是 0x205..0x208 之一。
  *   3. 转向: 若某轴转动方向相反, 把对应电机的 kYawMotorReverse / kPitchMotorReverse 置 true。
- *   4. PID 增益为经验起点, 必须实车整定。
+ *   4. 两轴使用 LQI；必须填写实车离散模型与 Q/R，旧 PID 参数保留但不参与控制。
  */
 
 /** @brief 云台使用的 FDCAN 控制器。 */
@@ -89,7 +91,7 @@ inline constexpr PID_Init_Config_s kPitchAnglePid{
  * @note 开启前先记录物理零位的 13 位编码器值，并实测相对零位的可动角度。
  */
 inline constexpr bool kYawPositionMode   = true; //YAW的位置模式，
-inline constexpr bool kPitchPositionMode = true; // 当前启用角度串速度环；松杆保持位置目标。
+inline constexpr bool kPitchPositionMode = true; // 当前使用 LQI 位置目标；松杆保持。
 
 /**
  * @brief 相对物理零位的行程。continuous 仅用于已确认可以连续旋转的 yaw 轴。
@@ -144,5 +146,64 @@ static_assert(kGimbalCurrentLimitA > 0.0F && kGimbalCurrentLimitA <= 3.0F,
 
 /** @brief 单次控制周期允许的最大 dt, 超过则认为调度异常并跳过本次输出。 */
 inline constexpr float kGimbalMaxDtS = 0.05F;
+
+/**
+ * @brief pitch/yaw LQI 参数；Manual 使用手填 K，BootSolve 根据模型和 Q/R 求解 K。
+ * @note 当前手填模式不依赖 A/B、Q/R，不执行启动求解；全零 K 会被拒绝。
+ *       积分上下限为零，待整定后填写。
+ *       实时输出使用 A，再转换为 GM6020 电流指令码；原 PID 参数已不参与两轴控制。
+ */
+enum class GimbalLqiGainSource
+{
+    Manual,
+    BootSolve
+};
+
+inline constexpr GimbalLqiGainSource kPitchLqiGainSource = GimbalLqiGainSource::Manual;
+inline constexpr GimbalLqiGainSource kYawLqiGainSource = GimbalLqiGainSource::Manual;
+
+/**
+ * @brief pitch Manual K 按原串级 PID 的未限幅比例项换算为 A。
+ * @note 旧指令码 = Kp_speed*(Kp_angle*(目标-实际)-速度)。
+ *       因此 k_angle=Kp_angle*Kp_speed/码每安培，k_speed=Kp_speed/码每安培。
+ *       不等价于还原旧角度环速度限幅或速度环积分；当前 LQI 积分范围仍为零。
+ */
+inline constexpr LQI_Init_Config_s kPitchLqiConfig{
+    .k_angle = kPitchAnglePid.kp * kPitchSpeedKp / kDjiGm6020CommandUnitsPerAmp,
+    .k_speed = kPitchSpeedKp / kDjiGm6020CommandUnitsPerAmp, .k_integral = 0.01F,
+    .q_angle = 0.04F, .q_speed = 0.000278F, .q_integral = 0.01F, .r_current = 1.0F,
+    .sample_period_s = kGimbalControlPeriodS,
+    .output_min_a = -kGimbalCurrentLimitA, .output_max_a = kGimbalCurrentLimitA,
+    .integral_min_deg_s = 0.0F, .integral_max_deg_s = 0.0F
+};
+inline constexpr LQI_Init_Config_s kYawLqiConfig{
+    // yaw 使用与 pitch 相同的反馈强度，单位为 A/度和 A/(度/秒)。
+    .k_angle = 0.1F,
+    .k_speed = 0.01F, .k_integral = 0.01F,
+	.q_angle = 0.04F, .q_speed = 0.000278F, .q_integral = 0.01F, .r_current = 1.0F,
+    .sample_period_s = kGimbalControlPeriodS,
+    .output_min_a = -kGimbalCurrentLimitA, .output_max_a = kGimbalCurrentLimitA,
+    .integral_min_deg_s = 0.0F, .integral_max_deg_s = 0.0F
+};
+
+/**
+ * @brief LQI 的实车离散模型入口；A/B 全零表示尚未辨识，求解器会拒绝。
+ * @note 填写角度/速度模型 x[k+1]=A*x[k]+B*I[k]，输入电流单位 A。
+ *       模型状态与电流须采用电机方向处理后的逻辑坐标。
+ *       仅 BootSolve 模式每次上电求解一次；占位模型或求解失败时对应轴禁止输出。
+ *       Manual 模式忽略模型，直接使用上面的 K。
+ */
+inline constexpr LQI_Model_s kPitchLqiModel{
+    .a = {}, .b = {}, .sample_period_s = kGimbalControlPeriodS
+};
+inline constexpr LQI_Model_s kYawLqiModel{
+    .a = {}, .b = {}, .sample_period_s = kGimbalControlPeriodS
+};
+
+/** @brief 上电单次增益求解的迭代上限与收敛阈值。 */
+inline constexpr LQI_Solver_Options_s kGimbalLqiSolverOptions{};
+
+static_assert(kYawPositionMode && kPitchPositionMode,
+              "Gimbal LQI requires position targets for both axes");
 
 #endif // INFANTRY_H723_GIMBAL_CONFIG_HPP
