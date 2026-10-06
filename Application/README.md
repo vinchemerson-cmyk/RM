@@ -28,11 +28,11 @@ Core/Src/main.c        外设初始化 (CubeMX 生成)
 
 | 控制器 | 用途 | 配置位置 |
 |---|---|---|
-| FDCAN1 | pitch=0x205 (ID1)速度调试、yaw=0x206 (ID2)位置控制；Classic CAN 1Mbps | `GimbalConfig.hpp` |
+| FDCAN1 | pitch=0x205 (ID1)位置控制、yaw=0x206 (ID2)速度调试；Classic CAN 1Mbps | `GimbalConfig.hpp` |
 | FDCAN2 | 左摩擦=0x201/右摩擦=0x202 (用户确认 ID1/ID2)，Classic CAN 1Mbps | `ShootConfig.hpp`；双板通信关闭 |
 | FDCAN3 | 空闲, 留给底盘/发射/裁判系统 | — |
 
-`ENABLE_ENCODER_UART7=true`启用20Hz串口pitch目标位置、实际位置与反馈电流FireWater三通道输出，`ENABLE_UART_SERIAL=false`关闭回环。`kEncoderCalibrationOnly=false`、`kEnableYaw=true`、`kEnablePitch=true`允许两轴运动；`kReadYawEncoder=true`保留编码器采集。FDCAN1使用两个标准过滤器、FDCAN2使用两个；RTOS堆32KB。pitch零位/限位已写入，yaw经用户确认可连续旋转。操作见 `shoot/README.md`。
+`ENABLE_ENCODER_UART7=true`启用20Hz串口 yaw FireWater 五通道诊断：目标速度、实际连续角度、实际速度、逻辑指令电流、反馈年龄（未收到为-1，过期数据不隐藏）。`ENABLE_UART_SERIAL=false`关闭回环。`kEncoderCalibrationOnly=false`、`kEnableYaw=true`、`kEnablePitch=true`允许两轴运动；`kReadYawEncoder=true`保留编码器采集。FDCAN1使用两个标准过滤器、FDCAN2使用两个；RTOS堆32KB。pitch零位/限位已写入，yaw经用户确认可连续旋转。操作见 `shoot/README.md`。
 
 ## gimbal — 云台控制 (已实现)
 
@@ -45,26 +45,26 @@ DT7 遥控器 ──2.4G──> DR16 ──DBUS──> UART5 中断 (rc 模块�
    GimbalTask (1kHz, osPriorityHigh)
    ├─ dt 计算 (钳位到 (0, 0.05s], 调度抖动不进 PID)
    ├─ outputAllowed = !kEncoderCalibrationOnly && rc::IsOnline() && safety::ShouldOutput()
-   ├─ UpdateAxis(yaw)   连续多圈位置目标──┤
+   ├─ UpdateAxis(yaw)   独立速度目标─────┤
    ├─ UpdateAxis(pitch) ──写 motor_settings──┤
    └─ LQI 电流计算 ──> DJI_Motor_Control(): 打包 0x1FE ──> FDCAN1 ──> 双轴GM6020
 ```
 
 ### 控制模式
 
-由`GimbalConfig.hpp`决定：yaw/pitch位置模式均为true，两轴使用 LQI。当前 `kPitchLqiGainSource`、`kYawLqiGainSource` 为 `Manual`，直接使用手填 K，不受零占位模型影响；切到 `BootSolve` 后须填写模型和 Q/R，求解失败的轴保持零电流。
+由`GimbalConfig.hpp`决定：pitch 保持 LQI 位置控制，yaw 的 `kYawPositionMode=false`，单独测试速度反馈。当前两轴均为 Manual；yaw 速度测试必须保持 Manual，pitch 可配置 BootSolve。
 
 - **标定模式（已关闭）**: `kEncoderCalibrationOnly=true`时两轴始终发送零电流，可手动读取编码器。位置模式请求和PID配置保留但不执行运动。
 - **位置模式（pitch当前）**: 安全区内右摇杆上下按`kPitchTargetRateDps`推动有界角度目标，LQI 计算电流，松杆保持目标；进入端点内侧10°保护区后临时使用 K_speed 速度反馈，只允许摇杆向水平零位退回，松杆或向外拨时Disable。退回安全区后重新同步当前位置并恢复位置保持。
-- **位置模式（yaw当前）**: 摇杆按`kYawTargetRateDps`推动多圈角度目标，LQI 计算电流；解锁保持当前位置，不自动回零。
+- **速度测试（yaw当前）**: 摇杆直接给速度目标，打满为 ±60°/s；`I=0.003*(目标速度-实际速度)`，限流 ±0.5A。静止打满输出 ±0.18A。无位置保持、无积分、无角度目标积压。松杆目标速度为零，低增益制动；静止后零电流，不锁定位置。不保证立即停住或克服静摩擦。
 
 ### LQI 参数预留
 
 `GimbalConfig.hpp` 提供 `kPitchLqiConfig`、`kYawLqiConfig`。`gimbal::Init()` 在调度器启动前按每轴 `GainSource` 装载 K：`Manual` 直接装载 `k_angle/k_speed/k_integral`，不执行求解、不使用 A/B 或 Q/R；`BootSolve` 调用一次 `LQI_Solve`，成功后将结果装载到独立的 `LQIController`，覆盖手填 K。非法手填 K/限幅和求解失败均使对应轴保持禁用，不在两种模式之间自动回退。1kHz 任务不重新求解、不执行原云台 PID。摩擦轮控制不变。
 
-配置包含三个反馈增益 K、Q/R、采样周期、电流输出范围及积分状态范围。当前周期 1ms、电流范围 ±3A；手填 K 和 Q/R 保留用户当前取值，积分范围仍为零。手填模式调 K，求解模式调模型与 Q/R，修改配置后编译烧录并重启。
+配置包含三个反馈增益 K、Q/R、采样周期、电流输出范围及积分状态范围。当前周期 1ms，pitch 电流范围 ±3A，yaw 测试范围 ±0.5A，积分范围仍为零。手填模式调 K，求解模式调模型与 Q/R，修改配置后编译烧录并重启。
 
-pitch 的 Manual K 按保留的原 PID 比例增益换算：`k_angle=角度Kp*速度Kp/kDjiGm6020CommandUnitsPerAmp`，`k_speed=速度Kp/kDjiGm6020CommandUnitsPerAmp`。yaw 手填增益调为与 pitch 相同，两轴均为 `k_angle=0.1`、`k_speed=0.01`，单位分别为 A/度、A/(度/秒)。pitch 只匹配原串级 PID 未限幅的比例反馈，yaw 不再匹配旧 yaw PID；不恢复原角度环速度限幅和 pitch 速度积分。LQI 积分限幅仍为零。
+pitch 的 Manual K 仍按原 PID 比例项换算，`k_angle=0.1`、`k_speed=0.01`，单位为 A/度、A/(度/秒)。yaw 为独立速度反馈测试：`k_angle=0`、`k_speed=0.003`、`k_integral=0`，电流范围 ±0.5A。两轴积分范围仍为零，pitch 参数未变。
 
 单位约定：角度为度，速度为度/秒，积分为度*秒，输出为 A。定义 `e = 实际角度 - 目标角度`、`z = integral(e * dt)`，定点保持的控制律为 `I = -k_angle*e - k_speed*实际速度 - k_integral*z`。离线模型必须沿用这些单位与积分符号；若求解工具使用 `目标 - 实际` 的积分状态，导入前须转换积分增益符号。填入模型和 Q/R 后可调用 `LQI_Solve` 计算 K，仍需另行接入运行代码；GM6020 发送前使用 `kDjiGm6020CommandUnitsPerAmp` 将 A 换算为指令码。
 
@@ -83,7 +83,7 @@ if (LQI_Solve(kPitchLqiModel, config, result) == LQI_Solve_Status::Success)
 
 求解器返回迭代次数、相对 Riccati 残差与 P，并检查 float K 的闭环稳定性。失败时对应轴保持零电流，RTT 打印轴名、状态和迭代次数，不影响其他模块。状态编号：0成功、1非法输入、2数值异常、3未收敛、4非稳定解。配置的积分限幅目前为零，模型和权重填好后还须设置非零积分范围才能消除静差。
 
-`LQIController` 使用更新前的 `z[k]` 计算电流，再更新 `z[k+1]`，与求解器离散时序一致；包含积分限幅和条件积分抗饱和。失联、急停、异常周期、反馈建立新基准时清空积分。pitch 保护区内只接受向内摇杆，临时使用已求出 K 的速度反馈项，清空积分和位置目标；松杆/向外时零输出，回到安全区后重新同步当前位置。UART7 的位置/电流三个通道继续保留，保护区无位置目标时 CH1 为零。
+`LQIController` 使用更新前的 `z[k]` 计算电流，再更新 `z[k+1]`，与求解器离散时序一致；包含积分限幅和条件积分抗饱和。失联、急停、异常周期、反馈建立新基准时清空积分。pitch 保护区内只接受向内摇杆，临时使用已求出 K 的速度反馈项，清空积分和位置目标；松杆/向外时零输出，回到安全区后重新同步当前位置。UART7 五通道为 yaw 目标速度、实际连续角度、实际速度、指令电流、反馈年龄；禁用时目标速度和指令电流显示零。
 
 ### 安全行为 (每个周期判定)
 
@@ -116,8 +116,8 @@ pitch零位893、当前代码配置上顶点120、下顶点1490；位置目标�
 | 模型 A/B | `kYawLqiModel` | `kPitchLqiModel` | 当前零占位，仅 BootSolve 模式需要 |
 | Q/R 与积分限幅 | `kYawLqiConfig` | `kPitchLqiConfig` | Q/R 为占位权重，积分范围目前为零 |
 | K | 当前直接使用手填值 | 当前直接使用手填值 | BootSolve 则上电求解；原 PID 增益不再使用 |
-| 电流输出范围 | ±3A | ±3A | GM6020 内部电流环必须开启 |
-| 摇杆目标 | 位置变化率180°/s | 位置变化率60°/s | 两轴松杆保持角度目标 |
+| 电流输出范围 | ±0.5A | ±3A | GM6020 内部电流环必须开启 |
+| 摇杆目标 | 速度±60°/s | 位置变化率60°/s | yaw松杆零目标速度；pitch保持角度目标 |
 
 启动求解在调度器启动前使用 MSP；Debug 栈用量报告显示求解调用链超过原 1KB 预留，因此链接脚本与 CubeMX 的主栈配置同步增加至 4KB。GimbalTask 的 2KB 任务栈不承担 Riccati 求解。
 

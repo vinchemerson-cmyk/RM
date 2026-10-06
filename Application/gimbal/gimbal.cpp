@@ -156,7 +156,7 @@ namespace
  */
     void UpdateAxis(DJI_Motor_s* motor, MotorAngleTarget& target, LQIController& lqi,
                     bool outputAllowed, const MotorAngleLimits& limits,
-                    float stick, float targetRateDps, float dt_s)
+                    float stick, float targetRateDps, float dt_s, bool positionMode = true)
     {
         if (motor == nullptr)
             return;
@@ -196,6 +196,22 @@ namespace
                     DJI_Motor_Enable(motor);
                 return;
             }
+        }
+
+        if (!positionMode)
+        {
+            // 速度测试不累积角度目标；松杆后仅低增益速度制动，不保持位置。
+            target.Reset();
+            const float speedTarget = std::isfinite(stick)
+                ? std::fmax(-1.0F, std::fmin(1.0F, stick)) * targetRateDps : 0.0F;
+            motor->motor_settings.close_loop_type = CURRENT_LOOP;
+            motor->motor_settings.speed = speedTarget;
+            motor->motor_settings.angle = feedback.total_angle;
+            motor->motor_settings.current = lqi.UpdateRecoverySpeed(speedTarget, feedback.speed, dt_s) *
+                                            kDjiGm6020CommandUnitsPerAmp;
+            if (!motor->enabled)
+                DJI_Motor_Enable(motor);
+            return;
         }
 
         if (!target.Ready() || target.Epoch() != feedback.angle_epoch)
@@ -251,7 +267,8 @@ namespace
                                        rc::IsOnline() && safety::ShouldOutput();
             UpdateAxis(yawMotor, yawTarget, yawLqi, outputAllowed && kEnableYaw,
                        kYawAngleLimits, rc::Normalize(remote.channels[0]),
-                       kYawTargetRateDps, dt_s);
+                       kYawPositionMode ? kYawTargetRateDps : kYawSpeedTestMaxDps,
+                       dt_s, kYawPositionMode);
             UpdateAxis(pitchMotor, pitchTarget, pitchLqi, outputAllowed && kEnablePitch,
                        kPitchAngleLimits, rc::Normalize(remote.channels[1]),
                        kPitchTargetRateDps, dt_s);
@@ -302,6 +319,13 @@ serialTasks::EncoderSnapshot gimbal::GetEncoderSnapshot()
         snapshot.yaw = {static_cast<uint16_t>(yawMotor->feedback.raw_angle),
                         yawMotor->feedback.angle_initialized,
                         yawMotor->feedback.last_update_tick};
+        snapshot.yaw_position_actual_deg = yawMotor->feedback.total_angle;
+        snapshot.yaw_position_target_deg = yawTarget.Ready()
+            ? yawMotor->motor_settings.angle : yawMotor->feedback.total_angle;
+        snapshot.yaw_speed_dps = yawMotor->feedback.speed;
+        snapshot.yaw_target_speed_dps = yawMotor->enabled ? yawMotor->motor_settings.speed : 0.0F;
+        snapshot.yaw_command_current_a = yawMotor->enabled
+            ? yawMotor->motor_settings.current / kDjiGm6020CommandUnitsPerAmp : 0.0F;
     }
     taskEXIT_CRITICAL();
     return snapshot;

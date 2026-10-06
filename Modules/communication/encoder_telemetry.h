@@ -22,8 +22,47 @@ struct EncoderSnapshot
     /** @brief pitch 位置目标和反馈位置，相对水平零位，单位 °。 */
     float pitch_position_target_deg{};
     float pitch_position_actual_deg{};
+    /** @brief yaw 连续角度（°）、速度（°/s）和方向处理后的指令电流（A）。 */
+    float yaw_position_target_deg{};
+    float yaw_position_actual_deg{};
+    float yaw_speed_dps{};
+    float yaw_target_speed_dps{};
+    float yaw_command_current_a{};
 };
 using EncoderProvider = EncoderSnapshot (*)();
+
+/** @brief yaw FireWater 五通道；保留过期反馈用于诊断，未收到反馈时 age=-1。 */
+inline size_t FormatYawTelemetryLine(char* buffer, size_t capacity,
+                                    const EncoderSnapshot& snapshot, uint32_t now)
+{
+    if (buffer == nullptr || capacity == 0U) return 0U;
+    const auto decimal = [](float value, char (&text)[24])
+    {
+        if (!std::isfinite(value) || std::fabs(value) > 1000000.0F) value = 0.0F;
+        const auto milli = static_cast<uint32_t>(std::fabs(static_cast<double>(value)) * 1000.0 + 0.5);
+        std::snprintf(text, sizeof(text), "%s%lu.%03lu",
+            value < 0.0F && milli != 0U ? "-" : "",
+            static_cast<unsigned long>(milli / 1000U), static_cast<unsigned long>(milli % 1000U));
+    };
+    char target[24]{}, actual[24]{}, speed[24]{}, current[24]{};
+    decimal(snapshot.yaw_target_speed_dps, target);
+    decimal(snapshot.yaw_position_actual_deg, actual);
+    decimal(snapshot.yaw_speed_dps, speed);
+    decimal(snapshot.yaw_command_current_a, current);
+    char age[16]{};
+    if (snapshot.yaw.seen)
+        std::snprintf(age, sizeof(age), "%lu", static_cast<unsigned long>(now - snapshot.yaw.last_update_tick));
+    else
+        std::snprintf(age, sizeof(age), "-1");
+    const int count = std::snprintf(buffer, capacity, "%s,%s,%s,%s,%s\n",
+                                    target, actual, speed, current, age);
+    if (count <= 0 || static_cast<size_t>(count) >= capacity)
+    {
+        buffer[0] = '\0';
+        return 0U;
+    }
+    return static_cast<size_t>(count);
+}
 
 /**
  * @brief 格式化 FireWater 三通道：目标位置、实际位置、实际电流。

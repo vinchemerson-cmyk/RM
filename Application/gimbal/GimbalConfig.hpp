@@ -90,7 +90,7 @@ inline constexpr PID_Init_Config_s kPitchAnglePid{
  * @brief 位置模式请求；标定模式保留该配置，但禁止两轴运动。
  * @note 开启前先记录物理零位的 13 位编码器值，并实测相对零位的可动角度。
  */
-inline constexpr bool kYawPositionMode   = true; //YAW的位置模式，
+inline constexpr bool kYawPositionMode   = false; // yaw 单独速度反馈测试，不保持位置。
 inline constexpr bool kPitchPositionMode = true; // 当前使用 LQI 位置目标；松杆保持。
 
 /**
@@ -134,7 +134,10 @@ static_assert(kEncoderCalibrationOnly || !kEnablePitch || !kPitchPositionMode ||
 
 /** @brief 位置模式下摇杆打满时目标角度的最大变化率，单位度每秒。 */
 inline constexpr float kYawTargetRateDps   = 180.0F;
-inline constexpr float kPitchTargetRateDps = 60.0F;
+inline constexpr float kPitchTargetRateDps = 120.0F;
+/** @brief yaw 速度环测试：摇杆打满 60°/s，独立限流 ±0.5A。 */
+inline constexpr float kYawSpeedTestMaxDps = 60.0F;
+inline constexpr float kYawSpeedTestCurrentLimitA = 0.5F;
 
 /** @brief 云台控制周期及低速联调电流限幅；与协议最大 ±3A 分开配置。 */
 inline constexpr float kGimbalControlPeriodS = 0.001F;
@@ -177,12 +180,12 @@ inline constexpr LQI_Init_Config_s kPitchLqiConfig{
     .integral_min_deg_s = 0.0F, .integral_max_deg_s = 0.0F
 };
 inline constexpr LQI_Init_Config_s kYawLqiConfig{
-    // yaw 使用与 pitch 相同的反馈强度，单位为 A/度和 A/(度/秒)。
-    .k_angle = 0.1F,
-    .k_speed = 0.01F, .k_integral = 0.01F,
+    // yaw 仅调速度反馈：I=0.003*(目标速度-实际速度)，关闭位置和积分。
+    .k_angle = 0.0F,
+    .k_speed = 0.003F, .k_integral = 0.0F,
 	.q_angle = 0.04F, .q_speed = 0.000278F, .q_integral = 0.01F, .r_current = 1.0F,
     .sample_period_s = kGimbalControlPeriodS,
-    .output_min_a = -kGimbalCurrentLimitA, .output_max_a = kGimbalCurrentLimitA,
+    .output_min_a = -kYawSpeedTestCurrentLimitA, .output_max_a = kYawSpeedTestCurrentLimitA,
     .integral_min_deg_s = 0.0F, .integral_max_deg_s = 0.0F
 };
 
@@ -203,7 +206,10 @@ inline constexpr LQI_Model_s kYawLqiModel{
 /** @brief 上电单次增益求解的迭代上限与收敛阈值。 */
 inline constexpr LQI_Solver_Options_s kGimbalLqiSolverOptions{};
 
-static_assert(kYawPositionMode && kPitchPositionMode,
-              "Gimbal LQI requires position targets for both axes");
+static_assert(kPitchPositionMode, "Pitch LQI requires position targets");
+static_assert(kYawPositionMode || kYawLqiGainSource == GimbalLqiGainSource::Manual,
+              "Yaw speed-only test requires manual gains");
+static_assert(kYawSpeedTestCurrentLimitA > 0.0F && kYawSpeedTestCurrentLimitA <= kGimbalCurrentLimitA,
+              "Yaw speed test current limit must remain within the gimbal current limit");
 
 #endif // INFANTRY_H723_GIMBAL_CONFIG_HPP

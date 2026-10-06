@@ -15,7 +15,7 @@ int main()
 {
     assert(!kEncoderCalibrationOnly);
     assert(kEnablePitch && kPitchPositionMode);
-    assert(kEnableYaw && kYawPositionMode && kReadYawEncoder);
+    assert(kEnableYaw && !kYawPositionMode && kReadYawEncoder);
     assert(kGimbalCanHandle == &hfdcan1);
     assert(kPitchAngleLimits.zero_raw == 893U);
     assert(kYawAngleLimits.zero_raw == 3741U);

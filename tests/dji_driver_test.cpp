@@ -160,7 +160,7 @@ int main()
 
     // pitch/yaw均启用位置模式；拨弹仍关闭。下方单独测试pitch速度环的电流输出。
     assert(kEnableYaw && kEnablePitch && !shoot::kEnableFeeder);
-    assert(kPitchPositionMode && kYawPositionMode);
+    assert(kPitchPositionMode && !kYawPositionMode);
     assert(!kEncoderCalibrationOnly && kReadYawEncoder);
     assert(kPitchAngleLimits.IsConfigured() && kYawAngleLimits.IsConfigured());
     assert(kGimbalCanHandle == &hfdcan1 && shoot::kCanHandle == &hfdcan2);

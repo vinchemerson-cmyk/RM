@@ -1,4 +1,4 @@
-/** @file encoder_serial_task.h @brief UART7 pitch FireWater 三通道周期输出任务入口。 */
+/** @file encoder_serial_task.h @brief UART7 yaw FireWater 五通道诊断任务入口。 */
 #pragma once
 #include "encoder_telemetry.h"
 
