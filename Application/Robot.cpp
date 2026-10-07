@@ -78,7 +78,7 @@ void InfantryInit(void)
         shoot::Init();
 
     if (InfantryInitialization::ENABLE_ENCODER_UART7)
-        serialTasks::CreateEncoderSerialTask(gimbal::GetEncoderSnapshot);
+        serialTasks::CreateEncoderSerialTask(gimbal::GetYawControlSnapshot);
 
     initialized = true;
 }

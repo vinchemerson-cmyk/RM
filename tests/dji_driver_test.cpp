@@ -105,9 +105,16 @@ int main()
     DJI_Motor_Disable(feeder); right->feedback.last_update_tick = tick - 101U;
     sent.clear(); DJI_Motor_Control(motors, 7U, 0.001F);
     assert(Slot(sent[1], 0U) == 0 && Slot(sent[1], 1U) == 3333 && Slot(sent[1], 2U) == -4444);
+    const auto attemptsBefore = motors[0]->tx_enqueue_attempts;
+    const auto failuresBefore = motors[0]->tx_enqueue_failures;
     sent.clear(); fifoFull = true; DJI_Motor_Control(motors, 7U, 0.001F);
+    assert(motors[0]->tx_enqueue_attempts == attemptsBefore + 1U);
+    assert(motors[0]->tx_enqueue_failures == failuresBefore + 1U);
     assert(sent.empty()); fifoFull = false;
-    DJI_Motor_Control(motors, 7U, 0.001F); assert(sent.size() == 4U);
+    DJI_Motor_Control(motors, 7U, 0.001F);
+    assert(motors[0]->tx_enqueue_attempts == attemptsBefore + 2U);
+    assert(motors[0]->tx_enqueue_failures == failuresBefore + 1U);
+    assert(sent.size() == 4U);
     received.push_back({0U, {0x01, 0x02, 0x00, 0x01, 0x20, 0x00, 30, 0}});
     received.push_back({1U, {0x02, 0x03, 0x00, 0x02, 0xE0, 0x00, 31, 0}});
     HAL_FDCAN_RxFifo0Callback(&hfdcan1, FDCAN_IT_RX_FIFO0_NEW_MESSAGE);

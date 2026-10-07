@@ -50,6 +50,9 @@ namespace
     MotorAngleTarget pitchTarget{};
     LQIController yawLqi{};
     LQIController pitchLqi{};
+    Motor_Feedback_s yawControlFeedback{};
+    uint32_t yawControlTick{};
+    serialTasks::EncoderSnapshot yawControlSnapshot{};
     bool yawPulseArmed = false;
     bool yawPulseActive = false;
     uint32_t yawPulseStartTick = 0U;
@@ -165,6 +168,11 @@ namespace
         if (motor == nullptr)
             return;
         const Motor_Feedback_s feedback = FeedbackSnapshot(*motor);
+        if (motor == yawMotor)
+        {
+            yawControlFeedback = feedback;
+            yawControlTick = osKernelGetTickCount();
+        }
         if (!outputAllowed || !lqi.IsConfigured() || !feedback.angle_initialized)
         {
             StopAxis(*motor, target, lqi);
@@ -257,6 +265,8 @@ namespace
             return;
         }
         const auto feedback = FeedbackSnapshot(*yawMotor);
+        yawControlFeedback = feedback;
+        yawControlTick = osKernelGetTickCount();
         if (!outputAllowed || !feedback.angle_initialized || !std::isfinite(stick))
         {
             yawPulseActive = yawPulseArmed = false;
@@ -297,6 +307,32 @@ namespace
             DJI_Motor_Enable(yawMotor);
     }
 
+    /** @brief 使用本次计算反馈发布诊断；禁止在此重新读取最新电机反馈。 */
+    void PublishYawControlSnapshot(float dt_s)
+    {
+        if (yawMotor == nullptr) return;
+        serialTasks::EncoderSnapshot snapshot{};
+        snapshot.control_tick = yawControlTick;
+        snapshot.control_sequence = yawControlSnapshot.control_sequence + 1U;
+        snapshot.control_dt_s = dt_s;
+        snapshot.yaw = {static_cast<uint16_t>(yawControlFeedback.raw_angle),
+                        yawControlFeedback.angle_initialized, yawControlFeedback.last_update_tick};
+        snapshot.yaw_position_actual_deg = yawControlFeedback.total_angle;
+        snapshot.yaw_position_target_deg = yawTarget.Ready() ? yawTarget.Target() : yawControlFeedback.total_angle;
+        snapshot.yaw_speed_dps = yawControlFeedback.speed;
+        snapshot.yaw_feedback_current_a = yawControlFeedback.current;
+        snapshot.yaw_output_enabled = yawMotor->enabled;
+        snapshot.yaw_command_current_a = yawMotor->enabled
+            ? yawMotor->motor_settings.current / kDjiGm6020CommandUnitsPerAmp : 0.0F;
+        snapshot.yaw_position_current_a = yawMotor->enabled ? yawLqi.PositionCurrent() : 0.0F;
+        snapshot.yaw_speed_current_a = yawMotor->enabled ? yawLqi.SpeedCurrent() : 0.0F;
+        snapshot.yaw_tx_attempts = yawMotor->tx_enqueue_attempts;
+        snapshot.yaw_tx_failures = yawMotor->tx_enqueue_failures;
+        taskENTER_CRITICAL();
+        yawControlSnapshot = snapshot;
+        taskEXIT_CRITICAL();
+    }
+
     /** @brief 云台控制任务：读取遥控器、更新两轴目标，并发送统一 CAN 指令帧。 */
     void Task(void*)
     {
@@ -331,6 +367,7 @@ namespace
                        kPitchTargetRateDps, dt_s);
 
             DJI_Motor_Control(gimbalMotors, 2U, dt_s);
+            PublishYawControlSnapshot(dt_s);
 
             const uint32_t next = now + 1U;
             if (static_cast<int32_t>(next - osKernelGetTickCount()) > 0)
@@ -385,6 +422,14 @@ serialTasks::EncoderSnapshot gimbal::GetEncoderSnapshot()
         snapshot.yaw_command_current_a = yawMotor->enabled
             ? yawMotor->motor_settings.current / kDjiGm6020CommandUnitsPerAmp : 0.0F;
     }
+    taskEXIT_CRITICAL();
+    return snapshot;
+}
+
+serialTasks::EncoderSnapshot gimbal::GetYawControlSnapshot()
+{
+    taskENTER_CRITICAL();
+    const auto snapshot = yawControlSnapshot;
     taskEXIT_CRITICAL();
     return snapshot;
 }

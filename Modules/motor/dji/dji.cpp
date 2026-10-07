@@ -410,6 +410,19 @@ void DJI_Motor_Control(DJI_Motor_s** motor_list, const uint8_t count, const floa
         input.tx_len = classicCan::DATA_SIZE;
         input.tx_buffer = frames[i].payload;
         // FIFO 满时本周期不阻塞，下个控制周期重新发送最新值。
-        frames[i].sender->Transmit(input);
+        const auto result = frames[i].sender->Transmit(input);
+        for (uint8_t j = 0; j < count; ++j)
+        {
+            auto* motor = motor_list[j];
+            DjiCommandAddress address{};
+            if (motor == nullptr || motor->can_instance == nullptr ||
+                motor->can_instance->dependency.hcan != frames[i].bus ||
+                !DjiResolveCommand(motor->motor_type == GM6020,
+                                   motor->can_instance->attribute.rx_id, address) ||
+                address.frame_id != frames[i].id)
+                continue;
+            ++motor->tx_enqueue_attempts;
+            if (result != HAL_OK) ++motor->tx_enqueue_failures;
+        }
     }
 }

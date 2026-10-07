@@ -26,6 +26,8 @@ int main()
         const float current = control.Update(0.0F, static_cast<float>(angle),
                                               static_cast<float>(speed), 1.0F);
         assert(std::fabs(current - expected) < 1e-6);
+        assert(std::fabs(control.PositionCurrent() + config.k_angle * static_cast<float>(angle)) < 1e-6);
+        assert(std::fabs(control.SpeedCurrent() + config.k_speed * static_cast<float>(speed)) < 1e-6);
         integral += angle;
         angle += speed + 0.5 * current;
         speed += current;
@@ -49,6 +51,7 @@ int main()
     assert(control.Update(0.0F, 0.0F, 0.0F, 1.0F) == 2.0F);
     control.Reset();
     assert(control.IsConfigured() && control.Output() == 0.0F && control.Integral() == 0.0F);
+    assert(control.PositionCurrent() == 0.0F && control.SpeedCurrent() == 0.0F);
     assert(control.Update(std::numeric_limits<float>::quiet_NaN(), 0.0F, 0.0F, 1.0F) == 0.0F);
     assert(control.Update(1.0F, 0.0F, 0.0F, 0.0F) == 0.0F);
     const float large = std::numeric_limits<float>::max();

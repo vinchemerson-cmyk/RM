@@ -1,5 +1,7 @@
 # Application 层文档
 
+UART7 当前使用 yaw **7 通道同步控制诊断**：目标位置、实际位置、实际速度、位置项电流、速度项电流、指令电流、反馈电流。每10ms输出最新控制快照，单位及限制见 `shoot/README.md` 的 UART7 章节。时间、序号、dt、反馈年龄、使能及CAN入队失败计数仍在内部保留，但不打印。本文其余旧六通道描述仅用于历史记录对照。
+
 Application 层是"整车业务"层: 决定**这台机器人要做什么**。它向下调用 `Modules/` 提供的驱动与算法, 通过 `BSP/` 访问硬件, 自身不直接操作寄存器。与 CubeMX 生成代码 (`Core/`) 的唯一边界是 `Robot.h` 暴露的 C 接口 `InfantryInit()`。
 
 ```
@@ -62,7 +64,7 @@ DT7 遥控器 ──2.4G──> DR16 ──DBUS──> UART5 中断 (rc 模块�
 
 `GimbalConfig.hpp` 提供 `kPitchLqiConfig`、`kYawLqiConfig`。`gimbal::Init()` 在调度器启动前按每轴 `GainSource` 装载 K：`Manual` 直接装载 `k_angle/k_speed/k_integral`，不执行求解、不使用 A/B 或 Q/R；`BootSolve` 调用一次 `LQI_Solve`，成功后将结果装载到独立的 `LQIController`，覆盖手填 K。非法手填 K/限幅和求解失败均使对应轴保持禁用，不在两种模式之间自动回退。1kHz 任务不重新求解、不执行原云台 PID。摩擦轮控制不变。
 
-配置包含三个反馈增益 K、Q/R、采样周期、电流输出范围及积分状态范围。当前周期 1ms，pitch 电流范围 ±3A，yaw 测试范围 ±0.5A，积分范围仍为零。手填模式调 K，求解模式调模型与 Q/R，修改配置后编译烧录并重启。
+配置包含三个反馈增益 K、Q/R、采样周期、电流输出范围及积分状态范围。当前周期 1ms，两轴电流范围均为 ±3A，积分范围仍为零。手填模式调 K，求解模式调模型与 Q/R，修改配置后编译烧录并重启。
 
 两轴 Manual K 一致：`k_angle=0.1` A/度、`k_speed=0.01` A/(度/秒)、`k_integral=0.01`，积分范围为零，输出限幅 ±3A。yaw 配置直接复制 `kPitchLqiConfig`，pitch 参数未变。同参数不保证不同机构都稳定，仍需上板验证。
 

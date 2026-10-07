@@ -27,11 +27,15 @@ public:
     [[nodiscard]] bool IsConfigured() const { return configured_; }
     [[nodiscard]] float Output() const { return output_a_; }
     [[nodiscard]] float Integral() const { return integral_deg_s_; }
+    [[nodiscard]] float PositionCurrent() const { return position_current_a_; }
+    [[nodiscard]] float SpeedCurrent() const { return speed_current_a_; }
 
 private:
     LQI_Init_Config_s config_{};
     float integral_deg_s_{};
     float output_a_{};
+    float position_current_a_{};
+    float speed_current_a_{};
     bool configured_{};
 };
 

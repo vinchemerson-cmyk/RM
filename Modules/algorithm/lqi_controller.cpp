@@ -34,6 +34,7 @@ bool LQIController::Configure(const LQI_Init_Config_s& config)
 void LQIController::Reset()
 {
     integral_deg_s_ = output_a_ = 0.0F;
+    position_current_a_ = speed_current_a_ = 0.0F;
 }
 
 void LQIController::Disable()
@@ -72,6 +73,8 @@ float LQIController::Update(float target_deg, float actual_deg, float actual_spe
           (candidateOutput < config_.output_min_a && change < 0.0F)))
         integral_deg_s_ = candidate;
     output_a_ = Clamp(output, config_.output_min_a, config_.output_max_a);
+    position_current_a_ = -config_.k_angle * error;
+    speed_current_a_ = -config_.k_speed * actual_speed_dps;
     return output_a_;
 }
 

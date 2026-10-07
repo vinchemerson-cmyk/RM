@@ -30,8 +30,47 @@ struct EncoderSnapshot
     float yaw_command_current_a{};
     /** @brief yaw 反馈转矩电流（A），与指令电流采用相同逻辑方向。 */
     float yaw_feedback_current_a{};
+    /** @brief 以下字段与 yaw 目标/反馈一起在控制任务内发布，不重新采反馈。 */
+    uint32_t control_tick{};
+    uint32_t control_sequence{};
+    float control_dt_s{};
+    float yaw_position_current_a{};
+    float yaw_speed_current_a{};
+    bool yaw_output_enabled{};
+    uint32_t yaw_tx_attempts{};
+    uint32_t yaw_tx_failures{};
 };
 using EncoderProvider = EncoderSnapshot (*)();
+
+/** @brief 同步控制诊断：位置目标、实际位置、实际速度、位置项、速度项、指令及反馈电流。 */
+inline size_t FormatYawControlTelemetryLine(char* buffer, size_t capacity,
+                                           const EncoderSnapshot& s, uint32_t /*now*/)
+{
+    if (buffer == nullptr || capacity == 0U) return 0U;
+    // 保持无浮点 printf 依赖；格式化仅影响串口显示。
+    const auto decimal = [](float value, char (&text)[24])
+    {
+        if (!std::isfinite(value) || std::fabs(value) > 1000000.0F) value = 0.0F;
+        const auto milli = static_cast<uint32_t>(std::fabs(static_cast<double>(value)) * 1000.0 + 0.5);
+        std::snprintf(text, sizeof(text), "%s%lu.%03lu",
+            value < 0.0F && milli != 0U ? "-" : "",
+            static_cast<unsigned long>(milli / 1000U), static_cast<unsigned long>(milli % 1000U));
+    };
+    char v[7][24]{};
+    const float values[]{s.yaw_position_target_deg,
+        s.yaw_position_actual_deg, s.yaw_speed_dps, s.yaw_position_current_a,
+        s.yaw_speed_current_a, s.yaw_command_current_a, s.yaw_feedback_current_a};
+    for (size_t i = 0; i < 7U; ++i) decimal(values[i], v[i]);
+    const int count = std::snprintf(buffer, capacity,
+        "%s,%s,%s,%s,%s,%s,%s\n",
+        v[0], v[1], v[2], v[3], v[4], v[5], v[6]);
+    if (count <= 0 || static_cast<size_t>(count) >= capacity)
+    {
+        buffer[0] = '\0';
+        return 0U;
+    }
+    return static_cast<size_t>(count);
+}
 
 /** @brief yaw FireWater 六通道；第六列为反馈电流，未收到反馈时 age=-1。 */
 inline size_t FormatYawTelemetryLine(char* buffer, size_t capacity,

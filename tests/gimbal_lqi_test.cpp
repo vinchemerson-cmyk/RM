@@ -191,6 +191,17 @@ int main()
     UpdateAxis(yawMotor, yawTarget, yawLqi, true, kYawAngleLimits,
                0.0F, kYawTargetRateDps, 0.001F, kYawPositionMode);
     assert(yawTarget.Target() == heldTarget && yawMotor->motor_settings.current < 0.0F);
+    PublishYawControlSnapshot(0.001F);
+    const auto sync = gimbal::GetYawControlSnapshot();
+    assert(sync.control_sequence == 1U && sync.control_dt_s == 0.001F);
+    assert(sync.yaw_position_target_deg == heldTarget && sync.yaw_output_enabled);
+    assert(sync.yaw_position_actual_deg == yawMotor->feedback.total_angle);
+    assert(std::fabs(sync.yaw_position_current_a -
+        kYawLqiConfig.k_angle * (heldTarget - sync.yaw_position_actual_deg)) < 1e-6F);
+    const float savedAngle = yawMotor->feedback.total_angle;
+    yawMotor->feedback.total_angle += 123.0F;
+    assert(gimbal::GetYawControlSnapshot().yaw_position_actual_deg == savedAngle);
+    yawMotor->feedback.total_angle = savedAngle;
     // 保留备用速度模式覆盖；其输出限幅采用当前实际 LQI 配置。
     yawMotor->feedback.speed = 0.0F;
     for (int i = 0; i < 1000; ++i)

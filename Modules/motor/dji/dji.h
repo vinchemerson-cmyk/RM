@@ -64,6 +64,9 @@ struct DJI_Motor_s
     Motor_Feedback_s                      feedback{};
     CAN_<canConfig::classicCan>::Instance* can_instance{};
     bool                                  enabled{};
+    /** @brief CAN 入队诊断，按本电机所在合并帧计数；HAL_OK 不代表总线发送成功。 */
+    uint32_t tx_enqueue_attempts{};
+    uint32_t tx_enqueue_failures{};
 };
 
 /**

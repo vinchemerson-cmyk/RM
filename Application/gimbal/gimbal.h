@@ -44,6 +44,8 @@ namespace gimbal
 
     /** @brief 读取编码器反馈和 pitch 相对水平零位的位置目标、实际位置与电流。 */
     serialTasks::EncoderSnapshot GetEncoderSnapshot();
+    /** @brief 同一控制周期目标/反馈/输出快照，供 UART 诊断。 */
+    serialTasks::EncoderSnapshot GetYawControlSnapshot();
 } // namespace gimbal
 
 #endif // INFANTRY_H723_GIMBAL_H
