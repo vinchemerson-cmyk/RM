@@ -27,11 +27,11 @@ struct LQI_Solver_Options_s
 
 enum class LQI_Solve_Status
 {
-    Success,
-    InvalidInput,
-    NumericalFailure,
-    NoConvergence,
-    NonStabilizing
+	Success,          //成功
+	InvalidInput,     //无效输入
+	NumericalFailure, //数值故障
+	NoConvergence,    //不收敛
+	NonStabilizing    //非稳定化
 };
 
 /** @brief 成功时的 K 与 Riccati 解；失败时 K/P 保持全零，保留迭代诊断。 */
