@@ -19,7 +19,7 @@
 #include "RemoteCommandTest.hpp"
 
 // 重复遥控指令对照测试：默认关闭，不改变 DBUS 解析和安全状态。
-inline constexpr bool kYawRemoteCommandTestEnabled = false;
+inline constexpr bool kYawRemoteCommandTestEnabled = true;
 inline constexpr gimbal::RemoteCommandTestConfig kYawRemoteCommandTestConfig{};
 static_assert(kYawRemoteCommandTestConfig.yaw_stick > 0.0F &&
               kYawRemoteCommandTestConfig.yaw_stick <= 1.0F);
