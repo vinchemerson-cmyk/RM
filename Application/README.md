@@ -54,7 +54,7 @@ DT7 遥控器 ──2.4G──> DR16 ──DBUS──> UART5 中断 (rc 模块�
 
 ### 控制模式
 
-由`GimbalConfig.hpp`决定：两轴均使用 LQI 位置控制（`kYawPositionMode=true`），当前均为 Manual。yaw 使用与 pitch 相同的 LQI 配置和 120°/s 目标变化率，松杆保持角度；yaw 连续旋转，不复制 pitch 的机械限位。BootSolve 仍需分别辨识各轴模型。
+由`GimbalConfig.hpp`决定：两轴均使用 LQI 位置控制（`kYawPositionMode=true`），当前均为 Manual。yaw 以 pitch 配置为基础，仅将速度反馈增益改为0.003，目标变化率仍为120°/s，松杆保持角度；yaw 连续旋转，不复制 pitch 的机械限位。BootSolve 仍需分别辨识各轴模型。
 
 - **标定模式（已关闭）**: `kEncoderCalibrationOnly=true`时两轴始终发送零电流，可手动读取编码器。位置模式请求和PID配置保留但不执行运动。
 - **位置模式（pitch当前）**: 安全区内右摇杆上下按`kPitchTargetRateDps`推动有界角度目标，LQI 计算电流，松杆保持目标；进入端点内侧10°保护区后临时使用 K_speed 速度反馈，只允许摇杆向水平零位退回，松杆或向外拨时Disable。退回安全区后重新同步当前位置并恢复位置保持。
@@ -66,7 +66,7 @@ DT7 遥控器 ──2.4G──> DR16 ──DBUS──> UART5 中断 (rc 模块�
 
 配置包含三个反馈增益 K、Q/R、采样周期、电流输出范围及积分状态范围。当前周期 1ms，两轴电流范围均为 ±3A，积分范围仍为零。手填模式调 K，求解模式调模型与 Q/R，修改配置后编译烧录并重启。
 
-两轴 Manual K 一致：`k_angle=0.1` A/度、`k_speed=0.01` A/(度/秒)、`k_integral=0.01`，积分范围为零，输出限幅 ±3A。yaw 配置直接复制 `kPitchLqiConfig`，pitch 参数未变。同参数不保证不同机构都稳定，仍需上板验证。
+两轴位置增益均为`k_angle=0.1` A/度、`k_integral=0.01`，积分范围为零，输出限幅 ±3A。yaw 的`k_speed=0.003` A/(度/秒)，pitch 仍为0.01。yaw 仅覆盖复制配置中的速度增益，用于单变量振荡对照；位置项保留，不能等同于纯速度测试。尚未验证此改动能消除振荡。
 
 单位约定：角度为度，速度为度/秒，积分为度*秒，输出为 A。定义 `e = 实际角度 - 目标角度`、`z = integral(e * dt)`，定点保持的控制律为 `I = -k_angle*e - k_speed*实际速度 - k_integral*z`。离线模型必须沿用这些单位与积分符号；若求解工具使用 `目标 - 实际` 的积分状态，导入前须转换积分增益符号。填入模型和 Q/R 后可调用 `LQI_Solve` 计算 K，仍需另行接入运行代码；GM6020 发送前使用 `kDjiGm6020CommandUnitsPerAmp` 将 A 换算为指令码。
 

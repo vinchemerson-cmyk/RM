@@ -191,8 +191,12 @@ inline constexpr LQI_Init_Config_s kPitchLqiConfig{
     .output_min_a = -kGimbalCurrentLimitA, .output_max_a = kGimbalCurrentLimitA,
     .integral_min_deg_s = 0.0F, .integral_max_deg_s = 0.0F
 };
-// 对齐 pitch 的全部 LQI 配置（K、Q/R、周期、积分范围和 ±3A 输出限幅）。
-inline constexpr LQI_Init_Config_s kYawLqiConfig = kPitchLqiConfig;
+// yaw 单变量对照：仅降低速度反馈增益，其余配置继续沿用 pitch。
+inline constexpr LQI_Init_Config_s kYawLqiConfig = [] {
+    auto config = kPitchLqiConfig;
+    config.k_speed = 0.003F;
+    return config;
+}();
 
 /**
  * @brief LQI 的实车离散模型入口；A/B 全零表示尚未辨识，求解器会拒绝。

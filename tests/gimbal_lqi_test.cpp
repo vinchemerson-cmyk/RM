@@ -70,7 +70,22 @@ int main()
         }
     };
     checkLegacyProportional(kPitchLqiConfig, kPitchAnglePid, kPitchSpeedKp);
-    checkLegacyProportional(kYawLqiConfig, kPitchAnglePid, kPitchSpeedKp);
+    // yaw 仅降低速度项，位置项不再等价于整套旧串级 PID 的同比例缩放。
+    assert(kYawLqiConfig.k_speed == 0.003F && kPitchLqiConfig.k_speed == 0.01F);
+    assert(kYawLqiConfig.k_angle == kPitchLqiConfig.k_angle);
+    assert(kYawLqiConfig.k_integral == kPitchLqiConfig.k_integral);
+    assert(kYawLqiConfig.q_angle == kPitchLqiConfig.q_angle);
+    assert(kYawLqiConfig.q_speed == kPitchLqiConfig.q_speed);
+    assert(kYawLqiConfig.q_integral == kPitchLqiConfig.q_integral);
+    assert(kYawLqiConfig.r_current == kPitchLqiConfig.r_current);
+    assert(kYawLqiConfig.sample_period_s == kPitchLqiConfig.sample_period_s);
+    assert(kYawLqiConfig.integral_min_deg_s == kPitchLqiConfig.integral_min_deg_s);
+    assert(kYawLqiConfig.integral_max_deg_s == kPitchLqiConfig.integral_max_deg_s);
+    LQIController yawPositionCheck{};
+    assert(yawPositionCheck.Configure(kYawLqiConfig));
+    assert(std::fabs(yawPositionCheck.Update(10.0F, 0.0F, 100.0F, 0.001F) - 0.7F) < 1e-6F);
+    assert(std::fabs(yawPositionCheck.PositionCurrent() - 1.0F) < 1e-6F);
+    assert(std::fabs(yawPositionCheck.SpeedCurrent() + 0.3F) < 1e-6F);
     assert(kYawPositionMode && kPitchPositionMode);
     assert(kYawTargetRateDps == kPitchTargetRateDps);
     assert(kYawLqiConfig.output_max_a == kPitchLqiConfig.output_max_a);
@@ -216,12 +231,14 @@ int main()
     yawMotor->feedback.total_angle += 360.0F;
     UpdateAxis(yawMotor, yawTarget, yawLqi, true, kYawAngleLimits, 0.0F, 60.0F, 0.001F, false);
     assert(yawMotor->motor_settings.current == 0.0F); // 松杆静止后不追逐旧角度。
-    for (const float speed : {-630.0F, 630.0F})
+    for (const float speed : {-1500.0F, -630.0F, 630.0F, 1500.0F})
     {
         yawMotor->feedback.speed = speed;
         UpdateAxis(yawMotor, yawTarget, yawLqi, true, kYawAngleLimits, 0.0F, 60.0F, 0.001F, false);
         const float current = gimbal::GetEncoderSnapshot().yaw_command_current_a;
-        assert(std::fabs(std::fabs(current) - kYawLqiConfig.output_max_a) < 1e-6F && current * speed < 0.0F);
+        const float expected = std::fmax(kYawLqiConfig.output_min_a,
+            std::fmin(kYawLqiConfig.output_max_a, -kYawLqiConfig.k_speed * speed));
+        assert(std::fabs(current - expected) < 1e-6F && current * speed < 0.0F);
         assert(yawLqi.Integral() == 0.0F);
     }
     UpdateAxis(yawMotor, yawTarget, yawLqi, false, kYawAngleLimits, 1.0F, 60.0F, 0.001F, false);
