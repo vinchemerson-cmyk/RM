@@ -1,4 +1,4 @@
-/** @file encoder_serial_task.cpp @brief UART7 DMA 每 50ms 输出 yaw 五通道诊断。 */
+/** @file encoder_serial_task.cpp @brief UART7 DMA 每 10ms 输出 yaw 六通道诊断。 */
 #include "encoder_serial_task.h"
 #include "cmsis_os2.h"
 #include "main.h"
@@ -12,7 +12,7 @@ serialTasks::EncoderProvider feedbackProvider = nullptr;
 constexpr osThreadAttr_t taskAttrs{
     .name = "EncoderSerialTask", .stack_size = 2048U, .priority = osPriorityNormal,
 };
-constexpr uint32_t kPrintPeriodMs = 50U;
+constexpr uint32_t kPrintPeriodMs = 10U;
 static_assert(usartConfig::TX_BUF_SIZE >= 128U, "UART yaw telemetry line requires a 128-byte buffer");
 
 /** @brief 在任务中注册 UART7；BSP 将临时文本复制至 AXI SRAM 长期 DMA 缓冲。 */

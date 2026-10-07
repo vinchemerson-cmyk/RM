@@ -32,7 +32,7 @@ Core/Src/main.c        外设初始化 (CubeMX 生成)
 | FDCAN2 | 左摩擦=0x201/右摩擦=0x202 (用户确认 ID1/ID2)，Classic CAN 1Mbps | `ShootConfig.hpp`；双板通信关闭 |
 | FDCAN3 | 空闲, 留给底盘/发射/裁判系统 | — |
 
-`ENABLE_ENCODER_UART7=true`启用20Hz串口 yaw FireWater 五通道诊断：目标速度、实际连续角度、实际速度、逻辑指令电流、反馈年龄（未收到为-1，过期数据不隐藏）。`ENABLE_UART_SERIAL=false`关闭回环。`kEncoderCalibrationOnly=false`、`kEnableYaw=true`、`kEnablePitch=true`允许两轴运动；`kReadYawEncoder=true`保留编码器采集。FDCAN1使用两个标准过滤器、FDCAN2使用两个；RTOS堆32KB。pitch零位/限位已写入，yaw经用户确认可连续旋转。操作见 `shoot/README.md`。
+`ENABLE_ENCODER_UART7=true`启用100Hz串口 yaw FireWater 六通道诊断：目标速度、实际连续角度、实际速度、逻辑指令电流、反馈年龄、反馈转矩电流（未收到为-1，过期数据不隐藏）。`ENABLE_UART_SERIAL=false`关闭回环。`kEncoderCalibrationOnly=false`、`kEnableYaw=true`、`kEnablePitch=true`允许两轴运动；`kReadYawEncoder=true`保留编码器采集。FDCAN1使用两个标准过滤器、FDCAN2使用两个；RTOS堆32KB。pitch零位/限位已写入，yaw经用户确认可连续旋转。操作见 `shoot/README.md`。
 
 ## gimbal — 云台控制 (已实现)
 
@@ -83,7 +83,7 @@ if (LQI_Solve(kPitchLqiModel, config, result) == LQI_Solve_Status::Success)
 
 求解器返回迭代次数、相对 Riccati 残差与 P，并检查 float K 的闭环稳定性。失败时对应轴保持零电流，RTT 打印轴名、状态和迭代次数，不影响其他模块。状态编号：0成功、1非法输入、2数值异常、3未收敛、4非稳定解。配置的积分限幅目前为零，模型和权重填好后还须设置非零积分范围才能消除静差。
 
-`LQIController` 使用更新前的 `z[k]` 计算电流，再更新 `z[k+1]`，与求解器离散时序一致；包含积分限幅和条件积分抗饱和。失联、急停、异常周期、反馈建立新基准时清空积分。pitch 保护区内只接受向内摇杆，临时使用已求出 K 的速度反馈项，清空积分和位置目标；松杆/向外时零输出，回到安全区后重新同步当前位置。UART7 五通道为 yaw 目标速度、实际连续角度、实际速度、指令电流、反馈年龄；禁用时目标速度和指令电流显示零。
+`LQIController` 使用更新前的 `z[k]` 计算电流，再更新 `z[k+1]`，与求解器离散时序一致；包含积分限幅和条件积分抗饱和。失联、急停、异常周期、反馈建立新基准时清空积分。pitch 保护区内只接受向内摇杆，临时使用已求出 K 的速度反馈项，清空积分和位置目标；松杆/向外时零输出，回到安全区后重新同步当前位置。UART7 六通道为 yaw 目标速度、实际连续角度、实际速度、指令电流、反馈年龄、反馈转矩电流；禁用时目标速度和指令电流显示零。
 
 ### 安全行为 (每个周期判定)
 

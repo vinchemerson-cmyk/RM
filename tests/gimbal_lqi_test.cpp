@@ -178,7 +178,9 @@ int main()
         UpdateAxis(yawMotor, yawTarget, yawLqi, true, kYawAngleLimits,
                    1.0F, kYawSpeedTestMaxDps, 0.001F, false);
     assert(!yawTarget.Ready()); // 长时间打杆不会积压角度目标。
-    assert(std::fabs(gimbal::GetEncoderSnapshot().yaw_target_speed_dps - 60.0F) < 1e-6F);
+    assert(std::fabs(gimbal::GetEncoderSnapshot().yaw_target_speed_dps - kYawSpeedTestMaxDps) < 1e-6F);
+    yawMotor->feedback.current = -0.4F;
+    assert(std::fabs(gimbal::GetEncoderSnapshot().yaw_feedback_current_a + 0.4F) < 1e-6F);
     assert(std::fabs(gimbal::GetEncoderSnapshot().yaw_command_current_a -
         std::fmin(kYawSpeedTestCurrentLimitA, kYawLqiConfig.k_speed * kYawSpeedTestMaxDps)) < 1e-6F);
     yawMotor->feedback.total_angle += 360.0F;

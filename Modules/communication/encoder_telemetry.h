@@ -28,10 +28,12 @@ struct EncoderSnapshot
     float yaw_speed_dps{};
     float yaw_target_speed_dps{};
     float yaw_command_current_a{};
+    /** @brief yaw 反馈转矩电流（A），与指令电流采用相同逻辑方向。 */
+    float yaw_feedback_current_a{};
 };
 using EncoderProvider = EncoderSnapshot (*)();
 
-/** @brief yaw FireWater 五通道；保留过期反馈用于诊断，未收到反馈时 age=-1。 */
+/** @brief yaw FireWater 六通道；第六列为反馈电流，未收到反馈时 age=-1。 */
 inline size_t FormatYawTelemetryLine(char* buffer, size_t capacity,
                                     const EncoderSnapshot& snapshot, uint32_t now)
 {
@@ -44,18 +46,19 @@ inline size_t FormatYawTelemetryLine(char* buffer, size_t capacity,
             value < 0.0F && milli != 0U ? "-" : "",
             static_cast<unsigned long>(milli / 1000U), static_cast<unsigned long>(milli % 1000U));
     };
-    char target[24]{}, actual[24]{}, speed[24]{}, current[24]{};
+    char target[24]{}, actual[24]{}, speed[24]{}, current[24]{}, feedbackCurrent[24]{};
     decimal(snapshot.yaw_target_speed_dps, target);
     decimal(snapshot.yaw_position_actual_deg, actual);
     decimal(snapshot.yaw_speed_dps, speed);
     decimal(snapshot.yaw_command_current_a, current);
+    decimal(snapshot.yaw_feedback_current_a, feedbackCurrent);
     char age[16]{};
     if (snapshot.yaw.seen)
         std::snprintf(age, sizeof(age), "%lu", static_cast<unsigned long>(now - snapshot.yaw.last_update_tick));
     else
         std::snprintf(age, sizeof(age), "-1");
-    const int count = std::snprintf(buffer, capacity, "%s,%s,%s,%s,%s\n",
-                                    target, actual, speed, current, age);
+    const int count = std::snprintf(buffer, capacity, "%s,%s,%s,%s,%s,%s\n",
+                                    target, actual, speed, current, age, feedbackCurrent);
     if (count <= 0 || static_cast<size_t>(count) >= capacity)
     {
         buffer[0] = '\0';

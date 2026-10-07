@@ -323,6 +323,7 @@ serialTasks::EncoderSnapshot gimbal::GetEncoderSnapshot()
         snapshot.yaw_position_target_deg = yawTarget.Ready()
             ? yawMotor->motor_settings.angle : yawMotor->feedback.total_angle;
         snapshot.yaw_speed_dps = yawMotor->feedback.speed;
+        snapshot.yaw_feedback_current_a = yawMotor->feedback.current;
         snapshot.yaw_target_speed_dps = yawMotor->enabled ? yawMotor->motor_settings.speed : 0.0F;
         snapshot.yaw_command_current_a = yawMotor->enabled
             ? yawMotor->motor_settings.current / kDjiGm6020CommandUnitsPerAmp : 0.0F;

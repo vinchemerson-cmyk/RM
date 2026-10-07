@@ -50,18 +50,21 @@ int main()
         assert(size == std::strlen(expected));
         assert(std::strcmp(yawBuffer, expected) == 0);
     };
-    checkYaw(100U, "0.000,0.000,0.000,0.000,-1\n");
+    checkYaw(100U, "0.000,0.000,0.000,0.000,-1,0.000\n");
     snapshot.yaw = {3741U, true, 90U};
     snapshot.yaw_target_speed_dps = -360.5F;
     snapshot.yaw_position_actual_deg = -358.0F;
     snapshot.yaw_speed_dps = -6.0F;
     snapshot.yaw_command_current_a = -0.25F;
-    checkYaw(100U, "-360.500,-358.000,-6.000,-0.250,10\n");
-    checkYaw(191U, "-360.500,-358.000,-6.000,-0.250,101\n"); // 过期数据不隐藏。
+    snapshot.yaw_feedback_current_a = -0.4F;
+    checkYaw(100U, "-360.500,-358.000,-6.000,-0.250,10,-0.400\n");
+    checkYaw(191U, "-360.500,-358.000,-6.000,-0.250,101,-0.400\n"); // 过期数据不隐藏。
     snapshot.yaw.last_update_tick = UINT32_MAX - 2U;
-    checkYaw(2U, "-360.500,-358.000,-6.000,-0.250,5\n");
+    checkYaw(2U, "-360.500,-358.000,-6.000,-0.250,5,-0.400\n");
     snapshot.yaw_speed_dps = std::numeric_limits<float>::quiet_NaN();
-    checkYaw(2U, "-360.500,-358.000,0.000,-0.250,5\n");
+    checkYaw(2U, "-360.500,-358.000,0.000,-0.250,5,-0.400\n");
+    snapshot.yaw_feedback_current_a = std::numeric_limits<float>::infinity();
+    checkYaw(2U, "-360.500,-358.000,0.000,-0.250,5,0.000\n");
     assert(serialTasks::FormatYawTelemetryLine(yawBuffer, 8U, snapshot, 2U) == 0U);
     assert(yawBuffer[0] == '\0');
     assert(serialTasks::FormatYawTelemetryLine(nullptr, 128U, snapshot, 2U) == 0U);
