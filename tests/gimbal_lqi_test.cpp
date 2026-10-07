@@ -198,6 +198,8 @@ int main()
     UpdateAxis(yawMotor, yawTarget, yawLqi, true, kYawAngleLimits,
                1.0F, kYawTargetRateDps, 0.001F, kYawPositionMode);
     const float heldTarget = yawTarget.Target();
+    PublishYawControlSnapshot(0.001F);
+    assert(gimbal::GetYawControlSnapshot().yaw_target_speed_dps == kYawTargetRateDps);
     assert(std::fabs(heldTarget - yawMotor->feedback.total_angle - 0.12F) < 0.001F);
     UpdateAxis(yawMotor, yawTarget, yawLqi, true, kYawAngleLimits,
                0.0F, kYawTargetRateDps, 0.001F, kYawPositionMode);
@@ -208,7 +210,8 @@ int main()
     assert(yawTarget.Target() == heldTarget && yawMotor->motor_settings.current < 0.0F);
     PublishYawControlSnapshot(0.001F);
     const auto sync = gimbal::GetYawControlSnapshot();
-    assert(sync.control_sequence == 1U && sync.control_dt_s == 0.001F);
+    assert(sync.control_sequence == 2U && sync.control_dt_s == 0.001F);
+    assert(sync.yaw_target_speed_dps == 0.0F); // 松杆保持位置时，目标变化率为零。
     assert(sync.yaw_position_target_deg == heldTarget && sync.yaw_output_enabled);
     assert(sync.yaw_position_actual_deg == yawMotor->feedback.total_angle);
     assert(std::fabs(sync.yaw_position_current_a -

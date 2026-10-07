@@ -52,6 +52,7 @@ namespace
     LQIController pitchLqi{};
     Motor_Feedback_s yawControlFeedback{};
     uint32_t yawControlTick{};
+    float yawControlTargetSpeedDps{}; // 位置模式下为摇杆给定的目标角度变化率，仅诊断。
     serialTasks::EncoderSnapshot yawControlSnapshot{};
     bool yawPulseArmed = false;
     bool yawPulseActive = false;
@@ -172,6 +173,7 @@ namespace
         {
             yawControlFeedback = feedback;
             yawControlTick = osKernelGetTickCount();
+            yawControlTargetSpeedDps = 0.0F;
         }
         if (!outputAllowed || !lqi.IsConfigured() || !feedback.angle_initialized)
         {
@@ -216,6 +218,7 @@ namespace
             target.Reset();
             const float speedTarget = std::isfinite(stick)
                 ? std::fmax(-1.0F, std::fmin(1.0F, stick)) * targetRateDps : 0.0F;
+            if (motor == yawMotor) yawControlTargetSpeedDps = speedTarget;
             motor->motor_settings.close_loop_type = CURRENT_LOOP;
             motor->motor_settings.speed = speedTarget;
             motor->motor_settings.angle = feedback.total_angle;
@@ -248,6 +251,9 @@ namespace
 
         motor->motor_settings.close_loop_type = CURRENT_LOOP;
         motor->motor_settings.angle = target.Step(limits, stick, targetRateDps, dt_s);
+        if (motor == yawMotor && std::isfinite(stick) && std::isfinite(targetRateDps) &&
+            targetRateDps >= 0.0F && std::isfinite(dt_s) && dt_s > 0.0F)
+            yawControlTargetSpeedDps = std::fmax(-1.0F, std::fmin(1.0F, stick)) * targetRateDps;
         motor->motor_settings.angle_epoch = feedback.angle_epoch;
         const float currentA = lqi.Update(motor->motor_settings.angle, feedback.total_angle,
                                           feedback.speed, dt_s);
@@ -267,6 +273,7 @@ namespace
         const auto feedback = FeedbackSnapshot(*yawMotor);
         yawControlFeedback = feedback;
         yawControlTick = osKernelGetTickCount();
+        yawControlTargetSpeedDps = 0.0F;
         if (!outputAllowed || !feedback.angle_initialized || !std::isfinite(stick))
         {
             yawPulseActive = yawPulseArmed = false;
@@ -320,6 +327,7 @@ namespace
         snapshot.yaw_position_actual_deg = yawControlFeedback.total_angle;
         snapshot.yaw_position_target_deg = yawTarget.Ready() ? yawTarget.Target() : yawControlFeedback.total_angle;
         snapshot.yaw_speed_dps = yawControlFeedback.speed;
+        snapshot.yaw_target_speed_dps = yawMotor->enabled ? yawControlTargetSpeedDps : 0.0F;
         snapshot.yaw_feedback_current_a = yawControlFeedback.current;
         snapshot.yaw_output_enabled = yawMotor->enabled;
         snapshot.yaw_command_current_a = yawMotor->enabled

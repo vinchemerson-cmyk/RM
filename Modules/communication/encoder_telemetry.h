@@ -26,7 +26,7 @@ struct EncoderSnapshot
     float yaw_position_target_deg{};
     float yaw_position_actual_deg{};
     float yaw_speed_dps{};
-    float yaw_target_speed_dps{};
+    float yaw_target_speed_dps{}; ///< 位置模式：摇杆给定的目标角度变化率；非独立速度环目标。
     float yaw_command_current_a{};
     /** @brief yaw 反馈转矩电流（A），与指令电流采用相同逻辑方向。 */
     float yaw_feedback_current_a{};
@@ -42,7 +42,7 @@ struct EncoderSnapshot
 };
 using EncoderProvider = EncoderSnapshot (*)();
 
-/** @brief 同步控制诊断：位置目标、实际位置、实际速度、位置项、速度项、指令及反馈电流。 */
+/** @brief 同步控制八通道：目标/实际位置、目标/实际速度、位置项、速度项、指令及反馈电流。 */
 inline size_t FormatYawControlTelemetryLine(char* buffer, size_t capacity,
                                            const EncoderSnapshot& s, uint32_t /*now*/)
 {
@@ -56,14 +56,14 @@ inline size_t FormatYawControlTelemetryLine(char* buffer, size_t capacity,
             value < 0.0F && milli != 0U ? "-" : "",
             static_cast<unsigned long>(milli / 1000U), static_cast<unsigned long>(milli % 1000U));
     };
-    char v[7][24]{};
+    char v[8][24]{};
     const float values[]{s.yaw_position_target_deg,
-        s.yaw_position_actual_deg, s.yaw_speed_dps, s.yaw_position_current_a,
+        s.yaw_position_actual_deg, s.yaw_target_speed_dps, s.yaw_speed_dps, s.yaw_position_current_a,
         s.yaw_speed_current_a, s.yaw_command_current_a, s.yaw_feedback_current_a};
-    for (size_t i = 0; i < 7U; ++i) decimal(values[i], v[i]);
+    for (size_t i = 0; i < 8U; ++i) decimal(values[i], v[i]);
     const int count = std::snprintf(buffer, capacity,
-        "%s,%s,%s,%s,%s,%s,%s\n",
-        v[0], v[1], v[2], v[3], v[4], v[5], v[6]);
+        "%s,%s,%s,%s,%s,%s,%s,%s\n",
+        v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7]);
     if (count <= 0 || static_cast<size_t>(count) >= capacity)
     {
         buffer[0] = '\0';
