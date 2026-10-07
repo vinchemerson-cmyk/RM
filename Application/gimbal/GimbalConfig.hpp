@@ -19,7 +19,7 @@
 #include "RemoteCommandTest.hpp"
 
 // 重复遥控指令对照测试：默认关闭，不改变 DBUS 解析和安全状态。
-inline constexpr bool kYawRemoteCommandTestEnabled = true;
+inline constexpr bool kYawRemoteCommandTestEnabled = false;
 inline constexpr gimbal::RemoteCommandTestConfig kYawRemoteCommandTestConfig{};
 static_assert(kYawRemoteCommandTestConfig.yaw_stick > 0.0F &&
               kYawRemoteCommandTestConfig.yaw_stick <= 1.0F);
@@ -205,7 +205,7 @@ inline constexpr LQI_Init_Config_s kPitchLqiConfig{
 // yaw 独立配置；不复制 pitch，修改任一轴 K、Q/R 或积分范围不影响另一轴。
 inline constexpr LQI_Init_Config_s kYawLqiConfig{
     .k_angle = 0.28F,
-    .k_speed = 0.0035F,
+    .k_speed = 0.003F,
     .k_integral = 0.01F,
     .q_angle = 0.04F,
     .q_speed = 0.000278F,

@@ -8,7 +8,7 @@ namespace gimbal
     {
         float yaw_stick = 0.5F;
         uint32_t initial_hold_ms = 1000U;
-        uint32_t move_ms = 500U;
+        uint32_t move_ms = 200U;
         uint32_t hold_ms = 2000U;
     };
 
