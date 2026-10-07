@@ -16,7 +16,11 @@ namespace imu
 namespace
 {
     osThreadId_t taskHandle = nullptr;
+
+    /**最新的欧拉角*/
     AttitudeSample latest{};
+
+    /**六轴四元数互补估计器*/
     AttitudeEstimator estimator{};
 
     constexpr osThreadAttr_t taskAttrs = {
@@ -36,6 +40,8 @@ namespace
     /** @brief 初始化后约 500 Hz 采样；SPI 失败时撤销上一帧有效性。 */
     void Task(void*)
     {
+
+        /** @brief配置频率 */
         const uint32_t configuredFrequency = osKernelGetTickFreq();
         const uint32_t tickFrequency = configuredFrequency == 0U ? 1U : configuredFrequency;
         const uint32_t sampleTicks = tickFrequency >= 500U ? tickFrequency / 500U : 1U;
