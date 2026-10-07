@@ -181,9 +181,9 @@ inline constexpr LQI_Init_Config_s kPitchLqiConfig{
 };
 inline constexpr LQI_Init_Config_s kYawLqiConfig{
     // yaw 仅调速度反馈：I=0.003*(目标速度-实际速度)，关闭位置和积分。
-    .k_angle = 0.0F,
+    .k_angle = 0.1F,
     .k_speed = 0.003F, .k_integral = 0.0F,
-	.q_angle = 0.04F, .q_speed = 0.000278F, .q_integral = 0.01F, .r_current = 1.0F,
+	.q_angle = 0.4F, .q_speed = 0.000278F, .q_integral = 0.01F, .r_current = 1.0F,
     .sample_period_s = kGimbalControlPeriodS,
     .output_min_a = -kYawSpeedTestCurrentLimitA, .output_max_a = kYawSpeedTestCurrentLimitA,
     .integral_min_deg_s = 0.0F, .integral_max_deg_s = 0.0F
