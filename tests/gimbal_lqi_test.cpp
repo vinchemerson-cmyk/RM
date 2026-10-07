@@ -69,13 +69,15 @@ int main()
         }
     };
     checkLegacyProportional(kPitchLqiConfig, kPitchAnglePid, kPitchSpeedKp);
-    // yaw 仅速度反馈，位置与积分不参与；静止打满输出 0.18A。
+    // yaw 仅速度反馈，位置与积分不参与；按当前增益和限流核对输出。
     LQIController yawCheck{};
     assert(yawCheck.Configure(kYawLqiConfig));
     for (const float speed : {0.0F, 2.0F, -2.0F})
     {
         const float yawCurrent = yawCheck.UpdateRecoverySpeed(60.0F, speed, 0.001F);
-        assert(std::fabs(yawCurrent - 0.003F * (60.0F - speed)) < 1e-6F);
+        const float expected = std::fmax(-kYawSpeedTestCurrentLimitA,
+            std::fmin(kYawSpeedTestCurrentLimitA, kYawLqiConfig.k_speed * (60.0F - speed)));
+        assert(std::fabs(yawCurrent - expected) < 1e-6F);
         assert(yawCheck.Integral() == 0.0F);
     }
     // 当前手填模式忽略占位模型；启动装载两轴 K，但未解锁前不使能电机。
@@ -177,7 +179,8 @@ int main()
                    1.0F, kYawSpeedTestMaxDps, 0.001F, false);
     assert(!yawTarget.Ready()); // 长时间打杆不会积压角度目标。
     assert(std::fabs(gimbal::GetEncoderSnapshot().yaw_target_speed_dps - 60.0F) < 1e-6F);
-    assert(std::fabs(gimbal::GetEncoderSnapshot().yaw_command_current_a - 0.18F) < 1e-6F);
+    assert(std::fabs(gimbal::GetEncoderSnapshot().yaw_command_current_a -
+        std::fmin(kYawSpeedTestCurrentLimitA, kYawLqiConfig.k_speed * kYawSpeedTestMaxDps)) < 1e-6F);
     yawMotor->feedback.total_angle += 360.0F;
     UpdateAxis(yawMotor, yawTarget, yawLqi, true, kYawAngleLimits, 0.0F, 60.0F, 0.001F, false);
     assert(yawMotor->motor_settings.current == 0.0F); // 松杆静止后不追逐旧角度。
@@ -186,7 +189,7 @@ int main()
         yawMotor->feedback.speed = speed;
         UpdateAxis(yawMotor, yawTarget, yawLqi, true, kYawAngleLimits, 0.0F, 60.0F, 0.001F, false);
         const float current = gimbal::GetEncoderSnapshot().yaw_command_current_a;
-        assert(std::fabs(std::fabs(current) - 0.5F) < 1e-6F && current * speed < 0.0F);
+        assert(std::fabs(std::fabs(current) - kYawSpeedTestCurrentLimitA) < 1e-6F && current * speed < 0.0F);
         assert(yawLqi.Integral() == 0.0F);
     }
     UpdateAxis(yawMotor, yawTarget, yawLqi, false, kYawAngleLimits, 1.0F, 60.0F, 0.001F, false);

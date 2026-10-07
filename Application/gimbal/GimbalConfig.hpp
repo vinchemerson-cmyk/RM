@@ -135,9 +135,9 @@ static_assert(kEncoderCalibrationOnly || !kEnablePitch || !kPitchPositionMode ||
 /** @brief 位置模式下摇杆打满时目标角度的最大变化率，单位度每秒。 */
 inline constexpr float kYawTargetRateDps   = 180.0F;
 inline constexpr float kPitchTargetRateDps = 120.0F;
-/** @brief yaw 速度环测试：摇杆打满 60°/s，独立限流 ±0.5A。 */
+/** @brief yaw 速度环测试：摇杆打满 60°/s，独立限流 ±1.8A。 */
 inline constexpr float kYawSpeedTestMaxDps = 60.0F;
-inline constexpr float kYawSpeedTestCurrentLimitA = 0.5F;
+inline constexpr float kYawSpeedTestCurrentLimitA = 1.8F;
 
 /** @brief 云台控制周期及低速联调电流限幅；与协议最大 ±3A 分开配置。 */
 inline constexpr float kGimbalControlPeriodS = 0.001F;
@@ -180,9 +180,9 @@ inline constexpr LQI_Init_Config_s kPitchLqiConfig{
     .integral_min_deg_s = 0.0F, .integral_max_deg_s = 0.0F
 };
 inline constexpr LQI_Init_Config_s kYawLqiConfig{
-    // yaw 仅调速度反馈：I=0.003*(目标速度-实际速度)，关闭位置和积分。
+    // yaw 仅调速度反馈：I=0.03*(目标速度-实际速度)，角度增益在速度模式不参与。
     .k_angle = 0.1F,
-    .k_speed = 0.003F, .k_integral = 0.0F,
+    .k_speed = 0.03F, .k_integral = 0.0F,
 	.q_angle = 0.4F, .q_speed = 0.000278F, .q_integral = 0.01F, .r_current = 1.0F,
     .sample_period_s = kGimbalControlPeriodS,
     .output_min_a = -kYawSpeedTestCurrentLimitA, .output_max_a = kYawSpeedTestCurrentLimitA,
