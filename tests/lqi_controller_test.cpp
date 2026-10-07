@@ -56,6 +56,20 @@ int main()
     assert(control.Update(1.0F, 0.0F, 0.0F, 0.0F) == 0.0F);
     const float large = std::numeric_limits<float>::max();
     assert(control.Update(-large, large, 0.0F, 1.0F) == 0.0F);
+    // 前馈参与合成后的限幅；抗饱和也必须考虑前馈，非法前馈零输出。
+    assert(control.Configure(config));
+    assert(control.Update(1.0F, 0.0F, 0.0F, 1.0F, 2.5F) == 2.5F);
+    assert(control.Integral() == 0.0F); // 候选输出3.5A，不允许继续积累。
+    assert(control.Update(-1.0F, 0.0F, 0.0F, 1.0F, -2.5F) == -2.5F);
+    assert(control.Integral() == 0.0F);
+    config.k_angle = 1.0F; config.k_integral = 0.0F;
+    assert(control.Configure(config));
+    assert(control.Update(10.0F, 0.0F, 0.0F, 1.0F, -0.12F) == 3.0F);
+    assert(control.Update(-10.0F, 0.0F, 0.0F, 1.0F, 0.12F) == -3.0F);
+    assert(std::fabs(control.Update(0.0F, 0.0F, 0.0F, 1.0F, 0.06F) - 0.06F) < 1e-6F);
+    assert(control.PositionCurrent() == 0.0F && control.SpeedCurrent() == 0.0F);
+    assert(control.Update(0.0F, 0.0F, 0.0F, 1.0F,
+        std::numeric_limits<float>::quiet_NaN()) == 0.0F);
     config.k_angle = config.k_speed = config.k_integral = 0.0F;
     assert(!control.Configure(config));
     control.Disable();

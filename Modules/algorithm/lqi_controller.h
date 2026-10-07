@@ -19,7 +19,9 @@ public:
      *       本周期使用 z[k] 计算输出，再更新 z[k+1]，与 DARE 积分模型一致。
      *       包含积分限幅、条件积分抗饱和；非法输入或溢出清状态并返回零。
      */
-    float Update(float target_deg, float actual_deg, float actual_speed_dps, float dt_s);
+    // 前馈与反馈统一参与输出限幅和抗饱和；默认零，不改变其他调用者。
+    float Update(float target_deg, float actual_deg, float actual_speed_dps, float dt_s,
+                 float feedforward_a = 0.0F);
 
     /** @brief 端点退回使用 K_speed 对速度误差反馈；不保持位置，清除积分，输出 A。 */
     float UpdateRecoverySpeed(float target_dps, float actual_dps, float dt_s);

@@ -43,16 +43,19 @@ void LQIController::Disable()
     Reset();
 }
 
-float LQIController::Update(float target_deg, float actual_deg, float actual_speed_dps, float dt_s)
+float LQIController::Update(float target_deg, float actual_deg, float actual_speed_dps, float dt_s,
+                            float feedforward_a)
 {
     if (!configured_ || !std::isfinite(target_deg) || !std::isfinite(actual_deg) ||
-        !std::isfinite(actual_speed_dps) || !std::isfinite(dt_s) || dt_s <= 0.0F)
+        !std::isfinite(actual_speed_dps) || !std::isfinite(dt_s) || dt_s <= 0.0F ||
+        !std::isfinite(feedforward_a))
     {
         Reset();
         return 0.0F;
     }
     const float error = actual_deg - target_deg;
-    const float feedback = -config_.k_angle * error - config_.k_speed * actual_speed_dps;
+    const float feedback = -config_.k_angle * error - config_.k_speed * actual_speed_dps +
+                           feedforward_a;
     const float nextIntegral = integral_deg_s_ + error * dt_s;
     if (!std::isfinite(error) || !std::isfinite(feedback) || !std::isfinite(nextIntegral))
     {
