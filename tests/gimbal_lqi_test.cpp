@@ -49,6 +49,40 @@ void DJI_Motor_Control(DJI_Motor_s**, uint8_t, float) {}
 
 int main()
 {
+    // 固定指令边界、单次触发、取消/掉线重装及 tick 回绕。
+    const gimbal::RemoteCommandTestConfig commandConfig{};
+    for (const uint32_t t : {0U, 999U, 1500U, 3499U, 4000U, 6000U})
+        assert(gimbal::GenerateRemoteYawCommand(t, commandConfig) == 0.0F);
+    assert(gimbal::GenerateRemoteYawCommand(1000U, commandConfig) == 0.5F);
+    assert(gimbal::GenerateRemoteYawCommand(1499U, commandConfig) == 0.5F);
+    assert(gimbal::GenerateRemoteYawCommand(3500U, commandConfig) == -0.5F);
+    assert(gimbal::GenerateRemoteYawCommand(3999U, commandConfig) == -0.5F);
+    double referenceDelta = 0.0;
+    for (uint32_t t = 0U; t < 6000U; ++t)
+    {
+        referenceDelta += gimbal::GenerateRemoteYawCommand(t, commandConfig) *
+                          kYawTargetRateDps * 0.001;
+        if (t == 1499U) assert(std::fabs(referenceDelta - 30.0) < 1e-6);
+    }
+    assert(std::fabs(referenceDelta) < 1e-6);
+    gimbal::RemoteCommandTest sequence{};
+    assert(sequence.Update(0U, true, true, commandConfig) == 0.0F);
+    sequence.Update(1U, true, false, commandConfig);
+    sequence.Update(10U, true, true, commandConfig);
+    assert(sequence.Update(1010U, true, true, commandConfig) == 0.5F);
+    assert(sequence.Update(3510U, true, true, commandConfig) == -0.5F);
+    assert(sequence.Update(6010U, true, true, commandConfig) == 0.0F);
+    assert(sequence.Update(7010U, true, true, commandConfig) == 0.0F);
+    sequence.Update(8000U, true, false, commandConfig);
+    sequence.Update(8010U, true, true, commandConfig);
+    assert(sequence.Update(9010U, true, true, commandConfig) == 0.5F);
+    assert(sequence.Update(9011U, false, true, commandConfig) == 0.0F);
+    assert(sequence.Update(10010U, true, true, commandConfig) == 0.0F);
+    sequence.Update(10011U, true, false, commandConfig);
+    constexpr uint32_t wrapStart = UINT32_MAX - 500U;
+    sequence.Update(wrapStart, true, true, commandConfig);
+    assert(sequence.Update(wrapStart + 1000U, true, true, commandConfig) == 0.5F);
+    assert(sequence.Update(wrapStart + 1001U, true, false, commandConfig) == 0.0F);
     // 对照真实 PID 算法的未限幅比例项，检验 A->CAN 指令码换算等效。
     const auto checkLegacyProportional = [](const LQI_Init_Config_s& lqiConfig,
                                            const PID_Init_Config_s& angleConfig, float speedKp)

@@ -52,6 +52,26 @@ DT7 遥控器 ──2.4G──> DR16 ──DBUS──> UART5 中断 (rc 模块�
    └─ LQI 电流计算 ──> DJI_Motor_Control(): 打包 0x1FE ──> FDCAN1 ──> 双轴GM6020
 ```
 
+### 可重复 yaw 遥控指令测试（默认关闭）
+
+`GimbalConfig.hpp` 的 `kYawRemoteCommandTestEnabled=true` 启用测试；
+`kYawRemoteCommandTestConfig` 配置半杆幅值和各段毫秒时长。
+`RemoteCommandTest.hpp` 的 `GenerateRemoteYawCommand(elapsed_ms, config)`
+模拟 DBUS 解析之后的归一化摇杆值，不向串口注入帧、不伪造遥控在线状态。
+
+默认序列共6秒：保持1秒、yaw正向0.5半杆0.5秒、保持2秒、反向半杆0.5秒、保持2秒。
+按120°/s目标变化率，每段移动30°目标角度，反向段结束后目标回到本轮起始目标。
+先将左拨杆置 MIDDLE，右拨杆离开 UP，再拨到 UP 并保持，触发一次。
+首次使能/重连时右拨杆已在 UP 不会自动启动，必须释放后重新触发。
+结束后保持位置，不自动循环；再次触发须先让右拨杆离开 UP。
+右拨杆离开 UP 或左拨杆离开 MIDDLE 会取消后续序列，但保持取消时的角度目标；
+遥控掉线、双 DOWN 急停或控制周期异常仍走原有禁用逻辑，并清除测试触发状态。
+测试模式下 pitch 摇杆输入固定为零，原限位逻辑仍有效；摩擦轮仍受真实遥控器控制，
+测试时保持左拨杆 MIDDLE，避免启轮。测试不得与固定电流模式同时开启。
+串口八通道不变，目标速度列会显示模拟给定的 ±60°/s。
+每轮尽量从同一实际角度、静止状态开始，并保持相同负载、电源和测试配置，
+仅改变一个控制参数，再比较超调、稳定时间与峰值电流。该序列不是机构仿真。
+
 ### 控制模式
 
 由`GimbalConfig.hpp`决定：两轴均使用 LQI 位置控制（`kYawPositionMode=true`），当前均为 Manual。yaw 以 pitch 配置为基础，位置增益0.12、速度反馈增益0.0035，目标变化率仍为120°/s，松杆保持角度；yaw 连续旋转，不复制 pitch 的机械限位。BootSolve 仍需分别辨识各轴模型。

@@ -16,6 +16,17 @@
 #include "algorithm/lqi.h"
 #include "motor/angle_target.h"
 #include "motor/dji/dji_protocol.h"
+#include "RemoteCommandTest.hpp"
+
+// 重复遥控指令对照测试：默认关闭，不改变 DBUS 解析和安全状态。
+inline constexpr bool kYawRemoteCommandTestEnabled = false;
+inline constexpr gimbal::RemoteCommandTestConfig kYawRemoteCommandTestConfig{};
+static_assert(kYawRemoteCommandTestConfig.yaw_stick > 0.0F &&
+              kYawRemoteCommandTestConfig.yaw_stick <= 1.0F);
+static_assert(kYawRemoteCommandTestConfig.move_ms > 0U);
+static_assert(static_cast<uint64_t>(kYawRemoteCommandTestConfig.initial_hold_ms) +
+              2ULL * kYawRemoteCommandTestConfig.move_ms +
+              2ULL * kYawRemoteCommandTestConfig.hold_ms < 0x80000000ULL);
 
 /**
  * @brief 云台电机全部使用 GM6020, 由右摇杆控制角速度。

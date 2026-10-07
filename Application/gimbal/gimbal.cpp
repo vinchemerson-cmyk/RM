@@ -58,6 +58,9 @@ namespace
     bool yawPulseActive = false;
     uint32_t yawPulseStartTick = 0U;
     float yawPulseDirection = 0.0F;
+    gimbal::RemoteCommandTest remoteCommandTest{};
+    static_assert(!kYawRemoteCommandTestEnabled || !kYawFixedCurrentTestEnabled,
+                  "Remote command test and fixed current test are mutually exclusive");
 
     constexpr osThreadAttr_t taskAttrs = {
         .name       = "GimbalTask",
@@ -362,16 +365,28 @@ namespace
             const auto remote = rc::Snapshot();
             const bool outputAllowed = !kEncoderCalibrationOnly && timingValid &&
                                        rc::IsOnline() && safety::ShouldOutput();
+            float yawStick = rc::Normalize(remote.channels[0]);
+            float pitchStick = rc::Normalize(remote.channels[1]);
+            if constexpr (kYawRemoteCommandTestEnabled)
+            {
+                const bool allowed = outputAllowed && kEnableYaw &&
+                    yawMotor != nullptr && FeedbackSnapshot(*yawMotor).angle_initialized &&
+                    remote.switch_left == rc::Left_Switch_e::MIDDLE;
+                const bool requested = remote.switch_right == rc::Right_Switch_e::UP;
+                yawStick = remoteCommandTest.Update(now, allowed, requested,
+                                                     kYawRemoteCommandTestConfig);
+                pitchStick = 0.0F;
+            }
             if constexpr (kYawFixedCurrentTestEnabled)
                 UpdateYawFixedCurrentTest(outputAllowed && kEnableYaw,
-                                          rc::Normalize(remote.channels[0]), now);
+                                          yawStick, now);
             else
                 UpdateAxis(yawMotor, yawTarget, yawLqi, outputAllowed && kEnableYaw,
-                           kYawAngleLimits, rc::Normalize(remote.channels[0]),
+                           kYawAngleLimits, yawStick,
                            kYawPositionMode ? kYawTargetRateDps : kYawSpeedTestMaxDps,
                            dt_s, kYawPositionMode);
             UpdateAxis(pitchMotor, pitchTarget, pitchLqi, outputAllowed && kEnablePitch,
-                       kPitchAngleLimits, rc::Normalize(remote.channels[1]),
+                       kPitchAngleLimits, pitchStick,
                        kPitchTargetRateDps, dt_s);
 
             DJI_Motor_Control(gimbalMotors, 2U, dt_s);
