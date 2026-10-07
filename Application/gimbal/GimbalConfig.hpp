@@ -191,10 +191,19 @@ inline constexpr LQI_Init_Config_s kYawLqiConfig{
 
 /**
  * @brief LQI 的实车离散模型入口；A/B 全零表示尚未辨识，求解器会拒绝。
- * @note 填写角度/速度模型 x[k+1]=A*x[k]+B*I[k]，输入电流单位 A。
+ * @note
+ *		 填写角度/速度模型 x[k+1]=A*x[k]+B*I[k]，输入电流单位 A。
  *       模型状态与电流须采用电机方向处理后的逻辑坐标。
  *       仅 BootSolve 模式每次上电求解一次；占位模型或求解失败时对应轴禁止输出。
  *       Manual 模式忽略模型，直接使用上面的 K。
+ * @todo 在BootSolve模式下填写A/B
+ * @note
+ *		 A11：当前角度对下一时刻角度的影响。
+ *		 A12：当前速度让角度变化多少。
+ *		 A21：当前角度对下一时刻速度的影响，例如回复力。
+ *		 A22：速度保留多少，反映惯性与阻尼的作用。
+ *		 B1：电流对下一时刻角度的影响。
+ *		 B2：电流对下一时刻速度的影响。
  */
 inline constexpr LQI_Model_s kPitchLqiModel{
     .a = {}, .b = {}, .sample_period_s = kGimbalControlPeriodS
