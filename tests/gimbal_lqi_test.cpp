@@ -2,6 +2,7 @@
 #include <cassert>
 #include <cmath>
 #include <initializer_list>
+#include <limits>
 #include "../Application/gimbal/gimbal.cpp"
 
 FDCAN_HandleTypeDef hfdcan1{}, hfdcan2{}, hfdcan3{};
@@ -69,14 +70,19 @@ int main()
         }
     };
     checkLegacyProportional(kPitchLqiConfig, kPitchAnglePid, kPitchSpeedKp);
-    // yaw 仅速度反馈，位置与积分不参与；按当前增益和限流核对输出。
+    checkLegacyProportional(kYawLqiConfig, kPitchAnglePid, kPitchSpeedKp);
+    assert(kYawPositionMode && kPitchPositionMode);
+    assert(kYawTargetRateDps == kPitchTargetRateDps);
+    assert(kYawLqiConfig.output_max_a == kPitchLqiConfig.output_max_a);
+    assert(kYawLqiConfig.output_min_a == kPitchLqiConfig.output_min_a);
+    // 备用速度模式不使用位置与积分；按实际 LQI 限幅核对输出。
     LQIController yawCheck{};
     assert(yawCheck.Configure(kYawLqiConfig));
     for (const float speed : {0.0F, 2.0F, -2.0F})
     {
         const float yawCurrent = yawCheck.UpdateRecoverySpeed(60.0F, speed, 0.001F);
-        const float expected = std::fmax(-kYawSpeedTestCurrentLimitA,
-            std::fmin(kYawSpeedTestCurrentLimitA, kYawLqiConfig.k_speed * (60.0F - speed)));
+        const float expected = std::fmax(kYawLqiConfig.output_min_a,
+            std::fmin(kYawLqiConfig.output_max_a, kYawLqiConfig.k_speed * (60.0F - speed)));
         assert(std::fabs(yawCurrent - expected) < 1e-6F);
         assert(yawCheck.Integral() == 0.0F);
     }
@@ -172,7 +178,20 @@ int main()
         yawMotor->motor_settings.current / kDjiGm6020CommandUnitsPerAmp) < 1e-6F);
     UpdateAxis(yawMotor, yawTarget, yawLqi, false, kYawAngleLimits, 0.0F, 180.0F, 0.001F);
     assert(gimbal::GetEncoderSnapshot().yaw_command_current_a == 0.0F);
-    assert(!kYawPositionMode && yawLqi.Configure(kYawLqiConfig));
+    assert(kYawPositionMode && yawLqi.Configure(kYawLqiConfig));
+    yawMotor->feedback.speed = 0.0F;
+    UpdateAxis(yawMotor, yawTarget, yawLqi, true, kYawAngleLimits,
+               1.0F, kYawTargetRateDps, 0.001F, kYawPositionMode);
+    const float heldTarget = yawTarget.Target();
+    assert(std::fabs(heldTarget - yawMotor->feedback.total_angle - 0.12F) < 0.001F);
+    UpdateAxis(yawMotor, yawTarget, yawLqi, true, kYawAngleLimits,
+               0.0F, kYawTargetRateDps, 0.001F, kYawPositionMode);
+    assert(yawTarget.Target() == heldTarget && yawMotor->motor_settings.current > 0.0F);
+    yawMotor->feedback.total_angle += 1.0F;
+    UpdateAxis(yawMotor, yawTarget, yawLqi, true, kYawAngleLimits,
+               0.0F, kYawTargetRateDps, 0.001F, kYawPositionMode);
+    assert(yawTarget.Target() == heldTarget && yawMotor->motor_settings.current < 0.0F);
+    // 保留备用速度模式覆盖；其输出限幅采用当前实际 LQI 配置。
     yawMotor->feedback.speed = 0.0F;
     for (int i = 0; i < 1000; ++i)
         UpdateAxis(yawMotor, yawTarget, yawLqi, true, kYawAngleLimits,
@@ -182,7 +201,7 @@ int main()
     yawMotor->feedback.current = -0.4F;
     assert(std::fabs(gimbal::GetEncoderSnapshot().yaw_feedback_current_a + 0.4F) < 1e-6F);
     assert(std::fabs(gimbal::GetEncoderSnapshot().yaw_command_current_a -
-        std::fmin(kYawSpeedTestCurrentLimitA, kYawLqiConfig.k_speed * kYawSpeedTestMaxDps)) < 1e-6F);
+        std::fmin(kYawLqiConfig.output_max_a, kYawLqiConfig.k_speed * kYawSpeedTestMaxDps)) < 1e-6F);
     yawMotor->feedback.total_angle += 360.0F;
     UpdateAxis(yawMotor, yawTarget, yawLqi, true, kYawAngleLimits, 0.0F, 60.0F, 0.001F, false);
     assert(yawMotor->motor_settings.current == 0.0F); // 松杆静止后不追逐旧角度。
@@ -191,7 +210,7 @@ int main()
         yawMotor->feedback.speed = speed;
         UpdateAxis(yawMotor, yawTarget, yawLqi, true, kYawAngleLimits, 0.0F, 60.0F, 0.001F, false);
         const float current = gimbal::GetEncoderSnapshot().yaw_command_current_a;
-        assert(std::fabs(std::fabs(current) - kYawSpeedTestCurrentLimitA) < 1e-6F && current * speed < 0.0F);
+        assert(std::fabs(std::fabs(current) - kYawLqiConfig.output_max_a) < 1e-6F && current * speed < 0.0F);
         assert(yawLqi.Integral() == 0.0F);
     }
     UpdateAxis(yawMotor, yawTarget, yawLqi, false, kYawAngleLimits, 1.0F, 60.0F, 0.001F, false);
@@ -200,5 +219,42 @@ int main()
     yawMotor->feedback.angle_initialized = false;
     UpdateAxis(yawMotor, yawTarget, yawLqi, true, kYawAngleLimits, 1.0F, 60.0F, 0.001F, false);
     assert(!yawMotor->enabled);
+    // 固定电流：先回中，固定方向，超时/急停/松杆停止，持续打杆不重复触发。
+    yawMotor->feedback.angle_initialized = true;
+    UpdateYawFixedCurrentTest(false, 0.0F, 0U);
+    UpdateYawFixedCurrentTest(true, 1.0F, 1U);
+    assert(!yawMotor->enabled);
+    UpdateYawFixedCurrentTest(true, 0.0F, 2U);
+    UpdateYawFixedCurrentTest(true, 1.0F, 3U);
+    assert(yawMotor->enabled && !yawTarget.Ready());
+    assert(std::fabs(gimbal::GetEncoderSnapshot().yaw_command_current_a - kYawFixedCurrentTestA) < 1e-6F);
+    yawMotor->feedback.speed = 630.0F;
+    UpdateYawFixedCurrentTest(true, 1.0F, 4U);
+    assert(std::fabs(gimbal::GetEncoderSnapshot().yaw_command_current_a - kYawFixedCurrentTestA) < 1e-6F);
+    UpdateYawFixedCurrentTest(true, 1.0F, 3U + kYawFixedCurrentTestDurationMs);
+    assert(!yawMotor->enabled);
+    UpdateYawFixedCurrentTest(true, 1.0F, 1000U);
+    assert(!yawMotor->enabled);
+    UpdateYawFixedCurrentTest(true, 0.0F, 1001U);
+    UpdateYawFixedCurrentTest(true, -1.0F, 1002U);
+    assert(std::fabs(gimbal::GetEncoderSnapshot().yaw_command_current_a + kYawFixedCurrentTestA) < 1e-6F);
+    UpdateYawFixedCurrentTest(true, 1.0F, 1003U);
+    assert(!yawMotor->enabled);
+    UpdateYawFixedCurrentTest(true, 0.0F, 1004U);
+    UpdateYawFixedCurrentTest(true, 1.0F, 1005U);
+    UpdateYawFixedCurrentTest(false, 1.0F, 1006U);
+    assert(!yawMotor->enabled && !yawPulseArmed);
+    UpdateYawFixedCurrentTest(true, 1.0F, 1007U);
+    assert(!yawMotor->enabled);
+    UpdateYawFixedCurrentTest(true, 0.0F, 1008U);
+    UpdateYawFixedCurrentTest(true, 1.0F, 1009U);
+    UpdateYawFixedCurrentTest(true, 0.0F, 1010U);
+    assert(!yawMotor->enabled);
+    UpdateYawFixedCurrentTest(true, 1.0F, 1011U);
+    UpdateYawFixedCurrentTest(true, std::numeric_limits<float>::quiet_NaN(), 1012U);
+    assert(!yawMotor->enabled && !yawPulseArmed);
+    yawMotor->feedback.angle_initialized = false;
+    UpdateYawFixedCurrentTest(true, 0.0F, 1013U);
+    assert(!yawPulseArmed);
     return 0;
 }

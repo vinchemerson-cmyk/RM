@@ -90,7 +90,7 @@ inline constexpr PID_Init_Config_s kPitchAnglePid{
  * @brief 位置模式请求；标定模式保留该配置，但禁止两轴运动。
  * @note 开启前先记录物理零位的 13 位编码器值，并实测相对零位的可动角度。
  */
-inline constexpr bool kYawPositionMode   = false; // yaw 单独速度反馈测试，不保持位置。
+inline constexpr bool kYawPositionMode   = true; // 与 pitch 一样使用位置目标，松杆保持。
 inline constexpr bool kPitchPositionMode = true; // 当前使用 LQI 位置目标；松杆保持。
 
 /**
@@ -133,11 +133,23 @@ static_assert(kEncoderCalibrationOnly || !kEnablePitch || !kPitchPositionMode ||
               "Pitch position mode requires measured mechanical limits");
 
 /** @brief 位置模式下摇杆打满时目标角度的最大变化率，单位度每秒。 */
-inline constexpr float kYawTargetRateDps   = 180.0F;
+inline constexpr float kYawTargetRateDps   = 120.0F; // 与 pitch 一致。
 inline constexpr float kPitchTargetRateDps = 120.0F;
-/** @brief yaw 速度环测试：摇杆打满 60°/s，独立限流 ±1.8A。 */
+/** @brief 备用 yaw 速度测试参数；当前位置模式不使用这两个参数。 */
 inline constexpr float kYawSpeedTestMaxDps = 60.0F;
-inline constexpr float kYawSpeedTestCurrentLimitA = 1.8F;
+inline constexpr float kYawSpeedTestCurrentLimitA = 2.0F;
+
+/** @brief 固定电流单次诊断；默认关闭，不自动执行。 */
+inline constexpr bool kYawFixedCurrentTestEnabled = false;
+inline constexpr float kYawFixedCurrentTestA = 1.3F;
+inline constexpr uint32_t kYawFixedCurrentTestDurationMs = 200U;
+inline constexpr float kYawFixedCurrentTestStickThreshold = 0.2F;
+static_assert(kYawFixedCurrentTestA > 0.0F && kYawFixedCurrentTestA <= 3.0F,
+              "Fixed current diagnostic must stay within the GM6020 protocol limit");
+static_assert(!kYawFixedCurrentTestEnabled || kYawFixedCurrentTestA <= kYawSpeedTestCurrentLimitA,
+              "Enabled fixed current diagnostic must stay within the yaw current limit");
+static_assert(kYawFixedCurrentTestDurationMs > 0U && kYawFixedCurrentTestDurationMs <= 500U,
+              "Fixed current diagnostic duration must stay within 500ms");
 
 /** @brief 云台控制周期及低速联调电流限幅；与协议最大 ±3A 分开配置。 */
 inline constexpr float kGimbalControlPeriodS = 0.001F;
@@ -179,15 +191,8 @@ inline constexpr LQI_Init_Config_s kPitchLqiConfig{
     .output_min_a = -kGimbalCurrentLimitA, .output_max_a = kGimbalCurrentLimitA,
     .integral_min_deg_s = 0.0F, .integral_max_deg_s = 0.0F
 };
-inline constexpr LQI_Init_Config_s kYawLqiConfig{
-    // yaw 仅调速度反馈：I=0.03*(目标速度-实际速度)，角度增益在速度模式不参与。
-    .k_angle = 0.1F,
-    .k_speed = 0.03F, .k_integral = 0.0F,
-	.q_angle = 0.4F, .q_speed = 0.000278F, .q_integral = 0.01F, .r_current = 1.0F,
-    .sample_period_s = kGimbalControlPeriodS,
-    .output_min_a = -kYawSpeedTestCurrentLimitA, .output_max_a = kYawSpeedTestCurrentLimitA,
-    .integral_min_deg_s = 0.0F, .integral_max_deg_s = 0.0F
-};
+// 对齐 pitch 的全部 LQI 配置（K、Q/R、周期、积分范围和 ±3A 输出限幅）。
+inline constexpr LQI_Init_Config_s kYawLqiConfig = kPitchLqiConfig;
 
 /**
  * @brief LQI 的实车离散模型入口；A/B 全零表示尚未辨识，求解器会拒绝。

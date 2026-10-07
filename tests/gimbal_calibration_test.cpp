@@ -15,7 +15,7 @@ int main()
 {
     assert(!kEncoderCalibrationOnly);
     assert(kEnablePitch && kPitchPositionMode);
-    assert(kEnableYaw && !kYawPositionMode && kReadYawEncoder);
+    assert(kEnableYaw && kYawPositionMode && kReadYawEncoder);
     assert(kGimbalCanHandle == &hfdcan1);
     assert(kPitchAngleLimits.zero_raw == 893U);
     assert(kYawAngleLimits.zero_raw == 3741U);
@@ -101,9 +101,9 @@ int main()
     assert(target.Sync(kYawAngleLimits, 720.0F, 8190U, 4U, kYawMotorReverse));
     assert(target.Target() == 720.0F);
     assert(std::fabs(target.Step(kYawAngleLimits, 1.0F, kYawTargetRateDps, 10.0F) -
-                     2520.0F) < 0.001F);
-    assert(target.Contains(kYawAngleLimits, 2520.0F));
+                     (720.0F + 10.0F * kYawTargetRateDps)) < 0.001F);
+    assert(target.Contains(kYawAngleLimits, target.Target()));
     assert(std::fabs(target.Step(kYawAngleLimits, -1.0F, kYawTargetRateDps, 20.0F) +
-                     1080.0F) < 0.001F);
+                     (10.0F * kYawTargetRateDps - 720.0F)) < 0.001F);
     return 0;
 }
