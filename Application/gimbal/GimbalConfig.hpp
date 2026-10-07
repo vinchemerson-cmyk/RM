@@ -210,6 +210,11 @@ inline constexpr LQI_Init_Config_s kYawLqiConfig = [] {
     return config;
 }();
 
+// 仅 yaw 正常位置模式使用；目标变化率前馈，单位 A/(度/秒)。
+inline constexpr float kYawTargetSpeedFeedforwardAperDps = 0.002F;
+static_assert(kYawTargetSpeedFeedforwardAperDps >= 0.0F &&
+              kYawTargetSpeedFeedforwardAperDps <= kGimbalCurrentLimitA / kYawTargetRateDps);
+
 /**
  * @brief LQI 的实车离散模型入口；A/B 全零表示尚未辨识，求解器会拒绝。
  * @note

@@ -258,8 +258,10 @@ namespace
             targetRateDps >= 0.0F && std::isfinite(dt_s) && dt_s > 0.0F)
             yawControlTargetSpeedDps = std::fmax(-1.0F, std::fmin(1.0F, stick)) * targetRateDps;
         motor->motor_settings.angle_epoch = feedback.angle_epoch;
+        const float feedforwardA = motor == yawMotor
+            ? kYawTargetSpeedFeedforwardAperDps * yawControlTargetSpeedDps : 0.0F;
         const float currentA = lqi.Update(motor->motor_settings.angle, feedback.total_angle,
-                                          feedback.speed, dt_s);
+                                          feedback.speed, dt_s, feedforwardA);
         motor->motor_settings.current = currentA * kDjiGm6020CommandUnitsPerAmp;
         if (!motor->enabled)
             DJI_Motor_Enable(motor);

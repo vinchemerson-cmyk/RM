@@ -107,6 +107,8 @@ int main()
     // yaw 仅小幅提高速度反馈，位置项和 pitch 不变。
     assert(kYawLqiConfig.k_speed == 0.0035F && kPitchLqiConfig.k_speed == 0.01F);
     assert(kYawLqiConfig.k_angle == 0.12F && kPitchLqiConfig.k_angle == 0.1F);
+    assert(std::fabs(kYawTargetSpeedFeedforwardAperDps * 60.0F - 0.12F) < 1e-6F);
+    assert(std::fabs(kYawTargetSpeedFeedforwardAperDps * kYawTargetRateDps - 0.24F) < 1e-6F);
     assert(kYawLqiConfig.k_integral == kPitchLqiConfig.k_integral);
     assert(kYawLqiConfig.q_angle == kPitchLqiConfig.q_angle);
     assert(kYawLqiConfig.q_speed == kPitchLqiConfig.q_speed);
@@ -232,12 +234,17 @@ int main()
     UpdateAxis(yawMotor, yawTarget, yawLqi, true, kYawAngleLimits,
                1.0F, kYawTargetRateDps, 0.001F, kYawPositionMode);
     const float heldTarget = yawTarget.Target();
+    assert(std::fabs(yawMotor->motor_settings.current / kDjiGm6020CommandUnitsPerAmp -
+        (yawLqi.PositionCurrent() + yawLqi.SpeedCurrent() +
+         kYawTargetSpeedFeedforwardAperDps * kYawTargetRateDps)) < 1e-6F);
     PublishYawControlSnapshot(0.001F);
     assert(gimbal::GetYawControlSnapshot().yaw_target_speed_dps == kYawTargetRateDps);
     assert(std::fabs(heldTarget - yawMotor->feedback.total_angle - 0.12F) < 0.001F);
     UpdateAxis(yawMotor, yawTarget, yawLqi, true, kYawAngleLimits,
                0.0F, kYawTargetRateDps, 0.001F, kYawPositionMode);
     assert(yawTarget.Target() == heldTarget && yawMotor->motor_settings.current > 0.0F);
+    assert(std::fabs(yawMotor->motor_settings.current / kDjiGm6020CommandUnitsPerAmp -
+        (yawLqi.PositionCurrent() + yawLqi.SpeedCurrent())) < 1e-6F);
     yawMotor->feedback.total_angle += 1.0F;
     UpdateAxis(yawMotor, yawTarget, yawLqi, true, kYawAngleLimits,
                0.0F, kYawTargetRateDps, 0.001F, kYawPositionMode);
@@ -254,6 +261,16 @@ int main()
     yawMotor->feedback.total_angle += 123.0F;
     assert(gimbal::GetYawControlSnapshot().yaw_position_actual_deg == savedAngle);
     yawMotor->feedback.total_angle = savedAngle;
+    StopAxis(*yawMotor, yawTarget, yawLqi);
+    yawMotor->feedback.speed = 0.0F;
+    UpdateAxis(yawMotor, yawTarget, yawLqi, true, kYawAngleLimits,
+               -1.0F, kYawTargetRateDps, 0.001F, true);
+    assert(std::fabs(yawMotor->motor_settings.current / kDjiGm6020CommandUnitsPerAmp -
+        (yawLqi.PositionCurrent() + yawLqi.SpeedCurrent() -
+         kYawTargetSpeedFeedforwardAperDps * kYawTargetRateDps)) < 1e-6F);
+    UpdateAxis(yawMotor, yawTarget, yawLqi, false, kYawAngleLimits,
+               1.0F, kYawTargetRateDps, 0.001F, true);
+    assert(!yawMotor->enabled && yawMotor->motor_settings.current == 0.0F);
     // 保留备用速度模式覆盖；其输出限幅采用当前实际 LQI 配置。
     yawMotor->feedback.speed = 0.0F;
     for (int i = 0; i < 1000; ++i)
