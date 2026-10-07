@@ -191,11 +191,11 @@ inline constexpr LQI_Init_Config_s kPitchLqiConfig{
     .output_min_a = -kGimbalCurrentLimitA, .output_max_a = kGimbalCurrentLimitA,
     .integral_min_deg_s = 0.0F, .integral_max_deg_s = 0.0F
 };
-// yaw：保留已降至 0.003 的速度反馈，本次仅提高位置增益以测试跟随响应。
+// yaw：位置增益保持 0.12，仅小幅提高速度反馈以测试松杆超调。
 inline constexpr LQI_Init_Config_s kYawLqiConfig = [] {
     auto config = kPitchLqiConfig;
     config.k_angle = 0.12F;
-    config.k_speed = 0.003F;
+    config.k_speed = 0.0035F;
     return config;
 }();
 

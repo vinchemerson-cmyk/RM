@@ -70,8 +70,8 @@ int main()
         }
     };
     checkLegacyProportional(kPitchLqiConfig, kPitchAnglePid, kPitchSpeedKp);
-    // yaw 独立整定位置项，保持已验证的低速度反馈增益；pitch 不变。
-    assert(kYawLqiConfig.k_speed == 0.003F && kPitchLqiConfig.k_speed == 0.01F);
+    // yaw 仅小幅提高速度反馈，位置项和 pitch 不变。
+    assert(kYawLqiConfig.k_speed == 0.0035F && kPitchLqiConfig.k_speed == 0.01F);
     assert(kYawLqiConfig.k_angle == 0.12F && kPitchLqiConfig.k_angle == 0.1F);
     assert(kYawLqiConfig.k_integral == kPitchLqiConfig.k_integral);
     assert(kYawLqiConfig.q_angle == kPitchLqiConfig.q_angle);
@@ -83,9 +83,9 @@ int main()
     assert(kYawLqiConfig.integral_max_deg_s == kPitchLqiConfig.integral_max_deg_s);
     LQIController yawPositionCheck{};
     assert(yawPositionCheck.Configure(kYawLqiConfig));
-    assert(std::fabs(yawPositionCheck.Update(10.0F, 0.0F, 100.0F, 0.001F) - 0.9F) < 1e-6F);
+    assert(std::fabs(yawPositionCheck.Update(10.0F, 0.0F, 100.0F, 0.001F) - 0.85F) < 1e-6F);
     assert(std::fabs(yawPositionCheck.PositionCurrent() - 1.2F) < 1e-6F);
-    assert(std::fabs(yawPositionCheck.SpeedCurrent() + 0.3F) < 1e-6F);
+    assert(std::fabs(yawPositionCheck.SpeedCurrent() + 0.35F) < 1e-6F);
     assert(kYawPositionMode && kPitchPositionMode);
     assert(kYawTargetRateDps == kPitchTargetRateDps);
     assert(kYawLqiConfig.output_max_a == kPitchLqiConfig.output_max_a);
