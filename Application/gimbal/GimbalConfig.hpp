@@ -202,13 +202,21 @@ inline constexpr LQI_Init_Config_s kPitchLqiConfig{
     .output_min_a = -kGimbalCurrentLimitA, .output_max_a = kGimbalCurrentLimitA,
     .integral_min_deg_s = 0.0F, .integral_max_deg_s = 0.0F
 };
-// yaw：位置增益保持 0.12，仅小幅提高速度反馈以测试松杆超调。
-inline constexpr LQI_Init_Config_s kYawLqiConfig = [] {
-    auto config = kPitchLqiConfig;
-    config.k_angle = 0.12F;
-    config.k_speed = 0.0035F;
-    return config;
-}();
+// yaw 独立配置；不复制 pitch，修改任一轴 K、Q/R 或积分范围不影响另一轴。
+inline constexpr LQI_Init_Config_s kYawLqiConfig{
+    .k_angle = 0.28F,
+    .k_speed = 0.0035F,
+    .k_integral = 0.01F,
+    .q_angle = 0.04F,
+    .q_speed = 0.000278F,
+    .q_integral = 0.01F,
+    .r_current = 1.0F,
+    .sample_period_s = kGimbalControlPeriodS,
+    .output_min_a = -3.0F,
+    .output_max_a = 3.0F,
+    .integral_min_deg_s = 0.0F,
+    .integral_max_deg_s = 0.0F
+};
 
 // 仅 yaw 正常位置模式使用；目标变化率前馈，单位 A/(度/秒)。
 inline constexpr float kYawTargetSpeedFeedforwardAperDps = 0.002F;

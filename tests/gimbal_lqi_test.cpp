@@ -104,28 +104,21 @@ int main()
         }
     };
     checkLegacyProportional(kPitchLqiConfig, kPitchAnglePid, kPitchSpeedKp);
-    // yaw 仅小幅提高速度反馈，位置项和 pitch 不变。
+    // 两轴独立配置：不要求 K、Q/R、积分范围或输出限幅相同。
     assert(kYawLqiConfig.k_speed == 0.0035F && kPitchLqiConfig.k_speed == 0.01F);
-    assert(kYawLqiConfig.k_angle == 0.12F && kPitchLqiConfig.k_angle == 0.1F);
+    assert(kYawLqiConfig.k_angle == 0.28F && kPitchLqiConfig.k_angle == 0.1F);
     assert(std::fabs(kYawTargetSpeedFeedforwardAperDps * 60.0F - 0.12F) < 1e-6F);
     assert(std::fabs(kYawTargetSpeedFeedforwardAperDps * kYawTargetRateDps - 0.24F) < 1e-6F);
-    assert(kYawLqiConfig.k_integral == kPitchLqiConfig.k_integral);
-    assert(kYawLqiConfig.q_angle == kPitchLqiConfig.q_angle);
-    assert(kYawLqiConfig.q_speed == kPitchLqiConfig.q_speed);
-    assert(kYawLqiConfig.q_integral == kPitchLqiConfig.q_integral);
-    assert(kYawLqiConfig.r_current == kPitchLqiConfig.r_current);
-    assert(kYawLqiConfig.sample_period_s == kPitchLqiConfig.sample_period_s);
-    assert(kYawLqiConfig.integral_min_deg_s == kPitchLqiConfig.integral_min_deg_s);
-    assert(kYawLqiConfig.integral_max_deg_s == kPitchLqiConfig.integral_max_deg_s);
+    assert(kYawLqiConfig.integral_min_deg_s == 0.0F && kYawLqiConfig.integral_max_deg_s == 0.0F);
+    assert(kPitchLqiConfig.integral_min_deg_s == 0.0F && kPitchLqiConfig.integral_max_deg_s == 0.0F);
     LQIController yawPositionCheck{};
     assert(yawPositionCheck.Configure(kYawLqiConfig));
-    assert(std::fabs(yawPositionCheck.Update(10.0F, 0.0F, 100.0F, 0.001F) - 0.85F) < 1e-6F);
-    assert(std::fabs(yawPositionCheck.PositionCurrent() - 1.2F) < 1e-6F);
+    assert(std::fabs(yawPositionCheck.Update(10.0F, 0.0F, 100.0F, 0.001F) - 2.45F) < 1e-6F);
+    assert(std::fabs(yawPositionCheck.PositionCurrent() - 2.8F) < 1e-6F);
     assert(std::fabs(yawPositionCheck.SpeedCurrent() + 0.35F) < 1e-6F);
     assert(kYawPositionMode && kPitchPositionMode);
     assert(kYawTargetRateDps == kPitchTargetRateDps);
-    assert(kYawLqiConfig.output_max_a == kPitchLqiConfig.output_max_a);
-    assert(kYawLqiConfig.output_min_a == kPitchLqiConfig.output_min_a);
+    assert(kYawLqiConfig.output_max_a == 3.0F && kYawLqiConfig.output_min_a == -3.0F);
     // 备用速度模式不使用位置与积分；按实际 LQI 限幅核对输出。
     LQIController yawCheck{};
     assert(yawCheck.Configure(kYawLqiConfig));
