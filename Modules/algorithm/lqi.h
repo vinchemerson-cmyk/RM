@@ -20,7 +20,7 @@ struct LQI_Model_s
 /** @brief Riccati 迭代参数；小采样周期的积分状态可能需要较多迭代。 */
 struct LQI_Solver_Options_s
 {
-	uint32_t max_iterations{50000U};
+	uint32_t max_iterations{50000U};  //最大迭代次数
 	double   relative_tolerance{1e-10};
 	double   absolute_tolerance{1e-12};
 };

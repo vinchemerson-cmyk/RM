@@ -74,13 +74,13 @@ enum Motor_Wokking_Type_e
  */
 struct Motor_Control_Setting_s
 {
-	Closeloop_Type_e        outer_loop_type{};
-	Closeloop_Type_e        close_loop_type{};
-	Motor_Reverse_Flag_e    motor_reverse_flag{};
-	Feedback_Reverse_Flag_e feedback_reverse_flag{};
-	Feedback_Source_e       angle_feedback_source{};
-	Feedback_Source_e       speed_feedback_source{};
-	Feedfoward_Type_e       feedforward_flag{};
+	Closeloop_Type_e        outer_loop_type{};  //
+	Closeloop_Type_e        close_loop_type{};  //闭环
+	Motor_Reverse_Flag_e    motor_reverse_flag{};  //电机反转标志
+	Feedback_Reverse_Flag_e feedback_reverse_flag{};//反馈反转标志
+	Feedback_Source_e       angle_feedback_source{};//角度反馈
+	Feedback_Source_e       speed_feedback_source{};//速度反馈
+	Feedfoward_Type_e       feedforward_flag{};  //前馈标志
 
 	float    angle{};
 	float    speed{};
@@ -91,14 +91,14 @@ struct Motor_Control_Setting_s
 /** @brief 控制器运行时所引用的反馈、前馈和三个 PID 环。 */
 struct Motor_Controller_s
 {
-	float*      other_angle_feedback_ptr{};
+	float*      other_angle_feedback_ptr{}; //
 	float*      other_speed_feedback_ptr{};
 	float*      speed_feedforward_ptr{};
 	float*      current_feedforward_ptr{};
-	PIDInstance current_PID{};
-	PIDInstance speed_PID{};
-	PIDInstance angle_PID{};
-	float       pid_ref{};
+	PIDInstance current_PID{};	//电流环
+	PIDInstance speed_PID{};	//速度环
+	PIDInstance angle_PID{};	//角度环
+	float       pid_ref{};	//pid反馈
 };
 
 /** @brief 普通电机控制器初始化参数。 */

@@ -15,6 +15,9 @@ namespace serialTasks
 		uint32_t last_update_tick{};
 	};
 
+	/**
+	 * @brief 编码器快照
+	 */
 	struct EncoderSnapshot
 	{
 		EncoderSample pitch{}, yaw{};
