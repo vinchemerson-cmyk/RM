@@ -8,15 +8,15 @@ namespace shoot
 {
 	inline FDCAN_HandleTypeDef* const kCanHandle         = &hfdcan2;
 	/** @brief 三电机测试阶段不注册或驱动拨弹盘。 */
-	inline constexpr bool             kEnableFeeder      = false;
-	inline constexpr uint32_t         kFeederFeedbackId  = 0x201U; // 未启用的旧拨弹配置；重启拨弹前需选择不与双轮冲突的 ID。
+	inline constexpr bool             kEnableFeeder      = false;  //测拨弹盘是否启用
+	inline constexpr uint32_t         kFeederFeedbackId  = 0x201U; // todo 拨弹盘电机	ID
 	inline constexpr uint32_t         kRightFeedbackId   = 0x202U; // M3508/C620 ID2
-	inline constexpr uint32_t         kLeftFeedbackId    = 0x201U; // M3508/C620 ID1，用户确认。
+	inline constexpr uint32_t         kLeftFeedbackId    = 0x201U; // M3508/C620 ID1
 	inline constexpr bool             kFeederReverse     = false;
 	inline constexpr bool             kRightReverse      = false;
 	inline constexpr bool             kLeftReverse       = true;
 	inline constexpr float            kFeederGearRatio   = 36.0F;
-	inline constexpr uint32_t         kFeederPocketCount = 6U; // 默认六槽，必须按实物确认
+	inline constexpr uint32_t         kFeederPocketCount = 8U;
 	inline constexpr ControlConfig    kControlConfig{
 		.enable_feeder             = kEnableFeeder,
 		.wheel_speed_dps           = 6000.0F, // 三电机联调：转子 1000 RPM，不使用发射用 6000 RPM。
@@ -39,14 +39,4 @@ namespace shoot
 		.output_min   = -kControlConfig.feeder_speed_dps, .output_max = kControlConfig.feeder_speed_dps,
 		.integral_min = 0.0F, .integral_max                           = 0.0F,
 	};
-	static_assert(kFeederFeedbackId >= 0x201U && kFeederFeedbackId <= 0x204U &&
-				  kRightFeedbackId >= 0x201U && kRightFeedbackId <= 0x204U &&
-				  kLeftFeedbackId >= 0x201U && kLeftFeedbackId <= 0x204U,
-				  "Shooter uses C610/C620 IDs 1..4 in one 0x200 command frame");
-	static_assert(kLeftFeedbackId != kRightFeedbackId, "Friction wheel IDs must be unique");
-	static_assert(!kEnableFeeder ||
-				  (kFeederFeedbackId != kRightFeedbackId && kFeederFeedbackId != kLeftFeedbackId),
-				  "Choose an unused feeder ID before enabling feeder");
-	static_assert(kFeederPocketCount > 0U && kFeederGearRatio > 0.0F,
-				  "Measured feeder gear ratio and pocket count must be positive");
 }

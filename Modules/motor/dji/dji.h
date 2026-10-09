@@ -45,9 +45,9 @@ enum Motor_Type_e
 /** @brief DJI 电机的控制器、型号和经典 CAN 注册配置。 */
 struct Motor_Init_Config_s
 {
-	Motor_Controller_Init_s controller_param_init_config;
+	Motor_Controller_Init_s controller_param_init_config{};
 	Motor_Control_Setting_s controller_setting_init_config{};
-	Motor_Type_e            motor_type;
+	Motor_Type_e            motor_type{};
 	classicCanConfigType    can_init_config{};
 };
 

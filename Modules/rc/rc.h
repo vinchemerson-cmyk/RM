@@ -31,7 +31,7 @@ namespace rc
 	static constexpr float NORMALIZED_MAX = 1.0F;
 
 	/** @brief 超过该时间没有收到合法帧即判定遥控掉线, 单位毫秒。 */
-	static constexpr uint32_t OFFLINE_TIMEOUT_MS = 100U;
+	static constexpr uint32_t OFFLINE_TIMEOUT_MS = 100U;//todo 掉线检测1000
 
 	/** @brief 遥控任务轮询周期, 单位毫秒。 */
 	static constexpr uint32_t TASK_PERIOD_MS = 1U;
