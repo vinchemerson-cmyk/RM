@@ -227,7 +227,7 @@ namespace
 			motor->motor_settings.speed           = speedTarget;
 			motor->motor_settings.angle           = feedback.total_angle;
 			motor->motor_settings.current         = lqi.UpdateRecoverySpeed(speedTarget, feedback.speed, dt_s) *
-													kDjiGm6020CommandUnitsPerAmp;
+											kDjiGm6020CommandUnitsPerAmp;
 			if (!motor->enabled)
 				DJI_Motor_Enable(motor);
 			return;
@@ -260,8 +260,8 @@ namespace
 			yawControlTargetSpeedDps = std::fmax(-1.0F, std::fmin(1.0F, stick)) * targetRateDps;
 		motor->motor_settings.angle_epoch = feedback.angle_epoch;
 		const float feedforwardA          = motor == yawMotor
-												? kYawTargetSpeedFeedforwardAperDps * yawControlTargetSpeedDps
-												: 0.0F;
+									   ? kYawTargetSpeedFeedforwardAperDps * yawControlTargetSpeedDps
+									   : 0.0F;
 		const float currentA = lqi.Update(motor->motor_settings.angle, feedback.total_angle,
 										  feedback.speed, dt_s, feedforwardA);
 		motor->motor_settings.current = currentA * kDjiGm6020CommandUnitsPerAmp;
@@ -317,7 +317,7 @@ namespace
 		yawMotor->motor_settings.speed           = 0.0F; // 无速度目标。
 		yawMotor->motor_settings.angle           = feedback.total_angle;
 		yawMotor->motor_settings.current         = yawPulseDirection * kYawFixedCurrentTestA *
-												   kDjiGm6020CommandUnitsPerAmp;
+										   kDjiGm6020CommandUnitsPerAmp;
 		if (!yawMotor->enabled)
 			DJI_Motor_Enable(yawMotor);
 	}
@@ -341,8 +341,8 @@ namespace
 		snapshot.yaw_feedback_current_a  = yawControlFeedback.current;
 		snapshot.yaw_output_enabled      = yawMotor->enabled;
 		snapshot.yaw_command_current_a   = yawMotor->enabled
-											   ? yawMotor->motor_settings.current / kDjiGm6020CommandUnitsPerAmp
-											   : 0.0F;
+											 ? yawMotor->motor_settings.current / kDjiGm6020CommandUnitsPerAmp
+											 : 0.0F;
 		snapshot.yaw_position_current_a = yawMotor->enabled ? yawLqi.PositionCurrent() : 0.0F;
 		snapshot.yaw_speed_current_a    = yawMotor->enabled ? yawLqi.SpeedCurrent() : 0.0F;
 		snapshot.yaw_tx_attempts        = yawMotor->tx_enqueue_attempts;
@@ -382,7 +382,7 @@ namespace
 									 remote.switch_left == rc::Left_Switch_e::MIDDLE;
 				const bool requested = remote.switch_right == rc::Right_Switch_e::UP;
 				yawStick             = remoteCommandTest.Update(now, allowed, requested,
-																kYawRemoteCommandTestConfig);
+													kYawRemoteCommandTestConfig);
 				pitchStick = 0.0F;
 			}
 			if constexpr (kYawFixedCurrentTestEnabled)
@@ -459,8 +459,8 @@ serialTasks::EncoderSnapshot gimbal::GetEncoderSnapshot()
 		snapshot.yaw_feedback_current_a = yawMotor->feedback.current;
 		snapshot.yaw_target_speed_dps   = yawMotor->enabled ? yawMotor->motor_settings.speed : 0.0F;
 		snapshot.yaw_command_current_a  = yawMotor->enabled
-											  ? yawMotor->motor_settings.current / kDjiGm6020CommandUnitsPerAmp
-											  : 0.0F;
+											 ? yawMotor->motor_settings.current / kDjiGm6020CommandUnitsPerAmp
+											 : 0.0F;
 	}
 	taskEXIT_CRITICAL();
 	return snapshot;

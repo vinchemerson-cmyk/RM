@@ -133,8 +133,8 @@ int main()
 	{
 		const float yawCurrent = yawCheck.UpdateRecoverySpeed(60.0F, speed, 0.001F);
 		const float expected   = std::fmax(kYawLqiConfig.output_min_a,
-										   std::fmin(kYawLqiConfig.output_max_a,
-													 kYawLqiConfig.k_speed * (60.0F - speed)));
+										 std::fmin(kYawLqiConfig.output_max_a,
+												   kYawLqiConfig.k_speed * (60.0F - speed)));
 		assert(std::fabs(yawCurrent - expected) < 1e-6F);
 		assert(yawCheck.Integral() == 0.0F);
 	}
