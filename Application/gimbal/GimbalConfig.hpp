@@ -78,13 +78,13 @@ inline constexpr bool kPitchPositionMode = true; // 当前使用 LQI 位置目�
  * @brief 相对物理零位的行程。continuous 仅用于已确认可以连续旋转的 yaw 轴。
  * @note 非连续轴的行程必须落在零点 ±180 度内；跨越多圈需另配绝对位置传感器。
  */
-inline constexpr uint16_t kPitchZeroRaw        = 893U;
-inline constexpr uint16_t kPitchTopRaw         = 120U;
-inline constexpr uint16_t kPitchBottomRaw      = 1490U;
-inline constexpr uint16_t kYawZeroRaw          = 3741U;
+inline constexpr uint16_t kPitchZeroRaw   = 893U;
+inline constexpr uint16_t kPitchTopRaw    = 120U;
+inline constexpr uint16_t kPitchBottomRaw = 1490U;
+inline constexpr uint16_t kYawZeroRaw     = 3741U;
 
 /** @brief 上、下实测顶点各向行程内留 10° 保护区；保护区内仅允许向水平零位方向运动。 */
-inline constexpr float    kPitchLimitMarginDeg = 7.0F;
+inline constexpr float kPitchLimitMarginDeg = 7.0F;
 
 inline constexpr float kPitchTopDeg =
 	(static_cast<int32_t>(kPitchTopRaw) - kPitchZeroRaw) * (360.0F / 8192.0F);
@@ -154,19 +154,19 @@ enum class GimbalLqiGainSource
 	BootSolve
 };
 
-inline constexpr GimbalLqiGainSource kPitchLqiGainSource = GimbalLqiGainSource::Manual;
-inline constexpr GimbalLqiGainSource kYawLqiGainSource   = GimbalLqiGainSource::Manual;
+inline constexpr auto kPitchLqiGainSource = GimbalLqiGainSource::Manual;
+inline constexpr auto kYawLqiGainSource   = GimbalLqiGainSource::Manual;
 
-/** @brief pitch 独立 LQI 增益：位置项 A/度，速度项 A/(度/秒)；保持原有效数值。 */
+//pitch 独立 LQI 增益：位置项 A/度，速度项 A/(度/秒)；保持原有效数值。
 inline constexpr LQI_Init_Config_s kPitchLqiConfig{
 	.k_angle            = 0.1F,
 	.k_speed            = 0.01F, .k_integral = 0.01F,
-	.q_angle            = 0.04F, .q_speed = 0.000278F, .q_integral = 0.01F, .r_current = 1.0F,
+	.q_angle            = 0.04F, .q_speed    = 0.000278F, .q_integral = 0.01F, .r_current = 1.0F,
 	.sample_period_s    = kGimbalControlPeriodS,
 	.output_min_a       = -kGimbalCurrentLimitA, .output_max_a = kGimbalCurrentLimitA,
 	.integral_min_deg_s = 0.0F, .integral_max_deg_s            = 0.0F
 };
-// yaw 独立配置；不复制 pitch，修改任一轴 K、Q/R 或积分范围不影响另一轴。
+// yaw 配置；
 inline constexpr LQI_Init_Config_s kYawLqiConfig{
 	.k_angle            = 0.28F,
 	.k_speed            = 0.003F,

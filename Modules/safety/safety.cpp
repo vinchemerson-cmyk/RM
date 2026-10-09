@@ -12,79 +12,79 @@
 
 namespace
 {
-    osThreadId_t taskHandle = nullptr;
+	osThreadId_t taskHandle = nullptr;
 
-    constexpr osThreadAttr_t taskAttrs = {
-        .name       = "SafetyTask",
-        .stack_size = 1024U,
-        // 高于普通应用任务, 保证急停判定不被低的控制任务拖延。
-        .priority   = osPriorityAboveNormal,
-    };
+	constexpr osThreadAttr_t taskAttrs = {
+		.name       = "SafetyTask",
+		.stack_size = 1024U,
+		// 高于普通应用任务, 保证急停判定不被低的控制任务拖延。
+		.priority   = osPriorityAboveNormal,
+	};
 
-    /** @brief 判定后的急停状态: 两个拨杆同时在 DOWN。 */
-    volatile bool e_stopped = false;
+	/** @brief 判定后的急停状态: 两个拨杆同时在 DOWN。 */
+	volatile bool e_stopped = false;
 
-    /** @brief 最近一次判定结果是否为遥控掉线。 */
-    volatile bool offline = true;
+	/** @brief 最近一次判定结果是否为遥控掉线。 */
+	volatile bool offline = true;
 
-    safety::OutputInterlock interlock{};
-    volatile bool armed = false;
+	safety::OutputInterlock interlock{};
+	volatile bool           armed = false;
 
-    /**
+	/**
  * @brief 原始急停手势: 左右拨杆是否同时处于 DOWN。
  */
-    bool RawBothDown()
-    {
-        const auto state = rc::Snapshot();
-        return state.switch_left == rc::Left_Switch_e::DOWN &&
-               state.switch_right == rc::Right_Switch_e::DOWN;
-    }
+	bool RawBothDown()
+	{
+		const auto state = rc::Snapshot();
+		return state.switch_left == rc::Left_Switch_e::DOWN &&
+			   state.switch_right == rc::Right_Switch_e::DOWN;
+	}
 
-    /**
+	/**
  * @brief 安全监控任务。
  * @note 上电和遥控失联后均需双 DOWN、摇杆居中解锁，不自动恢复动作。
  */
-    void Task(void*)
-    {
-        for (;;)
-        {
-            offline = !rc::IsOnline();
+	void Task(void*)
+	{
+		for (;;)
+		{
+			offline = !rc::IsOnline();
 
-            const auto state = rc::Snapshot();
-            const bool bothDown = state.switch_left == rc::Left_Switch_e::DOWN &&
-                                  state.switch_right == rc::Right_Switch_e::DOWN;
-            bool neutral = true;
-            for (uint16_t channel : state.channels)
-                neutral = neutral && rc::Normalize(channel) == 0.0F;
-            e_stopped = !interlock.Update(!offline, bothDown, neutral);
-            armed = interlock.Armed();
+			const auto state    = rc::Snapshot();
+			const bool bothDown = state.switch_left == rc::Left_Switch_e::DOWN &&
+								  state.switch_right == rc::Right_Switch_e::DOWN;
+			bool neutral = true;
+			for (uint16_t channel : state.channels)
+				neutral = neutral && rc::Normalize(channel) == 0.0F;
+			e_stopped = !interlock.Update(!offline, bothDown, neutral);
+			armed     = interlock.Armed();
 
-            osDelay(safety::TASK_PERIOD_MS);
-        }
-    }
+			osDelay(safety::TASK_PERIOD_MS);
+		}
+	}
 } // namespace
 
 bool safety::ShouldOutput()
 {
-    // 安全任务完成首次在线判定前保持关闭；掉线也立即失效。
-    return armed && !offline && !e_stopped && !RawBothDown() && rc::IsOnline();
+	// 安全任务完成首次在线判定前保持关闭；掉线也立即失效。
+	return armed && !offline && !e_stopped && !RawBothDown() && rc::IsOnline();
 }
 
 bool safety::IsEStopped()
 {
-    return e_stopped;
+	return e_stopped;
 }
 
 bool safety::BothDown()
 {
-    return RawBothDown();
+	return RawBothDown();
 }
 
 void safety::Init()
 {
-    if (taskHandle != nullptr)
-        return;
-    taskHandle = osThreadNew(Task, nullptr, &taskAttrs);
-    if (taskHandle == nullptr)
-        Error_Handler();
+	if (taskHandle != nullptr)
+		return;
+	taskHandle = osThreadNew(Task, nullptr, &taskAttrs);
+	if (taskHandle == nullptr)
+		Error_Handler();
 }

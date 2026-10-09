@@ -162,25 +162,25 @@
   *         the configuration information for the specified GPIO peripheral.
   * @retval None
   */
-void HAL_GPIO_Init(GPIO_TypeDef  *GPIOx, const GPIO_InitTypeDef *GPIO_Init)
+void HAL_GPIO_Init(GPIO_TypeDef* GPIOx, const GPIO_InitTypeDef* GPIO_Init)
 {
-  uint32_t position = 0x00U;
-  uint32_t iocurrent;
-  uint32_t temp;
-  EXTI_Core_TypeDef *EXTI_CurrentCPU;
+	uint32_t           position = 0x00U;
+	uint32_t           iocurrent;
+	uint32_t           temp;
+	EXTI_Core_TypeDef* EXTI_CurrentCPU;
 
 #if defined(DUAL_CORE) && defined(CORE_CM4)
-  EXTI_CurrentCPU = EXTI_D2; /* EXTI for CM4 CPU */
+EXTI_CurrentCPU= EXTI_D2; /* EXTI for CM4 CPU */
 #else
-  EXTI_CurrentCPU = EXTI_D1; /* EXTI for CM7 CPU */
+EXTI_CurrentCPU= EXTI_D1; /* EXTI for CM7 CPU */
 #endif
 
-  /* Check the parameters */
-  assert_param(IS_GPIO_ALL_INSTANCE(GPIOx));
-  assert_param(IS_GPIO_PIN(GPIO_Init->Pin));
-  assert_param(IS_GPIO_MODE(GPIO_Init->Mode));
+/* Check the parameters */
+assert_param (IS_GPIO_ALL_INSTANCE(GPIOx));
+assert_param (IS_GPIO_PIN(GPIO_Init->Pin));
+assert_param (IS_GPIO_MODE(GPIO_Init->Mode));
 
-  /* Configure the port pins */
+/* Configure the port pins */
   while (((GPIO_Init->Pin) >> position) != 0x00U)
   {
     /* Get current io position */
@@ -300,25 +300,25 @@ void HAL_GPIO_Init(GPIO_TypeDef  *GPIOx, const GPIO_InitTypeDef *GPIO_Init)
   *          This parameter can be one of GPIO_PIN_x where x can be (0..15).
   * @retval None
   */
-void HAL_GPIO_DeInit(GPIO_TypeDef  *GPIOx, uint32_t GPIO_Pin)
+void HAL_GPIO_DeInit(GPIO_TypeDef* GPIOx, uint32_t GPIO_Pin)
 {
-  uint32_t position = 0x00U;
-  uint32_t iocurrent;
-  uint32_t tmp;
-  EXTI_Core_TypeDef *EXTI_CurrentCPU;
+	uint32_t           position = 0x00U;
+	uint32_t           iocurrent;
+	uint32_t           tmp;
+	EXTI_Core_TypeDef* EXTI_CurrentCPU;
 
 #if defined(DUAL_CORE) && defined(CORE_CM4)
-  EXTI_CurrentCPU = EXTI_D2; /* EXTI for CM4 CPU */
+EXTI_CurrentCPU= EXTI_D2; /* EXTI for CM4 CPU */
 #else
-  EXTI_CurrentCPU = EXTI_D1; /* EXTI for CM7 CPU */
+EXTI_CurrentCPU= EXTI_D1; /* EXTI for CM7 CPU */
 #endif
 
-  /* Check the parameters */
-  assert_param(IS_GPIO_ALL_INSTANCE(GPIOx));
-  assert_param(IS_GPIO_PIN(GPIO_Pin));
+/* Check the parameters */
+assert_param (IS_GPIO_ALL_INSTANCE(GPIOx));
+assert_param (IS_GPIO_PIN(GPIO_Pin));
 
-  /* Configure the port pins */
-  while ((GPIO_Pin >> position) != 0x00U)
+/* Configure the port pins */
+  while ((GPIO_Pin>> position) != 0x00U)
   {
     /* Get current io position */
     iocurrent = GPIO_Pin & (1UL << position) ;
@@ -387,22 +387,21 @@ void HAL_GPIO_DeInit(GPIO_TypeDef  *GPIOx, uint32_t GPIO_Pin)
   *         This parameter can be GPIO_PIN_x where x can be (0..15).
   * @retval The input port pin value.
   */
-GPIO_PinState HAL_GPIO_ReadPin(const GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin)
+GPIO_PinState HAL_GPIO_ReadPin(const GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
 {
-  GPIO_PinState bitstatus;
+	GPIO_PinState bitstatus;
 
-  /* Check the parameters */
-  assert_param(IS_GPIO_PIN(GPIO_Pin));
+	/* Check the parameters */
+	assert_param(IS_GPIO_PIN(GPIO_Pin));
 
-  if ((GPIOx->IDR & GPIO_Pin) != 0x00U)
-  {
-    bitstatus = GPIO_PIN_SET;
-  }
-  else
-  {
-    bitstatus = GPIO_PIN_RESET;
-  }
-  return bitstatus;
+	if ((GPIOx->IDR & GPIO_Pin) != 0x00U)
+	{
+		bitstatus = GPIO_PIN_SET;
+	} else
+	{
+		bitstatus = GPIO_PIN_RESET;
+	}
+	return bitstatus;
 }
 
 /**
@@ -421,20 +420,19 @@ GPIO_PinState HAL_GPIO_ReadPin(const GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin)
   *            @arg GPIO_PIN_SET: to set the port pin
   * @retval None
   */
-void HAL_GPIO_WritePin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin, GPIO_PinState PinState)
+void HAL_GPIO_WritePin(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin, GPIO_PinState PinState)
 {
-  /* Check the parameters */
-  assert_param(IS_GPIO_PIN(GPIO_Pin));
-  assert_param(IS_GPIO_PIN_ACTION(PinState));
+	/* Check the parameters */
+	assert_param(IS_GPIO_PIN(GPIO_Pin));
+	assert_param(IS_GPIO_PIN_ACTION(PinState));
 
-  if (PinState != GPIO_PIN_RESET)
-  {
-    GPIOx->BSRR = GPIO_Pin;
-  }
-  else
-  {
-    GPIOx->BSRR = (uint32_t)GPIO_Pin << GPIO_NUMBER;
-  }
+	if (PinState != GPIO_PIN_RESET)
+	{
+		GPIOx->BSRR = GPIO_Pin;
+	} else
+	{
+		GPIOx->BSRR = (uint32_t)GPIO_Pin << GPIO_NUMBER;
+	}
 }
 
 /**
@@ -443,18 +441,18 @@ void HAL_GPIO_WritePin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin, GPIO_PinState Pin
   * @param  GPIO_Pin: Specifies the pins to be toggled.
   * @retval None
   */
-void HAL_GPIO_TogglePin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin)
+void HAL_GPIO_TogglePin(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
 {
-  uint32_t odr;
+	uint32_t odr;
 
-  /* Check the parameters */
-  assert_param(IS_GPIO_PIN(GPIO_Pin));
+	/* Check the parameters */
+	assert_param(IS_GPIO_PIN(GPIO_Pin));
 
-  /* get current Output Data Register value */
-  odr = GPIOx->ODR;
+	/* get current Output Data Register value */
+	odr = GPIOx->ODR;
 
-  /* Set selected pins that were at low level, and reset ones that were high */
-  GPIOx->BSRR = ((odr & GPIO_Pin) << GPIO_NUMBER) | (~odr & GPIO_Pin);
+	/* Set selected pins that were at low level, and reset ones that were high */
+	GPIOx->BSRR = ((odr & GPIO_Pin) << GPIO_NUMBER) | (~odr & GPIO_Pin);
 }
 
 /**
@@ -468,34 +466,33 @@ void HAL_GPIO_TogglePin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin)
   *         This parameter can be any combination of GPIO_PIN_x where x can be (0..15).
   * @retval None
   */
-HAL_StatusTypeDef HAL_GPIO_LockPin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin)
+HAL_StatusTypeDef HAL_GPIO_LockPin(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
 {
-  __IO uint32_t tmp = GPIO_LCKR_LCKK;
+	__IO uint32_t tmp = GPIO_LCKR_LCKK;
 
-  /* Check the parameters */
-  assert_param(IS_GPIO_LOCK_INSTANCE(GPIOx));
-  assert_param(IS_GPIO_PIN(GPIO_Pin));
+	/* Check the parameters */
+	assert_param(IS_GPIO_LOCK_INSTANCE(GPIOx));
+	assert_param(IS_GPIO_PIN(GPIO_Pin));
 
-  /* Apply lock key write sequence */
-  tmp |= GPIO_Pin;
-  /* Set LCKx bit(s): LCKK='1' + LCK[15-0] */
-  GPIOx->LCKR = tmp;
-  /* Reset LCKx bit(s): LCKK='0' + LCK[15-0] */
-  GPIOx->LCKR = GPIO_Pin;
-  /* Set LCKx bit(s): LCKK='1' + LCK[15-0] */
-  GPIOx->LCKR = tmp;
-  /* Read LCKK register. This read is mandatory to complete key lock sequence*/
-  tmp = GPIOx->LCKR;
+	/* Apply lock key write sequence */
+	tmp         |= GPIO_Pin;
+	/* Set LCKx bit(s): LCKK='1' + LCK[15-0] */
+	GPIOx->LCKR = tmp;
+	/* Reset LCKx bit(s): LCKK='0' + LCK[15-0] */
+	GPIOx->LCKR = GPIO_Pin;
+	/* Set LCKx bit(s): LCKK='1' + LCK[15-0] */
+	GPIOx->LCKR = tmp;
+	/* Read LCKK register. This read is mandatory to complete key lock sequence*/
+	tmp         = GPIOx->LCKR;
 
-  /* read again in order to confirm lock is active */
-  if ((GPIOx->LCKR & GPIO_LCKR_LCKK) != 0x00U)
-  {
-    return HAL_OK;
-  }
-  else
-  {
-    return HAL_ERROR;
-  }
+	/* read again in order to confirm lock is active */
+	if ((GPIOx->LCKR & GPIO_LCKR_LCKK) != 0x00U)
+	{
+		return HAL_OK;
+	} else
+	{
+		return HAL_ERROR;
+	}
 }
 
 /**
@@ -505,15 +502,16 @@ HAL_StatusTypeDef HAL_GPIO_LockPin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin)
   */
 void HAL_GPIO_EXTI_IRQHandler(uint16_t GPIO_Pin)
 {
+
 #if defined(DUAL_CORE) && defined(CORE_CM4)
-  if (__HAL_GPIO_EXTID2_GET_IT(GPIO_Pin) != 0x00U)
+if (__HAL_GPIO_EXTID2_GET_IT(GPIO_Pin)!= 0x00U)
   {
     __HAL_GPIO_EXTID2_CLEAR_IT(GPIO_Pin);
     HAL_GPIO_EXTI_Callback(GPIO_Pin);
   }
 #else
-  /* EXTI line interrupt detected */
-  if (__HAL_GPIO_EXTI_GET_IT(GPIO_Pin) != 0x00U)
+/* EXTI line interrupt detected */
+if (__HAL_GPIO_EXTI_GET_IT(GPIO_Pin)!= 0x00U)
   {
     __HAL_GPIO_EXTI_CLEAR_IT(GPIO_Pin);
     HAL_GPIO_EXTI_Callback(GPIO_Pin);
@@ -528,10 +526,10 @@ void HAL_GPIO_EXTI_IRQHandler(uint16_t GPIO_Pin)
   */
 __weak void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-  /* Prevent unused argument(s) compilation warning */
-  UNUSED(GPIO_Pin);
+	/* Prevent unused argument(s) compilation warning */
+	UNUSED(GPIO_Pin);
 
-  /* NOTE: This function Should not be modified, when the callback is needed,
+	/* NOTE: This function Should not be modified, when the callback is needed,
            the HAL_GPIO_EXTI_Callback could be implemented in the user file
    */
 }

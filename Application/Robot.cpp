@@ -8,22 +8,23 @@
 #include "FreeRTOS.h"
 
 static_assert(configTICK_RATE_HZ == 1000U, "Remote and motor timing requires 1ms RTOS ticks");
+
 namespace
 {
-// 应用栈按各任务 osThreadAttr_t 的字节数计；另留 8KB 给 TCB、内核任务和驱动对象。
-constexpr size_t kApplicationStackBytes = 4096U +
-    (InfantryInitialization::ENABLE_USB_SERIAL ? 2048U : 0U) +
-    (InfantryInitialization::ENABLE_IMU ? 3072U : 0U) +
-    (InfantryInitialization::ENABLE_RC ? 2048U : 0U) +
-    (InfantryInitialization::ENABLE_SAFETY ? 1024U : 0U) +
-    (InfantryInitialization::ENABLE_GIMBAL ? 2048U : 0U) +
-    (InfantryInitialization::ENABLE_SHOOT ? 3072U : 0U) +
-    (InfantryInitialization::ENABLE_INTERBOARD ? 2048U : 0U) +
-    (InfantryInitialization::ENABLE_UART_SERIAL ? 2048U : 0U) +
-    (InfantryInitialization::ENABLE_ENCODER_UART7 ? 2048U : 0U) +
-    (InfantryInitialization::ENABLE_BUZZER ? 1024U : 0U);
-static_assert(configTOTAL_HEAP_SIZE >= kApplicationStackBytes + 8192U,
-              "RTOS heap is too small for the enabled tasks");
+	// 应用栈按各任务 osThreadAttr_t 的字节数计；另留 8KB 给 TCB、内核任务和驱动对象。
+	constexpr size_t kApplicationStackBytes = 4096U +
+											  (InfantryInitialization::ENABLE_USB_SERIAL ? 2048U : 0U) +
+											  (InfantryInitialization::ENABLE_IMU ? 3072U : 0U) +
+											  (InfantryInitialization::ENABLE_RC ? 2048U : 0U) +
+											  (InfantryInitialization::ENABLE_SAFETY ? 1024U : 0U) +
+											  (InfantryInitialization::ENABLE_GIMBAL ? 2048U : 0U) +
+											  (InfantryInitialization::ENABLE_SHOOT ? 3072U : 0U) +
+											  (InfantryInitialization::ENABLE_INTERBOARD ? 2048U : 0U) +
+											  (InfantryInitialization::ENABLE_UART_SERIAL ? 2048U : 0U) +
+											  (InfantryInitialization::ENABLE_ENCODER_UART7 ? 2048U : 0U) +
+											  (InfantryInitialization::ENABLE_BUZZER ? 1024U : 0U);
+	static_assert(configTOTAL_HEAP_SIZE >= kApplicationStackBytes + 8192U,
+				  "RTOS heap is too small for the enabled tasks");
 }
 
 #include "main.h"
@@ -42,43 +43,43 @@ static_assert(configTOTAL_HEAP_SIZE >= kApplicationStackBytes + 8192U,
 /** @brief 创建已启用的任务并注册通信接口；重复调用只装配一次。 */
 void InfantryInit(void)
 {
-    static bool initialized = false;
-    if (initialized)
-        return;
+	static bool initialized = false;
+	if (initialized)
+		return;
 
-    BSPLogInit();
+	BSPLogInit();
 
-    if (InfantryInitialization::ENABLE_USB_SERIAL)
-        serialTasks::CreateUsbSerialTask();
+	if (InfantryInitialization::ENABLE_USB_SERIAL)
+		serialTasks::CreateUsbSerialTask();
 
-    if (InfantryInitialization::ENABLE_IMU)
-        imu::CreateTask();
+	if (InfantryInitialization::ENABLE_IMU)
+		imu::CreateTask();
 
-    // 双板链路独占指定 FDCAN，须先于同一路 CAN 上的其他模块注册。
-    if (InfantryInitialization::ENABLE_INTERBOARD && !interboard::Start())
-        Error_Handler();
+	// 双板链路独占指定 FDCAN，须先于同一路 CAN 上的其他模块注册。
+	if (InfantryInitialization::ENABLE_INTERBOARD && !interboard::Start())
+		Error_Handler();
 
-    if (InfantryInitialization::ENABLE_UART_SERIAL)
-        serialTasks::CreateUartSerialTask();
+	if (InfantryInitialization::ENABLE_UART_SERIAL)
+		serialTasks::CreateUartSerialTask();
 
-    if (InfantryInitialization::ENABLE_BUZZER)
-        appTasks::CreateBuzzerTask();
+	if (InfantryInitialization::ENABLE_BUZZER)
+		appTasks::CreateBuzzerTask();
 
-    if (InfantryInitialization::ENABLE_RC)
-        rc::Init();
+	if (InfantryInitialization::ENABLE_RC)
+		rc::Init();
 
-    if (InfantryInitialization::ENABLE_SAFETY)
-        safety::Init();
+	if (InfantryInitialization::ENABLE_SAFETY)
+		safety::Init();
 
-    // 云台任务运行时每周期查询遥控和急停状态。
-    if (InfantryInitialization::ENABLE_GIMBAL)
-        gimbal::Init();
+	// 云台任务运行时每周期查询遥控和急停状态。
+	if (InfantryInitialization::ENABLE_GIMBAL)
+		gimbal::Init();
 
-    if (InfantryInitialization::ENABLE_SHOOT)
-        shoot::Init();
+	if (InfantryInitialization::ENABLE_SHOOT)
+		shoot::Init();
 
-    if (InfantryInitialization::ENABLE_ENCODER_UART7)
-        serialTasks::CreateEncoderSerialTask(gimbal::GetYawControlSnapshot);
+	if (InfantryInitialization::ENABLE_ENCODER_UART7)
+		serialTasks::CreateEncoderSerialTask(gimbal::GetYawControlSnapshot);
 
-    initialized = true;
+	initialized = true;
 }

@@ -17,13 +17,13 @@
  */
 inline int16_t MotorEncoderDelta(uint16_t previous, uint16_t current)
 {
-    int32_t delta = static_cast<int32_t>(current & 0x1FFFU) -
-                    static_cast<int32_t>(previous & 0x1FFFU);
-    if (delta > 4096)
-        delta -= 8192;
-    else if (delta < -4096)
-        delta += 8192;
-    return static_cast<int16_t>(delta);
+	int32_t delta = static_cast<int32_t>(current & 0x1FFFU) -
+					static_cast<int32_t>(previous & 0x1FFFU);
+	if (delta > 4096)
+		delta -= 8192;
+	else if (delta < -4096)
+		delta += 8192;
+	return static_cast<int16_t>(delta);
 }
 
 #endif // INFANTRY_H723_ENCODER_ANGLE_H

@@ -24,53 +24,67 @@
 extern "C" {
 #endif
 
-/* Includes ------------------------------------------------------------------*/
+	/* Includes ------------------------------------------------------------------*/
 #include "stm32h7xx_hal_def.h"
 
-/** @addtogroup STM32H7xx_HAL_Driver
+	/** @addtogroup STM32H7xx_HAL_Driver
   * @{
   */
 
-/** @addtogroup GPIOEx GPIOEx
+	/** @addtogroup GPIOEx GPIOEx
   * @{
   */
 
-/* Exported types ------------------------------------------------------------*/
+	/* Exported types ------------------------------------------------------------*/
 
-/* Exported constants --------------------------------------------------------*/
-/** @defgroup GPIOEx_Exported_Constants GPIO Exported Constants
+	/* Exported constants --------------------------------------------------------*/
+	/** @defgroup GPIOEx_Exported_Constants GPIO Exported Constants
   * @{
   */
 
-/** @defgroup GPIO_Alternate_function_selection GPIO Alternate Function Selection
+	/** @defgroup GPIO_Alternate_function_selection GPIO Alternate Function Selection
   * @{
   */
 
-/**
+	/**
   * @brief   AF 0 selection
   */
 #define GPIO_AF0_RTC_50Hz      ((uint8_t)0x00)  /* RTC_50Hz Alternate Function mapping                                                     */
+
 #define GPIO_AF0_MCO           ((uint8_t)0x00)  /* MCO (MCO1 and MCO2) Alternate Function mapping                                          */
+
 #define GPIO_AF0_SWJ           ((uint8_t)0x00)  /* SWJ (SWD and JTAG) Alternate Function mapping                                           */
+
 #define GPIO_AF0_LCDBIAS       ((uint8_t)0x00)  /* LCDBIAS Alternate Function mapping                                                      */
+
 #define GPIO_AF0_TRACE         ((uint8_t)0x00)  /* TRACE Alternate Function mapping                                                        */
+
 #if defined(PWR_CPUCR_RETDS_CD) /* CPU domain power down Deepsleep */
 #define GPIO_AF0_CSLEEP        ((uint8_t)0x00)  /* CSLEEP Alternate Function mapping                                                       */
+
 #define GPIO_AF0_CSTOP         ((uint8_t)0x00)  /* CSTOP Alternate Function mapping                                                        */
+
 #define GPIO_AF0_NDSTOP2       ((uint8_t)0x00)  /* NDSTOP2 Alternate Function mapping                                                      */
+
 #endif /* PWR_CPUCR_RETDS_CD */
 #if defined(PWR_CPUCR_PDDS_D2) /* PWR D1 and D2 domains exists */
 #define GPIO_AF0_C1DSLEEP      ((uint8_t)0x00)  /* Cortex-M7 Deep Sleep Alternate Function mapping : available on STM32H7 Rev.B and above  */
+
 #define GPIO_AF0_C1SLEEP       ((uint8_t)0x00)  /* Cortex-M7 Sleep Alternate Function mapping : available on STM32H7 Rev.B and above       */
+
 #define GPIO_AF0_D1PWREN       ((uint8_t)0x00)  /* Domain 1 PWR enable Alternate Function mapping : available on STM32H7 Rev.B and above   */
+
 #define GPIO_AF0_D2PWREN       ((uint8_t)0x00)  /* Domain 2 PWR enable Alternate Function mapping : available on STM32H7 Rev.B and above   */
+
 #if defined(DUAL_CORE)
 #define GPIO_AF0_C2DSLEEP      ((uint8_t)0x00)  /* Cortex-M4 Deep Sleep Alternate Function mapping : available on STM32H7 Rev.B and above  */
+
 #define GPIO_AF0_C2SLEEP       ((uint8_t)0x00)  /* Cortex-M4 Sleep Alternate Function mapping : available on STM32H7 Rev.B and above       */
+
 #endif /* DUAL_CORE */
 #endif /* PWR_CPUCR_PDDS_D2 */
 
-/**
+	/**
   * @brief   AF 1 selection
   */
 #define GPIO_AF1_TIM1          ((uint8_t)0x01)  /* TIM1 Alternate Function mapping   */
@@ -83,11 +97,13 @@ extern "C" {
 #endif /* HRTIM1 */
 #if defined(SAI4)
 #define GPIO_AF1_SAI4          ((uint8_t)0x01)  /* SAI4 Alternate Function mapping : available on STM32H72xxx/STM32H73xxx */
+
 #endif /* SAI4 */
 #define GPIO_AF1_FMC           ((uint8_t)0x01)  /* FMC Alternate Function mapping : available on STM32H72xxx/STM32H73xxx */
 
 
-/**
+
+	/**
   * @brief   AF 2 selection
   */
 #define GPIO_AF2_TIM3          ((uint8_t)0x02)  /* TIM3 Alternate Function mapping   */
@@ -99,11 +115,12 @@ extern "C" {
 #define GPIO_AF2_HRTIM1        ((uint8_t)0x02)  /* HRTIM1 Alternate Function mapping */
 #endif /* HRTIM1 */
 #define GPIO_AF2_TIM15         ((uint8_t)0x02)  /* TIM15 Alternate Function mapping : available on STM32H7A3xxx/STM32H7B3xxx/STM32H7B0xxx and STM32H72xxx/STM32H73xxx */
+
 #if defined(FDCAN3)
 #define GPIO_AF2_FDCAN3        ((uint8_t)0x02)  /* FDCAN3 Alternate Function mapping */
 #endif /*FDCAN3*/
 
-/**
+	/**
   * @brief   AF 3 selection
   */
 #define GPIO_AF3_TIM8          ((uint8_t)0x03)  /* TIM8 Alternate Function mapping   */
@@ -122,7 +139,8 @@ extern "C" {
 #endif /* HRTIM1 */
 #define GPIO_AF3_LTDC          ((uint8_t)0x03)  /* LTDC Alternate Function mapping : available on STM32H72xxx/STM32H73xxx */
 
-/**
+
+	/**
   * @brief   AF 4 selection
   */
 #define GPIO_AF4_I2C1          ((uint8_t)0x04)  /* I2C1 Alternate Function mapping   */
@@ -138,20 +156,23 @@ extern "C" {
 #define GPIO_AF4_USART1        ((uint8_t)0x04)  /* USART1 Alternate Function mapping */
 #if defined(USART10)
 #define GPIO_AF4_USART10       ((uint8_t)0x04)  /* USART10 Alternate Function mapping : available on STM32H72xxx/STM32H73xxx */
+
 #endif /*USART10*/
 #define GPIO_AF4_DFSDM1        ((uint8_t)0x04)  /* DFSDM  Alternate Function mapping */
 #if defined(DFSDM2_BASE)
 #define GPIO_AF4_DFSDM2        ((uint8_t)0x04)  /* DFSDM2 Alternate Function mapping */
 #endif /* DFSDM2_BASE */
 #define GPIO_AF4_DCMI          ((uint8_t)0x04)   /* DCMI Alternate Function mapping : available on STM32H7A3xxx/STM32H7B3xxx/STM32H7B0xxx and STM32H72xxx/STM32H73xxx */
+
 #if defined(PSSI)
 #define GPIO_AF4_PSSI          ((uint8_t)0x04)  /* PSSI Alternate Function mapping   */
 #endif /* PSSI */
 #if defined(OCTOSPIM)
 #define GPIO_AF4_OCTOSPIM_P1   ((uint8_t)0x04)  /* OCTOSPI Manager Port 1 Alternate Function mapping  : available on STM32H72xxx/STM32H73xxx */
+
 #endif /* OCTOSPIM */
 
-/**
+	/**
   * @brief   AF 5 selection
   */
 #define GPIO_AF5_SPI1          ((uint8_t)0x05)  /* SPI1 Alternate Function mapping   */
@@ -165,7 +186,7 @@ extern "C" {
 #define GPIO_AF5_FDCAN3        ((uint8_t)0x05)  /* FDCAN3 Alternate Function mapping */
 #endif /*FDCAN3*/
 
-/**
+	/**
   * @brief   AF 6 selection
   */
 #define GPIO_AF6_SPI2          ((uint8_t)0x06)  /* SPI2 Alternate Function mapping   */
@@ -187,7 +208,7 @@ extern "C" {
 #define GPIO_AF6_OCTOSPIM_P1   ((uint8_t)0x06)  /* OCTOSPI Manager Port 1 Alternate Function mapping */
 #endif /* OCTOSPIM */
 
-/**
+	/**
   * @brief   AF 7 selection
   */
 #define GPIO_AF7_SPI2          ((uint8_t)0x07)  /* SPI2 Alternate Function mapping   */
@@ -200,7 +221,7 @@ extern "C" {
 #define GPIO_AF7_UART7         ((uint8_t)0x07)  /* UART7 Alternate Function mapping  */
 #define GPIO_AF7_SDMMC1        ((uint8_t)0x07)  /* SDMMC1 Alternate Function mapping */
 
-/**
+	/**
   * @brief   AF 8 selection
   */
 #define GPIO_AF8_SPI6          ((uint8_t)0x08)  /* SPI6 Alternate Function mapping   */
@@ -217,7 +238,7 @@ extern "C" {
 #define GPIO_AF8_SAI4          ((uint8_t)0x08)  /* SAI4 Alternate Function mapping   */
 #endif /* SAI4 */
 
-/**
+	/**
   * @brief   AF 9 selection
   */
 #define GPIO_AF9_FDCAN1        ((uint8_t)0x09)  /* FDCAN1 Alternate Function mapping   */
@@ -239,39 +260,52 @@ extern "C" {
 #define GPIO_AF9_OCTOSPIM_P2   ((uint8_t)0x09)  /* OCTOSPI Manager Port 2 Alternate Function mapping */
 #endif /* OCTOSPIM */
 
-/**
+	/**
   * @brief   AF 10 selection
   */
 #if defined(SAI2)
 #define GPIO_AF10_SAI2          ((uint8_t)0x0A)  /* SAI2 Alternate Function mapping                                             */
+
 #endif /*SAI2*/
 #define GPIO_AF10_SDMMC2        ((uint8_t)0x0A)  /* SDMMC2 Alternate Function mapping                                           */
+
 #if defined(USB2_OTG_FS)
 #define GPIO_AF10_OTG2_FS       ((uint8_t)0x0A)  /* OTG2_FS Alternate Function mapping                                          */
+
 #endif /*USB2_OTG_FS*/
 #define GPIO_AF10_COMP1         ((uint8_t)0x0A)  /* COMP1 Alternate Function mapping                                            */
+
 #define GPIO_AF10_COMP2         ((uint8_t)0x0A)  /* COMP2 Alternate Function mapping                                            */
+
 #if defined(LTDC)
 #define GPIO_AF10_LTDC          ((uint8_t)0x0A)  /* LTDC Alternate Function mapping                                             */
+
 #endif /*LTDC*/
 #define GPIO_AF10_CRS_SYNC      ((uint8_t)0x0A)  /* CRS Sync Alternate Function mapping : available on STM32H7 Rev.B and above  */
+
 #if defined(QUADSPI)
 #define GPIO_AF10_QUADSPI       ((uint8_t)0x0A)  /* QUADSPI Alternate Function mapping                                          */
+
 #endif /* QUADSPI */
 #if defined(SAI4)
 #define GPIO_AF10_SAI4          ((uint8_t)0x0A)  /* SAI4 Alternate Function mapping                                             */
+
 #endif /* SAI4 */
 #if !defined(USB2_OTG_FS)
 #define GPIO_AF10_OTG1_FS       ((uint8_t)0x0A)  /* OTG1_FS Alternate Function mapping : available on STM32H7A3xxx/STM32H7B3xxx/STM32H7B0xxx and STM32H72xxx/STM32H73xxx */
+
 #endif /* !USB2_OTG_FS */
 #define GPIO_AF10_OTG1_HS       ((uint8_t)0x0A)  /* OTG1_HS Alternate Function mapping                                          */
+
 #if defined(OCTOSPIM)
 #define GPIO_AF10_OCTOSPIM_P1   ((uint8_t)0x0A)  /* OCTOSPI Manager Port 1 Alternate Function mapping */
 #endif /* OCTOSPIM */
 #define GPIO_AF10_TIM8          ((uint8_t)0x0A)  /* TIM8 Alternate Function mapping                                             */
+
 #define GPIO_AF10_FMC           ((uint8_t)0x0A)  /* FMC Alternate Function mapping : available on STM32H7A3xxx/STM32H7B3xxx/STM32H7B0xxx and STM32H72xxx/STM32H73xxx */
 
-/**
+
+	/**
   * @brief   AF 11 selection
   */
 #define GPIO_AF11_SWP           ((uint8_t)0x0B)  /* SWP Alternate Function mapping     */
@@ -298,12 +332,13 @@ extern "C" {
 #endif /* ETH */
 #if defined(LTDC)
 #define GPIO_AF11_LTDC          ((uint8_t)0x0B)  /* LTDC Alternate Function mapping : available on STM32H7A3xxx/STM32H7B3xxx/STM32H7B0xxx and STM32H72xxx/STM32H73xxx */
+
 #endif /*LTDC*/
 #if defined(OCTOSPIM)
 #define GPIO_AF11_OCTOSPIM_P1   ((uint8_t)0x0B)  /* OCTOSPI Manager Port 1 Alternate Function mapping */
 #endif /* OCTOSPIM */
 
-/**
+	/**
   * @brief   AF 12 selection
   */
 #define GPIO_AF12_FMC           ((uint8_t)0x0C)  /* FMC Alternate Function mapping     */
@@ -323,7 +358,7 @@ extern "C" {
 #define GPIO_AF12_OCTOSPIM_P1   ((uint8_t)0x0C)  /* OCTOSPI Manager Port 1 Alternate Function mapping */
 #endif /* OCTOSPIM */
 
-/**
+	/**
   * @brief   AF 13 selection
   */
 #define GPIO_AF13_DCMI          ((uint8_t)0x0D)   /* DCMI Alternate Function mapping  */
@@ -343,7 +378,7 @@ extern "C" {
 #define GPIO_AF13_TIM23         ((uint8_t)0x0D)    /* TIM23 Alternate Function mapping */
 #endif  /*TIM23*/
 
-/**
+	/**
   * @brief   AF 14 selection
   */
 #define GPIO_AF14_LTDC         ((uint8_t)0x0E)   /* LTDC Alternate Function mapping  */
@@ -352,7 +387,7 @@ extern "C" {
 #define GPIO_AF14_TIM24        ((uint8_t)0x0E)   /* TIM24 Alternate Function mapping */
 #endif  /*TIM24*/
 
-/**
+	/**
   * @brief   AF 15 selection
   */
 #define GPIO_AF15_EVENTOUT      ((uint8_t)0x0F)  /* EVENTOUT Alternate Function mapping */
@@ -360,41 +395,40 @@ extern "C" {
 #define IS_GPIO_AF(AF)   ((AF) <= (uint8_t)0x0F)
 
 
-
-/**
+	/**
   * @}
   */
 
-/**
+	/**
   * @}
   */
 
-/* Exported macro ------------------------------------------------------------*/
-/** @defgroup GPIOEx_Exported_Macros GPIO Exported Macros
+	/* Exported macro ------------------------------------------------------------*/
+	/** @defgroup GPIOEx_Exported_Macros GPIO Exported Macros
   * @{
   */
-/**
+	/**
   * @}
   */
 
-/* Exported functions --------------------------------------------------------*/
-/** @defgroup GPIOEx_Exported_Functions GPIO Exported Functions
+	/* Exported functions --------------------------------------------------------*/
+	/** @defgroup GPIOEx_Exported_Functions GPIO Exported Functions
   * @{
   */
-/**
+	/**
   * @}
   */
-/* Private types -------------------------------------------------------------*/
-/* Private variables ---------------------------------------------------------*/
-/* Private constants ---------------------------------------------------------*/
-/** @defgroup GPIOEx_Private_Constants GPIO Private Constants
+	/* Private types -------------------------------------------------------------*/
+	/* Private variables ---------------------------------------------------------*/
+	/* Private constants ---------------------------------------------------------*/
+	/** @defgroup GPIOEx_Private_Constants GPIO Private Constants
   * @{
   */
 
-/**
+	/**
   * @brief   GPIO pin available on the platform
   */
-/* Defines the available pins per GPIOs */
+	/* Defines the available pins per GPIOs */
 #define GPIOA_PIN_AVAILABLE  GPIO_PIN_All
 #define GPIOB_PIN_AVAILABLE  GPIO_PIN_All
 #define GPIOC_PIN_AVAILABLE  GPIO_PIN_All
@@ -418,15 +452,15 @@ extern "C" {
 #define GPIOK_PIN_AVAILABLE  (GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 )
 #endif /* GPIOI */
 
-/**
+	/**
   * @}
   */
 
-/* Private macros ------------------------------------------------------------*/
-/** @defgroup GPIOEx_Private_Macros GPIO Private Macros
+	/* Private macros ------------------------------------------------------------*/
+	/** @defgroup GPIOEx_Private_Macros GPIO Private Macros
   * @{
   */
-/** @defgroup GPIOEx_Get_Port_Index GPIO Get Port Index
+	/** @defgroup GPIOEx_Get_Port_Index GPIO Get Port Index
   * @{
   */
 #if defined(GPIOI)
@@ -452,35 +486,35 @@ extern "C" {
                                     ((__GPIOx__) == (GPIOJ))? 9UL : 10UL)
 #endif /* GPIOI */
 
-/**
+	/**
   * @}
   */
 
-/** @defgroup GPIOEx_IS_Alternat_function_selection GPIO Check Alternate Function
+	/** @defgroup GPIOEx_IS_Alternat_function_selection GPIO Check Alternate Function
   * @{
   */
-/**
+	/**
   * @}
   */
 
-/**
+	/**
   * @}
   */
 
-/* Private functions ---------------------------------------------------------*/
-/** @defgroup GPIOEx_Private_Functions GPIO Private Functions
+	/* Private functions ---------------------------------------------------------*/
+	/** @defgroup GPIOEx_Private_Functions GPIO Private Functions
   * @{
   */
 
-/**
+	/**
   * @}
   */
 
-/**
+	/**
   * @}
   */
 
-/**
+	/**
   * @}
   */
 

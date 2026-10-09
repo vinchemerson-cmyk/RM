@@ -31,22 +31,22 @@
 #define SYSTEM_STM32H7XX_H
 
 #ifdef __cplusplus
- extern "C" {
+extern "C" {
 #endif
 
-/** @addtogroup STM32H7xx_System_Includes
+	/** @addtogroup STM32H7xx_System_Includes
   * @{
   */
 
-/**
+	/**
   * @}
   */
 
 
-/** @addtogroup STM32H7xx_System_Exported_types
+	/** @addtogroup STM32H7xx_System_Exported_types
   * @{
   */
-  /* This variable is updated in three ways:
+	/* This variable is updated in three ways:
       1) by calling CMSIS function SystemCoreClockUpdate()
       2) by calling HAL API function HAL_RCC_GetSysClockFreq()
       3) each time HAL_RCC_ClockConfig() is called to configure the system clock frequency
@@ -54,42 +54,48 @@
                is no need to call the 2 first functions listed above, since SystemCoreClock
                variable is updated automatically.
   */
-extern uint32_t SystemCoreClock;             /*!< System Domain1 Clock Frequency  */
-extern uint32_t SystemD2Clock;               /*!< System Domain2 Clock Frequency  */
-extern const  uint8_t D1CorePrescTable[16] ; /*!< D1CorePrescTable prescalers table values */
+	extern uint32_t      SystemCoreClock;      /*!< System Domain1 Clock Frequency  */
+	extern uint32_t      SystemD2Clock;        /*!< System Domain2 Clock Frequency  */
+	extern const uint8_t D1CorePrescTable[16]; /*!< D1CorePrescTable prescalers table values */
 
-/**
+	/**
   * @}
   */
 
-/** @addtogroup STM32H7xx_System_Exported_Constants
+	/** @addtogroup STM32H7xx_System_Exported_Constants
   * @{
   */
 
-/**
+	/**
   * @}
   */
 
-/** @addtogroup STM32H7xx_System_Exported_Macros
+	/** @addtogroup STM32H7xx_System_Exported_Macros
   * @{
   */
 
-/**
+	/**
   * @}
   */
 
-/** @addtogroup STM32H7xx_System_Exported_Functions
+	/** @addtogroup STM32H7xx_System_Exported_Functions
   * @{
   */
 
-extern void SystemInit(void);
-extern void SystemCoreClockUpdate(void);
+	extern void SystemInit(void);
+	extern void SystemCoreClockUpdate(void);
 #if defined(__GNUC__) && !defined(__ARMCC_VERSION)
-  extern void ExitRun0Mode(void) __attribute__((optimize("Os")));
+	extern void ExitRun0Mode(void) __attribute__
+	((optimize
+	(
+	"Os"
+	)
+	)
+	);
 #else
-  extern void ExitRun0Mode(void);
+	extern void ExitRun0Mode(void);
 #endif /* __GNUC__ */
-/**
+	/**
   * @}
   */
 

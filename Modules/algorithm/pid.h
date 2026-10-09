@@ -28,13 +28,13 @@
  */
 struct PID_Init_Config_s
 {
-    float kp{};
-    float ki{};
-    float kd{};
-    float output_min{};
-    float output_max{};
-    float integral_min{};
-    float integral_max{};
+	float kp{};
+	float ki{};
+	float kd{};
+	float output_min{};
+	float output_max{};
+	float integral_min{};
+	float integral_max{};
 };
 
 /**
@@ -43,41 +43,41 @@ struct PID_Init_Config_s
  */
 class PIDInstance
 {
-public:
-    /**
-     * @brief 验证参数并清空控制器历史状态。
-     * @return 参数合法时返回 true；非法配置不会启用控制器。
-     */
-    bool Configure(const PID_Init_Config_s& config);
+	public:
+		/**
+		 * @brief 验证参数并清空控制器历史状态。
+		 * @return 参数合法时返回 true；非法配置不会启用控制器。
+		 */
+		bool Configure(const PID_Init_Config_s& config);
 
-    /** @brief 清空积分和微分历史；停机、掉线或切换模式时调用。 */
-    void Reset();
+		/** @brief 清空积分和微分历史；停机、掉线或切换模式时调用。 */
+		void Reset();
 
-    /** @brief 停用控制器并清空状态；再次使用前必须重新配置。 */
-    void Disable();
+		/** @brief 停用控制器并清空状态；再次使用前必须重新配置。 */
+		void Disable();
 
-    /**
-     * @brief 计算一次 PID 输出，结果限制在配置范围内。
-     * @param target 目标值，与 measurement 使用相同单位。
-     * @param measurement 本次反馈值。
-     * @param dt_s 距离上次调用的时间，单位秒且必须大于零。
-     * @return 执行器输出；配置或输入无效时返回零并清空状态。
-     */
-    float Update(float target, float measurement, float dt_s);
+		/**
+		 * @brief 计算一次 PID 输出，结果限制在配置范围内。
+		 * @param target 目标值，与 measurement 使用相同单位。
+		 * @param measurement 本次反馈值。
+		 * @param dt_s 距离上次调用的时间，单位秒且必须大于零。
+		 * @return 执行器输出；配置或输入无效时返回零并清空状态。
+		 */
+		float Update(float target, float measurement, float dt_s);
 
-    /** @brief 返回上一次计算的输出。 */
-    [[nodiscard]] float Output() const { return output_; }
+		/** @brief 返回上一次计算的输出。 */
+		[[nodiscard]] float Output() const { return output_; }
 
-    /** @brief 查询是否已载入合法参数。 */
-    [[nodiscard]] bool IsConfigured() const { return configured_; }
+		/** @brief 查询是否已载入合法参数。 */
+		[[nodiscard]] bool IsConfigured() const { return configured_; }
 
-private:
-    PID_Init_Config_s config_{};
-    float integral_{};
-    float last_measurement_{};
-    float output_{};
-    bool configured_{};
-    bool has_measurement_{};
+	private:
+		PID_Init_Config_s config_{};
+		float             integral_{};
+		float             last_measurement_{};
+		float             output_{};
+		bool              configured_{};
+		bool              has_measurement_{};
 };
 
 #endif // INFANTRY_H723_PID_H

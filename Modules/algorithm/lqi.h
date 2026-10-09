@@ -12,17 +12,17 @@
  */
 struct LQI_Model_s
 {
-    double a[2][2]{};
-    double b[2]{};
-    double sample_period_s{};
+	double a[2][2]{};
+	double b[2]{};
+	double sample_period_s{};
 };
 
 /** @brief Riccati 迭代参数；小采样周期的积分状态可能需要较多迭代。 */
 struct LQI_Solver_Options_s
 {
-    uint32_t max_iterations{50000U};
-    double relative_tolerance{1e-10};
-    double absolute_tolerance{1e-12};
+	uint32_t max_iterations{50000U};
+	double   relative_tolerance{1e-10};
+	double   absolute_tolerance{1e-12};
 };
 
 enum class LQI_Solve_Status
@@ -37,10 +37,10 @@ enum class LQI_Solve_Status
 /** @brief 成功时的 K 与 Riccati 解；失败时 K/P 保持全零，保留迭代诊断。 */
 struct LQI_Solve_Result_s
 {
-    float gain[3]{}; ///< [k_angle, k_speed, k_integral]，I=-K*[角度误差,速度,积分]。
-    double p[3][3]{};
-    uint32_t iterations{};
-    double relative_residual{};
+	float    gain[3]{}; ///< [k_angle, k_speed, k_integral]，I=-K*[角度误差,速度,积分]。
+	double   p[3][3]{};
+	uint32_t iterations{};
+	double   relative_residual{};
 };
 
 /**
@@ -50,8 +50,8 @@ struct LQI_Solve_Result_s
  *       闭环是否严格位于单位圆内；不收敛或不稳定时不返回可用增益。
  *       属于初始化/离线计算，不能放进 1kHz 电机控制任务；不自动启用 LQI。
  */
-LQI_Solve_Status LQI_Solve(const LQI_Model_s& model, const LQI_Init_Config_s& config,
-                          LQI_Solve_Result_s& result,
-                          const LQI_Solver_Options_s& options = {});
+LQI_Solve_Status LQI_Solve(const LQI_Model_s&          model, const LQI_Init_Config_s& config,
+						   LQI_Solve_Result_s&         result,
+						   const LQI_Solver_Options_s& options = {});
 
 #endif // INFANTRY_H723_LQI_H

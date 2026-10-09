@@ -24,57 +24,57 @@
 extern "C" {
 #endif /* __cplusplus */
 
-/* Includes ------------------------------------------------------------------*/
+	/* Includes ------------------------------------------------------------------*/
 #include "stm32h7xx_hal_def.h"
 
 #if defined (USB_OTG_FS) || defined (USB_OTG_HS)
-/** @addtogroup STM32H7xx_HAL_Driver
+	/** @addtogroup STM32H7xx_HAL_Driver
   * @{
   */
 
-/** @addtogroup PCDEx
+	/** @addtogroup PCDEx
   * @{
   */
-/* Exported types ------------------------------------------------------------*/
-/* Exported constants --------------------------------------------------------*/
-/* Exported macros -----------------------------------------------------------*/
-/* Exported functions --------------------------------------------------------*/
-/** @addtogroup PCDEx_Exported_Functions PCDEx Exported Functions
+	/* Exported types ------------------------------------------------------------*/
+	/* Exported constants --------------------------------------------------------*/
+	/* Exported macros -----------------------------------------------------------*/
+	/* Exported functions --------------------------------------------------------*/
+	/** @addtogroup PCDEx_Exported_Functions PCDEx Exported Functions
   * @{
   */
-/** @addtogroup PCDEx_Exported_Functions_Group1 Peripheral Control functions
+	/** @addtogroup PCDEx_Exported_Functions_Group1 Peripheral Control functions
   * @{
   */
 #if defined (USB_OTG_FS) || defined (USB_OTG_HS)
-HAL_StatusTypeDef HAL_PCDEx_SetTxFiFo(PCD_HandleTypeDef *hpcd, uint8_t fifo, uint16_t size);
-HAL_StatusTypeDef HAL_PCDEx_SetRxFiFo(PCD_HandleTypeDef *hpcd, uint16_t size);
+	HAL_StatusTypeDef HAL_PCDEx_SetTxFiFo(PCD_HandleTypeDef* hpcd, uint8_t fifo, uint16_t size);
+	HAL_StatusTypeDef HAL_PCDEx_SetRxFiFo(PCD_HandleTypeDef* hpcd, uint16_t size);
 #endif /* defined (USB_OTG_FS) || defined (USB_OTG_HS) */
 
 
-HAL_StatusTypeDef HAL_PCDEx_ActivateLPM(PCD_HandleTypeDef *hpcd);
-HAL_StatusTypeDef HAL_PCDEx_DeActivateLPM(PCD_HandleTypeDef *hpcd);
+	HAL_StatusTypeDef HAL_PCDEx_ActivateLPM(PCD_HandleTypeDef * hpcd);
+	HAL_StatusTypeDef HAL_PCDEx_DeActivateLPM(PCD_HandleTypeDef * hpcd);
 
 
-HAL_StatusTypeDef HAL_PCDEx_ActivateBCD(PCD_HandleTypeDef *hpcd);
-HAL_StatusTypeDef HAL_PCDEx_DeActivateBCD(PCD_HandleTypeDef *hpcd);
-void HAL_PCDEx_BCD_VBUSDetect(PCD_HandleTypeDef *hpcd);
+	HAL_StatusTypeDef HAL_PCDEx_ActivateBCD(PCD_HandleTypeDef * hpcd);
+	HAL_StatusTypeDef HAL_PCDEx_DeActivateBCD(PCD_HandleTypeDef * hpcd);
+	void              HAL_PCDEx_BCD_VBUSDetect(PCD_HandleTypeDef * hpcd);
 
-void HAL_PCDEx_LPM_Callback(PCD_HandleTypeDef *hpcd, PCD_LPM_MsgTypeDef msg);
-void HAL_PCDEx_BCD_Callback(PCD_HandleTypeDef *hpcd, PCD_BCD_MsgTypeDef msg);
+	void HAL_PCDEx_LPM_Callback(PCD_HandleTypeDef* hpcd, PCD_LPM_MsgTypeDef msg);
+	void HAL_PCDEx_BCD_Callback(PCD_HandleTypeDef* hpcd, PCD_BCD_MsgTypeDef msg);
 
-/**
+	/**
   * @}
   */
 
-/**
+	/**
   * @}
   */
 
-/**
+	/**
   * @}
   */
 
-/**
+	/**
   * @}
   */
 #endif /* defined (USB_OTG_FS) || defined (USB_OTG_HS) */

@@ -24,30 +24,30 @@
 extern "C" {
 #endif
 
-/* Includes ------------------------------------------------------------------*/
+	/* Includes ------------------------------------------------------------------*/
 #include "stm32h7xx_hal_def.h"
 
-/** @addtogroup STM32H7xx_HAL_Driver
+	/** @addtogroup STM32H7xx_HAL_Driver
    * @{
    */
 
-/** @addtogroup HSEM
+	/** @addtogroup HSEM
    * @{
    */
 
-/* Exported macro ------------------------------------------------------------*/
-/** @defgroup HSEM_Exported_Macros HSEM Exported Macros
+	/* Exported macro ------------------------------------------------------------*/
+	/** @defgroup HSEM_Exported_Macros HSEM Exported Macros
   * @{
   */
 
-/**
+	/**
   * @brief  SemID to mask helper Macro.
   * @param  __SEMID__: semaphore ID from 0 to 31
   * @retval Semaphore Mask.
   */
 #define __HAL_HSEM_SEMID_TO_MASK(__SEMID__) (1 << (__SEMID__))
 
-/**
+	/**
   * @brief  Enables the specified HSEM interrupts.
   * @param  __SEM_MASK__: semaphores Mask
   * @retval None.
@@ -59,7 +59,7 @@ extern "C" {
 #else
 #define __HAL_HSEM_ENABLE_IT(__SEM_MASK__) (HSEM->C1IER |= (__SEM_MASK__))
 #endif /* DUAL_CORE */
-/**
+	/**
   * @brief  Disables the specified HSEM interrupts.
   * @param  __SEM_MASK__: semaphores Mask
   * @retval None.
@@ -72,7 +72,7 @@ extern "C" {
 #define __HAL_HSEM_DISABLE_IT(__SEM_MASK__) (HSEM->C1IER &= ~(__SEM_MASK__))
 #endif /* DUAL_CORE */
 
-/**
+	/**
   * @brief  Checks whether interrupt has occurred or not for semaphores specified by a mask.
   * @param  __SEM_MASK__: semaphores Mask
   * @retval semaphores Mask : Semaphores where an interrupt occurred.
@@ -85,7 +85,7 @@ extern "C" {
 #define __HAL_HSEM_GET_IT(__SEM_MASK__) ((__SEM_MASK__) & HSEM->C1MISR)
 #endif /* DUAL_CORE */
 
-/**
+	/**
   * @brief  Get the semaphores release status flags.
   * @param  __SEM_MASK__: semaphores Mask
   * @retval semaphores Mask : Semaphores where Release flags rise.
@@ -98,7 +98,7 @@ extern "C" {
 #define __HAL_HSEM_GET_FLAG(__SEM_MASK__) ((__SEM_MASK__) & HSEM->C1ISR)
 #endif /* DUAL_CORE */
 
-/**
+	/**
   * @brief  Clears the HSEM Interrupt flags.
   * @param  __SEM_MASK__: semaphores Mask
   * @retval None.
@@ -111,70 +111,70 @@ extern "C" {
 #define __HAL_HSEM_CLEAR_FLAG(__SEM_MASK__) (HSEM->C1ICR |= (__SEM_MASK__))
 #endif /* DUAL_CORE */
 
-/**
+	/**
   * @}
   */
 
-/* Exported functions --------------------------------------------------------*/
-/** @defgroup HSEM_Exported_Functions HSEM Exported Functions
+	/* Exported functions --------------------------------------------------------*/
+	/** @defgroup HSEM_Exported_Functions HSEM Exported Functions
   * @{
   */
 
-/** @addtogroup HSEM_Exported_Functions_Group1 Take and Release functions
+	/** @addtogroup HSEM_Exported_Functions_Group1 Take and Release functions
   * @brief    HSEM Take and Release functions
   * @{
   */
 
-/* HSEM semaphore take (lock) using 2-Step  method ****************************/
-HAL_StatusTypeDef  HAL_HSEM_Take(uint32_t SemID, uint32_t ProcessID);
-/* HSEM semaphore fast take (lock) using 1-Step  method ***********************/
-HAL_StatusTypeDef  HAL_HSEM_FastTake(uint32_t SemID);
-/* HSEM Release  **************************************************************/
-void  HAL_HSEM_Release(uint32_t SemID, uint32_t ProcessID);
-/* HSEM Release All************************************************************/
-void HAL_HSEM_ReleaseAll(uint32_t Key, uint32_t CoreID);
-/* HSEM Check semaphore state Taken or not   **********************************/
-uint32_t HAL_HSEM_IsSemTaken(uint32_t SemID);
+	/* HSEM semaphore take (lock) using 2-Step  method ****************************/
+	HAL_StatusTypeDef HAL_HSEM_Take(uint32_t SemID, uint32_t ProcessID);
+	/* HSEM semaphore fast take (lock) using 1-Step  method ***********************/
+	HAL_StatusTypeDef HAL_HSEM_FastTake(uint32_t SemID);
+	/* HSEM Release  **************************************************************/
+	void              HAL_HSEM_Release(uint32_t SemID, uint32_t ProcessID);
+	/* HSEM Release All************************************************************/
+	void              HAL_HSEM_ReleaseAll(uint32_t Key, uint32_t CoreID);
+	/* HSEM Check semaphore state Taken or not   **********************************/
+	uint32_t          HAL_HSEM_IsSemTaken(uint32_t SemID);
 
-/**
+	/**
   * @}
   */
 
-/** @addtogroup HSEM_Exported_Functions_Group2 HSEM Set and Get Key functions
+	/** @addtogroup HSEM_Exported_Functions_Group2 HSEM Set and Get Key functions
   * @brief    HSEM Set and Get Key functions.
   * @{
   */
-/* HSEM Set Clear Key *********************************************************/
-void  HAL_HSEM_SetClearKey(uint32_t Key);
-/* HSEM Get Clear Key *********************************************************/
-uint32_t HAL_HSEM_GetClearKey(void);
-/**
+	/* HSEM Set Clear Key *********************************************************/
+	void     HAL_HSEM_SetClearKey(uint32_t Key);
+	/* HSEM Get Clear Key *********************************************************/
+	uint32_t HAL_HSEM_GetClearKey(void);
+	/**
   * @}
   */
 
-/** @addtogroup HSEM_Exported_Functions_Group3
+	/** @addtogroup HSEM_Exported_Functions_Group3
   * @brief   HSEM Notification functions
   * @{
   */
-/* HSEM Activate HSEM Notification (When a semaphore is released) ) *****************/
-void HAL_HSEM_ActivateNotification(uint32_t SemMask);
-/* HSEM Deactivate HSEM Notification (When a semaphore is released)  ****************/
-void HAL_HSEM_DeactivateNotification(uint32_t SemMask);
-/* HSEM Free Callback (When a semaphore is released)  *******************************/
-void HAL_HSEM_FreeCallback(uint32_t SemMask);
-/* HSEM IRQ Handler  **********************************************************/
-void HAL_HSEM_IRQHandler(void);
+	/* HSEM Activate HSEM Notification (When a semaphore is released) ) *****************/
+	void HAL_HSEM_ActivateNotification(uint32_t SemMask);
+	/* HSEM Deactivate HSEM Notification (When a semaphore is released)  ****************/
+	void HAL_HSEM_DeactivateNotification(uint32_t SemMask);
+	/* HSEM Free Callback (When a semaphore is released)  *******************************/
+	void HAL_HSEM_FreeCallback(uint32_t SemMask);
+	/* HSEM IRQ Handler  **********************************************************/
+	void HAL_HSEM_IRQHandler(void);
 
-/**
+	/**
   * @}
   */
 
-/**
+	/**
   * @}
   */
 
-/* Private macros ------------------------------------------------------------*/
-/** @defgroup HSEM_Private_Macros HSEM Private Macros
+	/* Private macros ------------------------------------------------------------*/
+	/** @defgroup HSEM_Private_Macros HSEM Private Macros
   * @{
   */
 
@@ -192,15 +192,15 @@ void HAL_HSEM_IRQHandler(void);
 #endif
 
 
-/**
+	/**
   * @}
   */
 
-/**
+	/**
   * @}
   */
 
-/**
+	/**
   * @}
   */
 

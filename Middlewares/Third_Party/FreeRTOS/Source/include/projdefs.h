@@ -33,13 +33,13 @@
  * Defines the prototype to which task functions must conform.  Defined in this
  * file to ensure the type is known before portable.h is included.
  */
-typedef void (* TaskFunction_t)( void * );
+typedef void (*TaskFunction_t)(void*);
 
 /* Converts a time in milliseconds to a time in ticks.  This macro can be
  * overridden by a macro of the same name defined in FreeRTOSConfig.h in case the
  * definition here is not suitable for your application. */
 #ifndef pdMS_TO_TICKS
-    #define pdMS_TO_TICKS( xTimeInMs )    ( ( TickType_t ) ( ( ( TickType_t ) ( xTimeInMs ) * ( TickType_t ) configTICK_RATE_HZ ) / ( TickType_t ) 1000U ) )
+#define pdMS_TO_TICKS( xTimeInMs )    ( ( TickType_t ) ( ( ( TickType_t ) ( xTimeInMs ) * ( TickType_t ) configTICK_RATE_HZ ) / ( TickType_t ) 1000U ) )
 #endif
 
 #define pdFALSE                                  ( ( BaseType_t ) 0 )
@@ -61,17 +61,17 @@ typedef void (* TaskFunction_t)( void * );
 
 /* Macros used for basic data corruption checks. */
 #ifndef configUSE_LIST_DATA_INTEGRITY_CHECK_BYTES
-    #define configUSE_LIST_DATA_INTEGRITY_CHECK_BYTES    0
+#define configUSE_LIST_DATA_INTEGRITY_CHECK_BYTES    0
 #endif
 
 #if ( configTICK_TYPE_WIDTH_IN_BITS == TICK_TYPE_WIDTH_16_BITS )
-    #define pdINTEGRITY_CHECK_VALUE    0x5a5a
+#define pdINTEGRITY_CHECK_VALUE    0x5a5a
 #elif ( configTICK_TYPE_WIDTH_IN_BITS == TICK_TYPE_WIDTH_32_BITS )
-    #define pdINTEGRITY_CHECK_VALUE    0x5a5a5a5aUL
+#define pdINTEGRITY_CHECK_VALUE    0x5a5a5a5aUL
 #elif ( configTICK_TYPE_WIDTH_IN_BITS == TICK_TYPE_WIDTH_64_BITS )
-    #define pdINTEGRITY_CHECK_VALUE    0x5a5a5a5a5a5a5a5aULL
+#define pdINTEGRITY_CHECK_VALUE    0x5a5a5a5a5a5a5a5aULL
 #else
-    #error configTICK_TYPE_WIDTH_IN_BITS set to unsupported tick type width.
+#error configTICK_TYPE_WIDTH_IN_BITS set to unsupported tick type width.
 #endif
 
 /* The following errno values are used by FreeRTOS+ components, not FreeRTOS

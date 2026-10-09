@@ -16,8 +16,8 @@
 /** @brief BMI088 机体坐标系中的加速度和角速度。 */
 struct Bmi088MotionSample
 {
-    std::array<float, 3> acceleration_mps2{};
-    std::array<float, 3> angular_velocity_rad_s{};
+	std::array<float, 3> acceleration_mps2{};
+	std::array<float, 3> angular_velocity_rad_s{};
 };
 
 /**

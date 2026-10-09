@@ -24,70 +24,70 @@
 extern "C" {
 #endif
 
-/* Includes ------------------------------------------------------------------*/
+	/* Includes ------------------------------------------------------------------*/
 #include "stm32h7xx_hal_def.h"
 
-/** @addtogroup STM32H7xx_HAL_Driver
+	/** @addtogroup STM32H7xx_HAL_Driver
   * @{
   */
 
-/** @addtogroup SPIEx
+	/** @addtogroup SPIEx
   * @{
   */
 
-/* Exported types ------------------------------------------------------------*/
-/** @defgroup SPIEx_Exported_Types SPIEx Exported Types
+	/* Exported types ------------------------------------------------------------*/
+	/** @defgroup SPIEx_Exported_Types SPIEx Exported Types
   * @{
   */
 
-/**
+	/**
   * @}
   */
 
-/* Exported constants --------------------------------------------------------*/
-/** @defgroup SPIEx_Exported_Constants SPIEx Exported Constants
+	/* Exported constants --------------------------------------------------------*/
+	/** @defgroup SPIEx_Exported_Constants SPIEx Exported Constants
   * @{
   */
 
-/**
+	/**
   * @}
   */
 
-/* Exported macros -----------------------------------------------------------*/
-/** @defgroup SPIEx_Exported_Macros SPIEx Extended Exported Macros
+	/* Exported macros -----------------------------------------------------------*/
+	/** @defgroup SPIEx_Exported_Macros SPIEx Extended Exported Macros
   * @{
   */
 
-/**
+	/**
   * @}
   */
 
-/* Exported functions --------------------------------------------------------*/
-/** @addtogroup SPIEx_Exported_Functions
+	/* Exported functions --------------------------------------------------------*/
+	/** @addtogroup SPIEx_Exported_Functions
   * @{
   */
 
-/* Initialization and de-initialization functions  ****************************/
-/* IO operation functions *****************************************************/
-/** @addtogroup SPIEx_Exported_Functions_Group1
+	/* Initialization and de-initialization functions  ****************************/
+	/* IO operation functions *****************************************************/
+	/** @addtogroup SPIEx_Exported_Functions_Group1
   * @{
   */
-HAL_StatusTypeDef HAL_SPIEx_FlushRxFifo(const SPI_HandleTypeDef *hspi);
-HAL_StatusTypeDef HAL_SPIEx_EnableLockConfiguration(SPI_HandleTypeDef *hspi);
-HAL_StatusTypeDef HAL_SPIEx_ConfigureUnderrun(SPI_HandleTypeDef *hspi, uint32_t UnderrunDetection,
-                                              uint32_t UnderrunBehaviour);
-/**
+	HAL_StatusTypeDef HAL_SPIEx_FlushRxFifo(const SPI_HandleTypeDef* hspi);
+	HAL_StatusTypeDef HAL_SPIEx_EnableLockConfiguration(SPI_HandleTypeDef * hspi);
+	HAL_StatusTypeDef HAL_SPIEx_ConfigureUnderrun(SPI_HandleTypeDef* hspi, uint32_t UnderrunDetection,
+												  uint32_t           UnderrunBehaviour);
+	/**
   * @}
   */
-/**
-  * @}
-  */
-
-/**
+	/**
   * @}
   */
 
-/**
+	/**
+  * @}
+  */
+
+	/**
   * @}
   */
 

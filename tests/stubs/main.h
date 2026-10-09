@@ -1,20 +1,38 @@
 /** @file main.h @brief 宿主机 CAN HAL 替身，仅由 tests/CMakeLists.txt 使用。 */
 #pragma once
 #include <cstdint>
+
 enum HAL_StatusTypeDef { HAL_OK, HAL_ERROR, HAL_BUSY };
+
 enum HAL_FDCAN_StateTypeDef { HAL_FDCAN_STATE_READY, HAL_FDCAN_STATE_BUSY };
-struct FDCAN_HandleTypeDef {
-    struct { uint32_t StdFiltersNbr{16U}; uint32_t FrameFormat{}; } Init;
-    HAL_FDCAN_StateTypeDef State{HAL_FDCAN_STATE_READY};
+
+struct FDCAN_HandleTypeDef
+{
+	struct
+	{
+		uint32_t StdFiltersNbr{16U};
+		uint32_t FrameFormat{};
+	} Init;
+
+	HAL_FDCAN_StateTypeDef State{HAL_FDCAN_STATE_READY};
 };
-struct FDCAN_TxHeaderTypeDef {
-    uint32_t Identifier{}, IdType{}, TxFrameType{}, DataLength{}, ErrorStateIndicator{};
-    uint32_t BitRateSwitch{}, FDFormat{}, TxEventFifoControl{}, MessageMarker{};
+
+struct FDCAN_TxHeaderTypeDef
+{
+	uint32_t Identifier{},    IdType{},   TxFrameType{},        DataLength{}, ErrorStateIndicator{};
+	uint32_t BitRateSwitch{}, FDFormat{}, TxEventFifoControl{}, MessageMarker{};
 };
-struct FDCAN_RxHeaderTypeDef { uint32_t FilterIndex{}, DataLength{}; };
-struct FDCAN_FilterTypeDef {
-    uint32_t IdType{}, FilterIndex{}, FilterType{}, FilterConfig{}, FilterID1{}, FilterID2{};
+
+struct FDCAN_RxHeaderTypeDef
+{
+	uint32_t FilterIndex{}, DataLength{};
 };
+
+struct FDCAN_FilterTypeDef
+{
+	uint32_t IdType{}, FilterIndex{}, FilterType{}, FilterConfig{}, FilterID1{}, FilterID2{};
+};
+
 inline constexpr uint32_t FDCAN_FRAME_CLASSIC = 0U;
 inline constexpr uint32_t FDCAN_FRAME_FD_BRS = 1U;
 inline constexpr uint32_t FDCAN_CLASSIC_CAN = 0U;

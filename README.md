@@ -1,11 +1,13 @@
 # infantry_H723 — RoboMaster 步兵主控固件
 
-基于 **STM32H723** 的 RoboMaster 步兵机器人固件, 采用**云台板 + 底盘板双板架构**: 两板共用本工程, 由编译期开关区分角色, 经一路专用 FDCAN 互连。
+基于 **STM32H723** 的 RoboMaster 步兵机器人固件, 采用 **云台板 + 底盘板双板架构**: 两板共用本工程, 由编译期开关区分角色,
+经一路专用 FDCAN 互连。
 
 - 芯片: STM32H723VGT6（以 `infantry_H723.ioc` 为准，Cortex-M7，硬件浮点）
 - 框架: STM32CubeMX 生成底层 + CMake/Ninja 构建 + FreeRTOS (CMSIS-OS2)
 - 语言: C/C++ 混合, 全中文 Doxygen 注释
-- 生成工程: `infantry_H723.ioc` (修改外设配置后用 CubeMX 重新生成 `Core/`, 不要手改生成文件, 用户代码一律写在 `USER CODE` 区或 Application/Modules/BSP 三层)
+- 生成工程: `infantry_H723.ioc` (修改外设配置后用 CubeMX 重新生成 `Core/`, 不要手改生成文件, 用户代码一律写在
+  `USER CODE` 区或 Application/Modules/BSP 三层)
 
 ## 分层架构
 
@@ -26,19 +28,19 @@
 
 ## 当前状态 (2026-09)
 
-| 子系统 | 状态 | 说明 |
-|---|---|---|
-| 云台 (pitch/yaw GM6020, FDCAN1) | ✅ 两轴位置模式 | pitch位置目标受软件行程限制，yaw连续位置控制；参数以`GimbalConfig.hpp`为准，未完成实车整定 |
-| UART7 pitch 调试输出 | ✅ 已启用 | PE8 TX，921600/8N1，每50ms输出FireWater三通道：目标位置、实际位置（相对水平零位，°）、反馈电流（A） |
-| 遥控 (DT7/DR16, UART5 DBUS) | ✅ 已启用 | 18 字节 DBUS、跨回调残帧重组、100ms 掉线判定 |
-| 急停 (双拨杆 DOWN + 失联保护) | ✅ 已启用 | 上电/失联后须摇杆居中、双 DOWN 解锁；所有输出经过门控 |
-| 双板 CAN 链路 (0x301/0x302) | 测试关闭 | FDCAN2 当前接双摩擦轮，禁止链路同时占用 |
-| DJI 电机驱动 (GM6020/M3508/M2006) | ✅ 已实现 | 按物理总线/指令帧打包；测试阶段电机反馈超时不停机 |
-| PID / 角度目标 (可宿主机单测) | ✅ 已实现 | 测量微分 + 条件积分抗饱和 |
-| BMI088 六轴姿态 CDC 输出、UART 回环自测、RTT 日志、蜂鸣器 | ✅ 已实现 | 源码与编译验证，姿态轴向待实测 |
-| IMU 加热控制 | 🔶 部分 | 温控代码已有，尚未接入整车初始化 |
-| 底盘 (chassis) | ⬜ 占位 | 模块边界已约定, 见 Application/README.md |
-| 摩擦轮 (M3508 ×2, FDCAN2) | ✅ 测试启用 | 双轮共同启停/爬升到 1000RPM；拨弹不注册，实车 ID、方向、PID 待核对 |
+| 子系统                                                    | 状态            | 说明                                                                                                |
+|-----------------------------------------------------------|-----------------|-----------------------------------------------------------------------------------------------------|
+| 云台 (pitch/yaw GM6020, FDCAN1)                           | ✅ 两轴位置模式 | pitch位置目标受软件行程限制，yaw连续位置控制；参数以`GimbalConfig.hpp`为准，未完成实车整定          |
+| UART7 pitch 调试输出                                      | ✅ 已启用       | PE8 TX，921600/8N1，每50ms输出FireWater三通道：目标位置、实际位置（相对水平零位，°）、反馈电流（A） |
+| 遥控 (DT7/DR16, UART5 DBUS)                               | ✅ 已启用       | 18 字节 DBUS、跨回调残帧重组、100ms 掉线判定                                                        |
+| 急停 (双拨杆 DOWN + 失联保护)                             | ✅ 已启用       | 上电/失联后须摇杆居中、双 DOWN 解锁；所有输出经过门控                                               |
+| 双板 CAN 链路 (0x301/0x302)                               | 测试关闭        | FDCAN2 当前接双摩擦轮，禁止链路同时占用                                                             |
+| DJI 电机驱动 (GM6020/M3508/M2006)                         | ✅ 已实现       | 按物理总线/指令帧打包；测试阶段电机反馈超时不停机                                                   |
+| PID / 角度目标 (可宿主机单测)                             | ✅ 已实现       | 测量微分 + 条件积分抗饱和                                                                           |
+| BMI088 六轴姿态 CDC 输出、UART 回环自测、RTT 日志、蜂鸣器 | ✅ 已实现       | 源码与编译验证，姿态轴向待实测                                                                      |
+| IMU 加热控制                                              | 🔶 部分         | 温控代码已有，尚未接入整车初始化                                                                    |
+| 底盘 (chassis)                                            | ⬜ 占位         | 模块边界已约定, 见 Application/README.md                                                            |
+| 摩擦轮 (M3508 ×2, FDCAN2)                                 | ✅ 测试启用     | 双轮共同启停/爬升到 1000RPM；拨弹不注册，实车 ID、方向、PID 待核对                                  |
 
 ## 构建与烧录
 
@@ -66,8 +68,10 @@ openocd -f stm32h7_daplink.cfg -c "program build/Debug/infantry_H723.elf verify 
 ```
 
 - 调试日志走 SEGGER RTT (`BSP/log/`), 在 J-Link RTT Viewer 或支持 RTT 的上位机中读取, 不占用串口。
-- 首次上电前核对 `Application/RobotConfig.hpp`: 板卡角色 (`INFANTRY_BOARD_GIMBAL`) 与 FDCAN 分配; 云台参数核对清单见 `Application/gimbal/GimbalConfig.hpp` 的注释。
-- 当前四电机测试：FDCAN1的pitch/yaw均为位置模式，pitch使用配置的软件行程，yaw连续旋转；FDCAN2双摩擦轮不变。UART7输出pitch目标/实际位置及反馈电流，保留遥控失联与双DOWN急停。操作见 [测试说明](Application/shoot/README.md)。
+- 首次上电前核对 `Application/RobotConfig.hpp`: 板卡角色 (`INFANTRY_BOARD_GIMBAL`) 与 FDCAN 分配; 云台参数核对清单见
+  `Application/gimbal/GimbalConfig.hpp` 的注释。
+-
+当前四电机测试：FDCAN1的pitch/yaw均为位置模式，pitch使用配置的软件行程，yaw连续旋转；FDCAN2双摩擦轮不变。UART7输出pitch目标/实际位置及反馈电流，保留遥控失联与双DOWN急停。操作见 [测试说明](Application/shoot/README.md)。
 
 ### 宿主机单元测试
 
@@ -81,14 +85,14 @@ ctest --test-dir build/host-tests --output-on-failure
 
 ## 关键机制速查
 
-| 机制 | 位置 | 一句话 |
-|---|---|---|
-| 输出总开关 | `Modules/safety/` | 上电需解锁，双 DOWN 急停，遥控失联撤输出且撤销解锁状态 |
-| 电机连续角度 | `Modules/motor/dji/dji.cpp` | 仅首帧建立角度基准，测试阶段移除超时重锚，反馈中断后的累计角度不保证准确 |
-| 位置目标限幅 | `Modules/motor/angle_target.h` | 未实测标定的行程无法启用 (`static_assert` 兜底) |
-| 双板话题 | `Modules/communication/interboard.cpp` | 话题 ID + 序号/分片, 最新值邮箱语义, 无重发 |
-| DMA 内存约束 | `BSP/README.md` 内存布局节 | DMA 缓冲必须放 `.axi_bss` (DTCM 对 DMA 不可见) |
-| UART 不定长接收 | `BSP/usart/usart.hpp` | DMA+Idle, 半传输中断已关 (HAL 设计缺陷规避) |
+| 机制            | 位置                                   | 一句话                                                                   |
+|-----------------|----------------------------------------|--------------------------------------------------------------------------|
+| 输出总开关      | `Modules/safety/`                      | 上电需解锁，双 DOWN 急停，遥控失联撤输出且撤销解锁状态                   |
+| 电机连续角度    | `Modules/motor/dji/dji.cpp`            | 仅首帧建立角度基准，测试阶段移除超时重锚，反馈中断后的累计角度不保证准确 |
+| 位置目标限幅    | `Modules/motor/angle_target.h`         | 未实测标定的行程无法启用 (`static_assert` 兜底)                          |
+| 双板话题        | `Modules/communication/interboard.cpp` | 话题 ID + 序号/分片, 最新值邮箱语义, 无重发                              |
+| DMA 内存约束    | `BSP/README.md` 内存布局节             | DMA 缓冲必须放 `.axi_bss` (DTCM 对 DMA 不可见)                           |
+| UART 不定长接收 | `BSP/usart/usart.hpp`                  | DMA+Idle, 半传输中断已关 (HAL 设计缺陷规避)                              |
 
 ## TODO / 已知问题
 

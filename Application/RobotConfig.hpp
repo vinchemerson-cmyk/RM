@@ -29,30 +29,30 @@
 
 namespace InfantryInitialization
 {
-    // ---------- 通信与调试 ----------
-    inline constexpr bool ENABLE_USB_SERIAL     = true;  // USB CDC 虚拟串口发送 Roll/Pitch/Yaw
-    inline constexpr bool ENABLE_IMU            = true;  // BMI088 六轴采样与姿态解算
-    inline constexpr bool ENABLE_INTERBOARD     = false;  // 双板 CAN 通信 (interboard::Start, 独占上方选定的 FDCAN)
-    inline constexpr bool ENABLE_UART_SERIAL    = false;  // UART7 硬件串口回环任务 (DMA 收 -> 队列 -> DMA 发)
-    inline constexpr bool ENABLE_ENCODER_UART7 = true; // UART7 TX-only pitch目标/实际位置与电流FireWater三通道，每50ms一行。
+	// ---------- 通信与调试 ----------
+	inline constexpr bool ENABLE_USB_SERIAL    = true;  // USB CDC 虚拟串口发送 Roll/Pitch/Yaw
+	inline constexpr bool ENABLE_IMU           = true;  // BMI088 六轴采样与姿态解算
+	inline constexpr bool ENABLE_INTERBOARD    = false; // 双板 CAN 通信 (interboard::Start, 独占上方选定的 FDCAN)
+	inline constexpr bool ENABLE_UART_SERIAL   = false; // UART7 硬件串口回环任务 (DMA 收 -> 队列 -> DMA 发)
+	inline constexpr bool ENABLE_ENCODER_UART7 = true;  // UART7 TX-only pitch目标/实际位置与电流FireWater三通道，每50ms一行。
 
-    // ---------- 输入与安全 ----------
-    inline constexpr bool ENABLE_RC            = true; // 遥控 (UART5 DBUS 解析与掉线判定)
-    inline constexpr bool ENABLE_SAFETY        = true; // 急停与使能监控 (依赖遥控)
+	// ---------- 输入与安全 ----------
+	inline constexpr bool ENABLE_RC     = true; // 遥控 (UART5 DBUS 解析与掉线判定)
+	inline constexpr bool ENABLE_SAFETY = true; // 急停与使能监控 (依赖遥控)
 
-    // ---------- 执行器与提示 ----------
-    inline constexpr bool ENABLE_GIMBAL        = true; // pitch速度环调试、yaw连续位置控制及编码器采集。
-    inline constexpr bool ENABLE_SHOOT         = true; // 当前只启用双摩擦轮，见 ShootConfig.hpp
-    inline constexpr bool ENABLE_BUZZER        = false; // TIM12 CH2 蜂鸣器任务
+	// ---------- 执行器与提示 ----------
+	inline constexpr bool ENABLE_GIMBAL = true;  // pitch速度环调试、yaw连续位置控制及编码器采集。
+	inline constexpr bool ENABLE_SHOOT  = true;  // 当前只启用双摩擦轮，见 ShootConfig.hpp
+	inline constexpr bool ENABLE_BUZZER = false; // TIM12 CH2 蜂鸣器任务
 
-    static_assert(!ENABLE_GIMBAL || (ENABLE_RC && ENABLE_SAFETY),
-                  "Gimbal requires remote control and output safety");
-    static_assert(!ENABLE_SHOOT || (ENABLE_RC && ENABLE_SAFETY),
-                  "Shooter requires remote control and output safety");
-    static_assert(!ENABLE_INTERBOARD || !ENABLE_SHOOT || INFANTRY_INTERBOARD_FDCAN != 2,
-                  "FDCAN2 is occupied by friction wheels; interboard cannot share it");
-    static_assert(!ENABLE_ENCODER_UART7 || (ENABLE_GIMBAL && !ENABLE_UART_SERIAL),
-                  "Encoder telemetry requires gimbal and exclusive UART7 ownership");
+	static_assert(!ENABLE_GIMBAL || (ENABLE_RC && ENABLE_SAFETY),
+				  "Gimbal requires remote control and output safety");
+	static_assert(!ENABLE_SHOOT || (ENABLE_RC && ENABLE_SAFETY),
+				  "Shooter requires remote control and output safety");
+	static_assert(!ENABLE_INTERBOARD || !ENABLE_SHOOT || INFANTRY_INTERBOARD_FDCAN != 2,
+				  "FDCAN2 is occupied by friction wheels; interboard cannot share it");
+	static_assert(!ENABLE_ENCODER_UART7 || (ENABLE_GIMBAL && !ENABLE_UART_SERIAL),
+				  "Encoder telemetry requires gimbal and exclusive UART7 ownership");
 }
 
 #endif

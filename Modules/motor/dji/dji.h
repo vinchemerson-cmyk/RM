@@ -36,19 +36,19 @@
 /** @brief 当前 DJI 电机驱动所支持的型号。 */
 enum Motor_Type_e
 {
-    MOTOR_TYPE_NONE = 0,
-    GM6020,
-    M3508,
-    M2006,
+	MOTOR_TYPE_NONE = 0,
+	GM6020,
+	M3508,
+	M2006,
 };
 
 /** @brief DJI 电机的控制器、型号和经典 CAN 注册配置。 */
 struct Motor_Init_Config_s
 {
-    Motor_Controller_Init_s controller_param_init_config;
-    Motor_Control_Setting_s controller_setting_init_config{};
-    Motor_Type_e motor_type;
-    classicCanConfigType can_init_config{};
+	Motor_Controller_Init_s controller_param_init_config;
+	Motor_Control_Setting_s controller_setting_init_config{};
+	Motor_Type_e            motor_type;
+	classicCanConfigType    can_init_config{};
 };
 
 /**
@@ -58,15 +58,15 @@ struct Motor_Init_Config_s
  */
 struct DJI_Motor_s
 {
-    Motor_Controller_s                    controller{};
-    Motor_Control_Setting_s               motor_settings{};
-    Motor_Type_e                          motor_type{MOTOR_TYPE_NONE};
-    Motor_Feedback_s                      feedback{};
-    CAN_<canConfig::classicCan>::Instance* can_instance{};
-    bool                                  enabled{};
-    /** @brief CAN 入队诊断，按本电机所在合并帧计数；HAL_OK 不代表总线发送成功。 */
-    uint32_t tx_enqueue_attempts{};
-    uint32_t tx_enqueue_failures{};
+	Motor_Controller_s                     controller{};
+	Motor_Control_Setting_s                motor_settings{};
+	Motor_Type_e                           motor_type{MOTOR_TYPE_NONE};
+	Motor_Feedback_s                       feedback{};
+	CAN_<canConfig::classicCan>::Instance* can_instance{};
+	bool                                   enabled{};
+	/** @brief CAN 入队诊断，按本电机所在合并帧计数；HAL_OK 不代表总线发送成功。 */
+	uint32_t                               tx_enqueue_attempts{};
+	uint32_t                               tx_enqueue_failures{};
 };
 
 /**

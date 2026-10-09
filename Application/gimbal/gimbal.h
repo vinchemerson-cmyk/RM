@@ -28,24 +28,24 @@
 
 namespace gimbal
 {
-    /** @brief 初始化 yaw/pitch 电机并启动控制任务; 重复调用不重复创建。
+	/** @brief 初始化 yaw/pitch 电机并启动控制任务; 重复调用不重复创建。
      *
      *  配置非法 (反馈 ID 越界、LQI 参数不合法等) 或任务创建失败时直接
      *  Error_Handler(): 云台是整车核心执行机构, 不允许"半个云台"运行。
      */
-    void Init();
+	void Init();
 
-    /** @brief 计算一次控制量并下发, 由云台控制任务按固定周期调用。
+	/** @brief 计算一次控制量并下发, 由云台控制任务按固定周期调用。
      *
      *  当前控制逻辑集中在 GimbalTask 内部执行, 保留此入口供后续
      *  统一调度器 (单一高频任务轮询所有应用模块) 接管时使用。
      */
-    void Update();
+	void Update();
 
-    /** @brief 读取编码器反馈和 pitch 相对水平零位的位置目标、实际位置与电流。 */
-    serialTasks::EncoderSnapshot GetEncoderSnapshot();
-    /** @brief 同一控制周期目标/反馈/输出快照，供 UART 诊断。 */
-    serialTasks::EncoderSnapshot GetYawControlSnapshot();
+	/** @brief 读取编码器反馈和 pitch 相对水平零位的位置目标、实际位置与电流。 */
+	serialTasks::EncoderSnapshot GetEncoderSnapshot();
+	/** @brief 同一控制周期目标/反馈/输出快照，供 UART 诊断。 */
+	serialTasks::EncoderSnapshot GetYawControlSnapshot();
 } // namespace gimbal
 
 #endif // INFANTRY_H723_GIMBAL_H

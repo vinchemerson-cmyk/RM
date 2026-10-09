@@ -2,6 +2,6 @@
 #pragma once
 namespace shoot
 {
-/** @brief 注册两台 M3508 和一台 M2006，创建 1ms 发射任务。 */
-void Init();
+	/** @brief 注册两台 M3508 和一台 M2006，创建 1ms 发射任务。 */
+	void Init();
 }

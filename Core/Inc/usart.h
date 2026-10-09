@@ -25,39 +25,39 @@
 extern "C" {
 #endif
 
-/* Includes ------------------------------------------------------------------*/
+	/* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
-/* USER CODE BEGIN Includes */
+	/* USER CODE BEGIN Includes */
 
-/* USER CODE END Includes */
+	/* USER CODE END Includes */
 
-extern UART_HandleTypeDef huart5;
+	extern UART_HandleTypeDef huart5;
 
-extern UART_HandleTypeDef huart7;
+	extern UART_HandleTypeDef huart7;
 
-extern UART_HandleTypeDef huart8;
+	extern UART_HandleTypeDef huart8;
 
-extern UART_HandleTypeDef huart9;
+	extern UART_HandleTypeDef huart9;
 
-extern UART_HandleTypeDef huart1;
+	extern UART_HandleTypeDef huart1;
 
-extern UART_HandleTypeDef huart10;
+	extern UART_HandleTypeDef huart10;
 
-/* USER CODE BEGIN Private defines */
+	/* USER CODE BEGIN Private defines */
 
-/* USER CODE END Private defines */
+	/* USER CODE END Private defines */
 
-void MX_UART5_Init(void);
-void MX_UART7_Init(void);
-void MX_UART8_Init(void);
-void MX_UART9_Init(void);
-void MX_USART1_UART_Init(void);
-void MX_USART10_UART_Init(void);
+	void MX_UART5_Init(void);
+	void MX_UART7_Init(void);
+	void MX_UART8_Init(void);
+	void MX_UART9_Init(void);
+	void MX_USART1_UART_Init(void);
+	void MX_USART10_UART_Init(void);
 
-/* USER CODE BEGIN Prototypes */
+	/* USER CODE BEGIN Prototypes */
 
-/* USER CODE END Prototypes */
+	/* USER CODE END Prototypes */
 
 #ifdef __cplusplus
 }

@@ -19,7 +19,7 @@
 extern "C" {
 #endif
 
-/** @brief 根据 RobotConfig.hpp 的开关创建整车应用所需的通信及控制任务。
+	/** @brief 根据 RobotConfig.hpp 的开关创建整车应用所需的通信及控制任务。
  *
  *  调用约定:
  *   - 必须在 FreeRTOS 调度器启动前调用 (当前由 freertos.c 的
@@ -29,7 +29,7 @@ extern "C" {
  *   - 装配失败 (如双板链路启动失败) 会直接进入 Error_Handler(),
  *     不存在"带病运行"的中间状态。
  */
-void InfantryInit();
+	void InfantryInit();
 
 #ifdef __cplusplus
 }

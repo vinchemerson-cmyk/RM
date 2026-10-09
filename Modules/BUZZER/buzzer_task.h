@@ -12,8 +12,7 @@
 
 namespace appTasks
 {
-
-    /** @brief 初始化蜂鸣器并创建周期鸣响任务；重复调用不会创建第二个任务。 */
-    void CreateBuzzerTask();
+	/** @brief 初始化蜂鸣器并创建周期鸣响任务；重复调用不会创建第二个任务。 */
+	void CreateBuzzerTask();
 }
 #endif //INFANTRY_H723_BUZZER_TASK_H

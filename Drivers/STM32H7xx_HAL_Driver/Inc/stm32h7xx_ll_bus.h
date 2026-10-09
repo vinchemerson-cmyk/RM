@@ -40,33 +40,33 @@
 extern "C" {
 #endif
 
-/* Includes ------------------------------------------------------------------*/
+	/* Includes ------------------------------------------------------------------*/
 #include "stm32h7xx.h"
 
-/** @addtogroup STM32H7xx_LL_Driver
+	/** @addtogroup STM32H7xx_LL_Driver
   * @{
   */
 
 #if defined(RCC)
 
-/** @defgroup BUS_LL BUS
+	/** @defgroup BUS_LL BUS
   * @{
   */
 
-/* Private variables ---------------------------------------------------------*/
+	/* Private variables ---------------------------------------------------------*/
 
-/* Private constants ---------------------------------------------------------*/
+	/* Private constants ---------------------------------------------------------*/
 
-/* Private macros ------------------------------------------------------------*/
+	/* Private macros ------------------------------------------------------------*/
 
-/* Exported types ------------------------------------------------------------*/
+	/* Exported types ------------------------------------------------------------*/
 
-/* Exported constants --------------------------------------------------------*/
-/** @defgroup BUS_LL_Exported_Constants BUS Exported Constants
+	/* Exported constants --------------------------------------------------------*/
+	/** @defgroup BUS_LL_Exported_Constants BUS Exported Constants
   * @{
   */
 
-/** @defgroup BUS_LL_EC_AHB3_GRP1_PERIPH  AHB3 GRP1 PERIPH
+	/** @defgroup BUS_LL_EC_AHB3_GRP1_PERIPH  AHB3 GRP1 PERIPH
   * @{
   */
 #define LL_AHB3_GRP1_PERIPH_MDMA           RCC_AHB3ENR_MDMAEN
@@ -111,12 +111,12 @@ extern "C" {
 #if defined(CD_AXISRAM3_BASE)
 #define LL_AHB3_GRP1_PERIPH_AXISRAM3       RCC_AHB3LPENR_AXISRAM3LPEN
 #endif /* CD_AXISRAM3_BASE */
-/**
+	/**
   * @}
   */
 
 
-/** @defgroup BUS_LL_EC_AHB1_GRP1_PERIPH  AHB1 GRP1 PERIPH
+	/** @defgroup BUS_LL_EC_AHB1_GRP1_PERIPH  AHB1 GRP1 PERIPH
   * @{
   */
 #define LL_AHB1_GRP1_PERIPH_DMA1           RCC_AHB1ENR_DMA1EN
@@ -139,12 +139,12 @@ extern "C" {
 #define LL_AHB1_GRP1_PERIPH_USB2OTGHS      RCC_AHB1ENR_USB2OTGHSEN
 #define LL_AHB1_GRP1_PERIPH_USB2OTGHSULPI  RCC_AHB1ENR_USB2OTGHSULPIEN
 #endif /* USB2_OTG_FS */
-/**
+	/**
   * @}
   */
 
 
-/** @defgroup BUS_LL_EC_AHB2_GRP1_PERIPH  AHB2 GRP1 PERIPH
+	/** @defgroup BUS_LL_EC_AHB2_GRP1_PERIPH  AHB2 GRP1 PERIPH
   * @{
   */
 #define LL_AHB2_GRP1_PERIPH_DCMI           RCC_AHB2ENR_DCMIEN
@@ -183,12 +183,12 @@ extern "C" {
 #if defined(RCC_AHB2ENR_D2SRAM3EN)
 #define LL_AHB2_GRP1_PERIPH_D2SRAM3        RCC_AHB2ENR_D2SRAM3EN
 #endif /* RCC_AHB2ENR_D2SRAM3EN */
-/**
+	/**
   * @}
   */
 
 
-/** @defgroup BUS_LL_EC_AHB4_GRP1_PERIPH  AHB4 GRP1 PERIPH
+	/** @defgroup BUS_LL_EC_AHB4_GRP1_PERIPH  AHB4 GRP1 PERIPH
   * @{
   */
 #define LL_AHB4_GRP1_PERIPH_GPIOA          RCC_AHB4ENR_GPIOAEN
@@ -228,12 +228,12 @@ extern "C" {
 #define LL_AHB4_GRP1_PERIPH_SRAM4          LL_AHB4_GRP1_PERIPH_SRDSRAM  /* for backward compatibility*/
 #define LL_AHB4_GRP1_PERIPH_D3SRAM1        LL_AHB4_GRP1_PERIPH_SRDSRAM  /* for backward compatibility*/
 #endif /* RCC_AHB4ENR_D3SRAM1EN */
-/**
+	/**
   * @}
   */
 
 
-/** @defgroup BUS_LL_EC_APB3_GRP1_PERIPH  APB3 GRP1 PERIPH
+	/** @defgroup BUS_LL_EC_APB3_GRP1_PERIPH  APB3 GRP1 PERIPH
   * @{
   */
 #if defined(LTDC)
@@ -246,12 +246,12 @@ extern "C" {
 #if defined(RCC_APB3ENR_WWDGEN)
 #define LL_APB3_GRP1_PERIPH_WWDG           LL_APB3_GRP1_PERIPH_WWDG1   /* for backward compatibility*/
 #endif /* RCC_APB3ENR_WWDGEN */
-/**
+	/**
   * @}
   */
 
 
-/** @defgroup BUS_LL_EC_APB1_GRP1_PERIPH  APB1 GRP1 PERIPH
+	/** @defgroup BUS_LL_EC_APB1_GRP1_PERIPH  APB1 GRP1 PERIPH
   * @{
   */
 #define LL_APB1_GRP1_PERIPH_TIM2           RCC_APB1LENR_TIM2EN
@@ -289,12 +289,12 @@ extern "C" {
 #define LL_APB1_GRP1_PERIPH_DAC12          RCC_APB1LENR_DAC12EN
 #define LL_APB1_GRP1_PERIPH_UART7          RCC_APB1LENR_UART7EN
 #define LL_APB1_GRP1_PERIPH_UART8          RCC_APB1LENR_UART8EN
-/**
+	/**
   * @}
   */
 
 
-/** @defgroup BUS_LL_EC_APB1_GRP2_PERIPH  APB1 GRP2 PERIPH
+	/** @defgroup BUS_LL_EC_APB1_GRP2_PERIPH  APB1 GRP2 PERIPH
   * @{
   */
 #define LL_APB1_GRP2_PERIPH_CRS            RCC_APB1HENR_CRSEN
@@ -308,12 +308,12 @@ extern "C" {
 #if defined(TIM24)
 #define LL_APB1_GRP2_PERIPH_TIM24          RCC_APB1HENR_TIM24EN
 #endif /* TIM24 */
-/**
+	/**
   * @}
   */
 
 
-/** @defgroup BUS_LL_EC_APB2_GRP1_PERIPH  APB2 GRP1 PERIPH
+	/** @defgroup BUS_LL_EC_APB2_GRP1_PERIPH  APB2 GRP1 PERIPH
   * @{
   */
 #define LL_APB2_GRP1_PERIPH_TIM1           RCC_APB2ENR_TIM1EN
@@ -343,12 +343,12 @@ extern "C" {
 #if defined(HRTIM1)
 #define LL_APB2_GRP1_PERIPH_HRTIM          RCC_APB2ENR_HRTIMEN
 #endif /* HRTIM1 */
-/**
+	/**
   * @}
   */
 
 
-/** @defgroup BUS_LL_EC_APB4_GRP1_PERIPH  APB4 GRP1 PERIPH
+	/** @defgroup BUS_LL_EC_APB4_GRP1_PERIPH  APB4 GRP1 PERIPH
   * @{
   */
 #define LL_APB4_GRP1_PERIPH_SYSCFG         RCC_APB4ENR_SYSCFGEN
@@ -378,11 +378,11 @@ extern "C" {
 #if defined(DFSDM2_BASE)
 #define LL_APB4_GRP1_PERIPH_DFSDM2         RCC_APB4ENR_DFSDM2EN
 #endif /* DFSDM2_BASE */
-/**
+	/**
   * @}
   */
 
-/** @defgroup BUS_LL_EC_CLKAM_PERIPH  CLKAM PERIPH
+	/** @defgroup BUS_LL_EC_CLKAM_PERIPH  CLKAM PERIPH
   * @{
   */
 #if defined(RCC_D3AMR_BDMAAMEN)
@@ -472,12 +472,12 @@ extern "C" {
 #define LL_CLKAM_PERIPH_SRDSRAM       RCC_SRDAMR_SRDSRAMAMEN
 #define LL_CLKAM_PERIPH_SRAM4         LL_CLKAM_PERIPH_SRDSRAM
 #endif /* RCC_D3AMR_SRAM4AMEN */
-/**
+	/**
   * @}
   */
 
 #if defined(RCC_CKGAENR_AXICKG)
-/** @defgroup BUS_LL_EC_CKGA_PERIPH  CKGA (AXI Clocks Gating) PERIPH
+	/** @defgroup BUS_LL_EC_CKGA_PERIPH  CKGA (AXI Clocks Gating) PERIPH
   * @{
   */
 #define LL_CKGA_PERIPH_AXI            RCC_CKGAENR_AXICKG
@@ -501,28 +501,28 @@ extern "C" {
 #define LL_CKGA_PERIPH_ECCRAM         RCC_CKGAENR_ECCRAMCKG
 #define LL_CKGA_PERIPH_EXTI           RCC_CKGAENR_EXTICKG
 #define LL_CKGA_PERIPH_JTAG           RCC_CKGAENR_JTAGCKG
-/**
+	/**
   * @}
   */
 #endif /* RCC_CKGAENR_AXICKG */
 
-/**
+	/**
   * @}
   */
 
-/* Exported macro ------------------------------------------------------------*/
+	/* Exported macro ------------------------------------------------------------*/
 
-/* Exported functions --------------------------------------------------------*/
+	/* Exported functions --------------------------------------------------------*/
 
-/** @defgroup BUS_LL_Exported_Functions BUS Exported Functions
+	/** @defgroup BUS_LL_Exported_Functions BUS Exported Functions
   * @{
   */
 
-/** @defgroup BUS_LL_EF_AHB3 AHB3
+	/** @defgroup BUS_LL_EF_AHB3 AHB3
   * @{
   */
 
-/**
+	/**
   * @brief  Enable AHB3 peripherals clock.
   * @rmtoll AHB3ENR      MDMAEN        LL_AHB3_GRP1_EnableClock\n
   *         AHB3ENR      DMA2DEN       LL_AHB3_GRP1_EnableClock\n
@@ -564,15 +564,15 @@ extern "C" {
   * @retval None
 */
 __STATIC_INLINE void LL_AHB3_GRP1_EnableClock(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC->AHB3ENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC->AHB3ENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC->AHB3ENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC->AHB3ENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Check if AHB3 peripheral clock is enabled or not
   * @rmtoll AHB3ENR      MDMAEN        LL_AHB3_GRP1_IsEnabledClock\n
   *         AHB3ENR      DMA2DEN       LL_AHB3_GRP1_IsEnabledClock\n
@@ -614,11 +614,11 @@ __STATIC_INLINE void LL_AHB3_GRP1_EnableClock(uint32_t Periphs)
   * @retval uint32_t
 */
 __STATIC_INLINE uint32_t LL_AHB3_GRP1_IsEnabledClock(uint32_t Periphs)
-{
-  return ((READ_BIT(RCC->AHB3ENR, Periphs) == Periphs) ? 1U : 0U);
-}
+	{
+		return ((READ_BIT(RCC->AHB3ENR, Periphs) == Periphs) ? 1U : 0U);
+	}
 
-/**
+	/**
   * @brief  Disable AHB3 peripherals clock.
   * @rmtoll AHB3ENR      MDMAEN        LL_AHB3_GRP1_DisableClock\n
   *         AHB3ENR      DMA2DEN       LL_AHB3_GRP1_DisableClock\n
@@ -660,11 +660,11 @@ __STATIC_INLINE uint32_t LL_AHB3_GRP1_IsEnabledClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_AHB3_GRP1_DisableClock(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC->AHB3ENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC->AHB3ENR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Force AHB3 peripherals reset.
   * @rmtoll AHB3RSTR     MDMARST       LL_AHB3_GRP1_ForceReset\n
   *         AHB3RSTR     DMA2DRST      LL_AHB3_GRP1_ForceReset\n
@@ -696,11 +696,11 @@ __STATIC_INLINE void LL_AHB3_GRP1_DisableClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_AHB3_GRP1_ForceReset(uint32_t Periphs)
-{
-  SET_BIT(RCC->AHB3RSTR, Periphs);
-}
+	{
+		SET_BIT(RCC->AHB3RSTR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Release AHB3 peripherals reset.
   * @rmtoll AHB3RSTR     MDMARST       LL_AHB3_GRP1_ReleaseReset\n
   *         AHB3RSTR     DMA2DRST      LL_AHB3_GRP1_ReleaseReset\n
@@ -732,11 +732,11 @@ __STATIC_INLINE void LL_AHB3_GRP1_ForceReset(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_AHB3_GRP1_ReleaseReset(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC->AHB3RSTR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC->AHB3RSTR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Enable AHB3 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll AHB3LPENR    MDMALPEN      LL_AHB3_GRP1_EnableClockSleep\n
   *         AHB3LPENR    DMA2DLPEN     LL_AHB3_GRP1_EnableClockSleep\n
@@ -777,15 +777,15 @@ __STATIC_INLINE void LL_AHB3_GRP1_ReleaseReset(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_AHB3_GRP1_EnableClockSleep(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC->AHB3LPENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC->AHB3LPENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC->AHB3LPENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC->AHB3LPENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Disable AHB3 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll AHB3LPENR    MDMALPEN      LL_AHB3_GRP1_DisableClockSleep\n
   *         AHB3LPENR    DMA2DLPEN     LL_AHB3_GRP1_DisableClockSleep\n
@@ -826,19 +826,19 @@ __STATIC_INLINE void LL_AHB3_GRP1_EnableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_AHB3_GRP1_DisableClockSleep(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC->AHB3LPENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC->AHB3LPENR, Periphs);
+	}
 
-/**
+	/**
   * @}
   */
 
-/** @defgroup BUS_LL_EF_AHB1 AHB1
+	/** @defgroup BUS_LL_EF_AHB1 AHB1
   * @{
   */
 
-/**
+	/**
   * @brief  Enable AHB1 peripherals clock.
   * @rmtoll AHB1ENR      DMA1EN        LL_AHB1_GRP1_EnableClock\n
   *         AHB1ENR      DMA2EN        LL_AHB1_GRP1_EnableClock\n
@@ -870,15 +870,15 @@ __STATIC_INLINE void LL_AHB3_GRP1_DisableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_AHB1_GRP1_EnableClock(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC->AHB1ENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC->AHB1ENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC->AHB1ENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC->AHB1ENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Check if AHB1 peripheral clock is enabled or not
   * @rmtoll AHB1ENR      DMA1EN        LL_AHB1_GRP1_IsEnabledClock\n
   *         AHB1ENR      DMA2EN        LL_AHB1_GRP1_IsEnabledClock\n
@@ -910,11 +910,11 @@ __STATIC_INLINE void LL_AHB1_GRP1_EnableClock(uint32_t Periphs)
   * @retval uint32_t
 */
 __STATIC_INLINE uint32_t LL_AHB1_GRP1_IsEnabledClock(uint32_t Periphs)
-{
-  return ((READ_BIT(RCC->AHB1ENR, Periphs) == Periphs) ? 1U : 0U);
-}
+	{
+		return ((READ_BIT(RCC->AHB1ENR, Periphs) == Periphs) ? 1U : 0U);
+	}
 
-/**
+	/**
   * @brief  Disable AHB1 peripherals clock.
   * @rmtoll AHB1ENR      DMA1EN        LL_AHB1_GRP1_DisableClock\n
   *         AHB1ENR      DMA2EN        LL_AHB1_GRP1_DisableClock\n
@@ -946,11 +946,11 @@ __STATIC_INLINE uint32_t LL_AHB1_GRP1_IsEnabledClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_AHB1_GRP1_DisableClock(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC->AHB1ENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC->AHB1ENR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Force AHB1 peripherals reset.
   * @rmtoll AHB1RSTR     DMA1RST       LL_AHB1_GRP1_ForceReset\n
   *         AHB1RSTR     DMA2RST       LL_AHB1_GRP1_ForceReset\n
@@ -974,11 +974,11 @@ __STATIC_INLINE void LL_AHB1_GRP1_DisableClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_AHB1_GRP1_ForceReset(uint32_t Periphs)
-{
-  SET_BIT(RCC->AHB1RSTR, Periphs);
-}
+	{
+		SET_BIT(RCC->AHB1RSTR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Release AHB1 peripherals reset.
   * @rmtoll AHB1RSTR     DMA1RST       LL_AHB1_GRP1_ReleaseReset\n
   *         AHB1RSTR     DMA2RST       LL_AHB1_GRP1_ReleaseReset\n
@@ -1002,11 +1002,11 @@ __STATIC_INLINE void LL_AHB1_GRP1_ForceReset(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_AHB1_GRP1_ReleaseReset(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC->AHB1RSTR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC->AHB1RSTR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Enable AHB1 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll AHB1LPENR    DMA1LPEN      LL_AHB1_GRP1_EnableClockSleep\n
   *         AHB1LPENR    DMA2LPEN      LL_AHB1_GRP1_EnableClockSleep\n
@@ -1038,15 +1038,15 @@ __STATIC_INLINE void LL_AHB1_GRP1_ReleaseReset(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_AHB1_GRP1_EnableClockSleep(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC->AHB1LPENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC->AHB1LPENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC->AHB1LPENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC->AHB1LPENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Disable AHB1 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll AHB1LPENR    DMA1LPEN      LL_AHB1_GRP1_DisableClockSleep\n
   *         AHB1LPENR    DMA2LPEN      LL_AHB1_GRP1_DisableClockSleep\n
@@ -1078,19 +1078,19 @@ __STATIC_INLINE void LL_AHB1_GRP1_EnableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_AHB1_GRP1_DisableClockSleep(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC->AHB1LPENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC->AHB1LPENR, Periphs);
+	}
 
-/**
+	/**
   * @}
   */
 
-/** @defgroup BUS_LL_EF_AHB2 AHB2
+	/** @defgroup BUS_LL_EF_AHB2 AHB2
   * @{
   */
 
-/**
+	/**
   * @brief  Enable AHB2 peripherals clock.
   * @rmtoll AHB2ENR      DCMIEN        LL_AHB2_GRP1_EnableClock\n
   *         AHB2ENR      HSEMEN        LL_AHB2_GRP1_EnableClock\n (*)
@@ -1122,15 +1122,15 @@ __STATIC_INLINE void LL_AHB1_GRP1_DisableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_AHB2_GRP1_EnableClock(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC->AHB2ENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC->AHB2ENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC->AHB2ENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC->AHB2ENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Check if AHB2 peripheral clock is enabled or not
   * @rmtoll AHB2ENR      DCMIEN        LL_AHB2_GRP1_IsEnabledClock\n
   *         AHB2ENR      HSEMEN        LL_AHB2_GRP1_IsEnabledClock\n (*)
@@ -1162,11 +1162,11 @@ __STATIC_INLINE void LL_AHB2_GRP1_EnableClock(uint32_t Periphs)
   * @retval uint32_t
 */
 __STATIC_INLINE uint32_t LL_AHB2_GRP1_IsEnabledClock(uint32_t Periphs)
-{
-  return ((READ_BIT(RCC->AHB2ENR, Periphs) == Periphs) ? 1U : 0U);
-}
+	{
+		return ((READ_BIT(RCC->AHB2ENR, Periphs) == Periphs) ? 1U : 0U);
+	}
 
-/**
+	/**
   * @brief  Disable AHB2 peripherals clock.
   * @rmtoll AHB2ENR      DCMIEN        LL_AHB2_GRP1_DisableClock\n
   *         AHB2ENR      HSEMEN        LL_AHB2_GRP1_DisableClock\n (*)
@@ -1198,11 +1198,11 @@ __STATIC_INLINE uint32_t LL_AHB2_GRP1_IsEnabledClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_AHB2_GRP1_DisableClock(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC->AHB2ENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC->AHB2ENR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Force AHB2 peripherals reset.
   * @rmtoll AHB2RSTR     DCMIRST       LL_AHB2_GRP1_ForceReset\n
   *         AHB2RSTR     HSEMRST       LL_AHB2_GRP1_ForceReset\n (*)
@@ -1228,11 +1228,11 @@ __STATIC_INLINE void LL_AHB2_GRP1_DisableClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_AHB2_GRP1_ForceReset(uint32_t Periphs)
-{
-  SET_BIT(RCC->AHB2RSTR, Periphs);
-}
+	{
+		SET_BIT(RCC->AHB2RSTR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Release AHB2 peripherals reset.
   * @rmtoll AHB2RSTR     DCMIRST       LL_AHB2_GRP1_ReleaseReset\n
   *         AHB2RSTR     HSEMRST       LL_AHB2_GRP1_ReleaseReset\n (*)
@@ -1258,11 +1258,11 @@ __STATIC_INLINE void LL_AHB2_GRP1_ForceReset(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_AHB2_GRP1_ReleaseReset(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC->AHB2RSTR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC->AHB2RSTR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Enable AHB2 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll AHB2LPENR    DCMILPEN      LL_AHB2_GRP1_EnableClockSleep\n
   *         AHB2LPENR    CRYPLPEN      LL_AHB2_GRP1_EnableClockSleep\n  (*)
@@ -1292,15 +1292,15 @@ __STATIC_INLINE void LL_AHB2_GRP1_ReleaseReset(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_AHB2_GRP1_EnableClockSleep(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC->AHB2LPENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC->AHB2LPENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC->AHB2LPENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC->AHB2LPENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Disable AHB2 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll AHB2LPENR    DCMILPEN      LL_AHB2_GRP1_DisableClockSleep\n
   *         AHB2LPENR    CRYPLPEN      LL_AHB2_GRP1_DisableClockSleep\n (*)
@@ -1328,19 +1328,19 @@ __STATIC_INLINE void LL_AHB2_GRP1_EnableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_AHB2_GRP1_DisableClockSleep(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC->AHB2LPENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC->AHB2LPENR, Periphs);
+	}
 
-/**
+	/**
   * @}
   */
 
-/** @defgroup BUS_LL_EF_AHB4 AHB4
+	/** @defgroup BUS_LL_EF_AHB4 AHB4
   * @{
   */
 
-/**
+	/**
   * @brief  Enable AHB4 peripherals clock.
   * @rmtoll AHB4ENR      GPIOAEN       LL_AHB4_GRP1_EnableClock\n
   *         AHB4ENR      GPIOBEN       LL_AHB4_GRP1_EnableClock\n
@@ -1382,15 +1382,15 @@ __STATIC_INLINE void LL_AHB2_GRP1_DisableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_AHB4_GRP1_EnableClock(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC->AHB4ENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC->AHB4ENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC->AHB4ENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC->AHB4ENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Check if AHB4 peripheral clock is enabled or not
   * @rmtoll AHB4ENR      GPIOAEN       LL_AHB4_GRP1_IsEnabledClock\n
   *         AHB4ENR      GPIOBEN       LL_AHB4_GRP1_IsEnabledClock\n
@@ -1432,11 +1432,11 @@ __STATIC_INLINE void LL_AHB4_GRP1_EnableClock(uint32_t Periphs)
   * @retval uint32_t
 */
 __STATIC_INLINE uint32_t LL_AHB4_GRP1_IsEnabledClock(uint32_t Periphs)
-{
-  return ((READ_BIT(RCC->AHB4ENR, Periphs) == Periphs) ? 1U : 0U);
-}
+	{
+		return ((READ_BIT(RCC->AHB4ENR, Periphs) == Periphs) ? 1U : 0U);
+	}
 
-/**
+	/**
   * @brief  Disable AHB4 peripherals clock.
   * @rmtoll AHB4ENR      GPIOAEN       LL_AHB4_GRP1_DisableClock\n
   *         AHB4ENR      GPIOBEN       LL_AHB4_GRP1_DisableClock\n
@@ -1478,11 +1478,11 @@ __STATIC_INLINE uint32_t LL_AHB4_GRP1_IsEnabledClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_AHB4_GRP1_DisableClock(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC->AHB4ENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC->AHB4ENR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Force AHB4 peripherals reset.
   * @rmtoll AHB4RSTR     GPIOARST      LL_AHB4_GRP1_ForceReset\n
   *         AHB4RSTR     GPIOBRST      LL_AHB4_GRP1_ForceReset\n
@@ -1520,11 +1520,11 @@ __STATIC_INLINE void LL_AHB4_GRP1_DisableClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_AHB4_GRP1_ForceReset(uint32_t Periphs)
-{
-  SET_BIT(RCC->AHB4RSTR, Periphs);
-}
+	{
+		SET_BIT(RCC->AHB4RSTR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Release AHB4 peripherals reset.
   * @rmtoll AHB4RSTR     GPIOARST      LL_AHB4_GRP1_ReleaseReset\n
   *         AHB4RSTR     GPIOBRST      LL_AHB4_GRP1_ReleaseReset\n
@@ -1562,11 +1562,11 @@ __STATIC_INLINE void LL_AHB4_GRP1_ForceReset(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_AHB4_GRP1_ReleaseReset(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC->AHB4RSTR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC->AHB4RSTR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Enable AHB4 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll AHB4LPENR    GPIOALPEN     LL_AHB4_GRP1_EnableClockSleep\n
   *         AHB4LPENR    GPIOBLPEN     LL_AHB4_GRP1_EnableClockSleep\n
@@ -1604,15 +1604,15 @@ __STATIC_INLINE void LL_AHB4_GRP1_ReleaseReset(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_AHB4_GRP1_EnableClockSleep(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC->AHB4LPENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC->AHB4LPENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC->AHB4LPENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC->AHB4LPENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Disable AHB4 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll AHB4LPENR    GPIOALPEN     LL_AHB4_GRP1_DisableClockSleep\n
   *         AHB4LPENR    GPIOBLPEN     LL_AHB4_GRP1_DisableClockSleep\n
@@ -1650,19 +1650,19 @@ __STATIC_INLINE void LL_AHB4_GRP1_EnableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_AHB4_GRP1_DisableClockSleep(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC->AHB4LPENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC->AHB4LPENR, Periphs);
+	}
 
-/**
+	/**
   * @}
   */
 
-/** @defgroup BUS_LL_EF_APB3 APB3
+	/** @defgroup BUS_LL_EF_APB3 APB3
   * @{
   */
 
-/**
+	/**
   * @brief  Enable APB3 peripherals clock.
   * @rmtoll APB3ENR      LTDCEN        LL_APB3_GRP1_EnableClock\n (*)
   *         APB3ENR      DSIEN         LL_APB3_GRP1_EnableClock\n (*)
@@ -1676,15 +1676,15 @@ __STATIC_INLINE void LL_AHB4_GRP1_DisableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_APB3_GRP1_EnableClock(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC->APB3ENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC->APB3ENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC->APB3ENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC->APB3ENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Check if APB3 peripheral clock is enabled or not
   * @rmtoll APB3ENR      LTDCEN        LL_APB3_GRP1_IsEnabledClock\n (*)
   *         APB3ENR      DSIEN         LL_APB3_GRP1_IsEnabledClock\n (*)
@@ -1698,11 +1698,11 @@ __STATIC_INLINE void LL_APB3_GRP1_EnableClock(uint32_t Periphs)
   * @retval uint32_t
 */
 __STATIC_INLINE uint32_t LL_APB3_GRP1_IsEnabledClock(uint32_t Periphs)
-{
-  return ((READ_BIT(RCC->APB3ENR, Periphs) == Periphs) ? 1U : 0U);
-}
+	{
+		return ((READ_BIT(RCC->APB3ENR, Periphs) == Periphs) ? 1U : 0U);
+	}
 
-/**
+	/**
   * @brief  Disable APB3 peripherals clock.
   * @rmtoll APB3ENR      LTDCEN        LL_APB3_GRP1_DisableClock\n
   *         APB3ENR      DSIEN         LL_APB3_GRP1_DisableClock\n
@@ -1716,11 +1716,11 @@ __STATIC_INLINE uint32_t LL_APB3_GRP1_IsEnabledClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_APB3_GRP1_DisableClock(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC->APB3ENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC->APB3ENR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Force APB3 peripherals reset.
   * @rmtoll APB3RSTR     LTDCRST       LL_APB3_GRP1_ForceReset\n (*)
   *         APB3RSTR     DSIRST        LL_APB3_GRP1_ForceReset   (*)
@@ -1732,11 +1732,11 @@ __STATIC_INLINE void LL_APB3_GRP1_DisableClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_APB3_GRP1_ForceReset(uint32_t Periphs)
-{
-  SET_BIT(RCC->APB3RSTR, Periphs);
-}
+	{
+		SET_BIT(RCC->APB3RSTR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Release APB3 peripherals reset.
   * @rmtoll APB3RSTR     LTDCRST       LL_APB3_GRP1_ReleaseReset\n
   *         APB3RSTR     DSIRST        LL_APB3_GRP1_ReleaseReset
@@ -1748,11 +1748,11 @@ __STATIC_INLINE void LL_APB3_GRP1_ForceReset(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_APB3_GRP1_ReleaseReset(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC->APB3RSTR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC->APB3RSTR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Enable APB3 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll APB3LPENR    LTDCLPEN      LL_APB3_GRP1_EnableClockSleep\n (*)
   *         APB3LPENR    DSILPEN       LL_APB3_GRP1_EnableClockSleep\n (*)
@@ -1766,15 +1766,15 @@ __STATIC_INLINE void LL_APB3_GRP1_ReleaseReset(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_APB3_GRP1_EnableClockSleep(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC->APB3LPENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC->APB3LPENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC->APB3LPENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC->APB3LPENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Disable APB3 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll APB3LPENR    LTDCLPEN      LL_APB3_GRP1_DisableClockSleep\n (*)
   *         APB3LPENR    DSILPEN       LL_APB3_GRP1_DisableClockSleep\n (*)
@@ -1788,19 +1788,19 @@ __STATIC_INLINE void LL_APB3_GRP1_EnableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_APB3_GRP1_DisableClockSleep(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC->APB3LPENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC->APB3LPENR, Periphs);
+	}
 
-/**
+	/**
   * @}
   */
 
-/** @defgroup BUS_LL_EF_APB1 APB1
+	/** @defgroup BUS_LL_EF_APB1 APB1
   * @{
   */
 
-/**
+	/**
   * @brief  Enable APB1 peripherals clock.
   * @rmtoll APB1LENR     TIM2EN        LL_APB1_GRP1_EnableClock\n
   *         APB1LENR     TIM3EN        LL_APB1_GRP1_EnableClock\n
@@ -1860,15 +1860,15 @@ __STATIC_INLINE void LL_APB3_GRP1_DisableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_APB1_GRP1_EnableClock(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC->APB1LENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC->APB1LENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC->APB1LENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC->APB1LENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Check if APB1 peripheral clock is enabled or not
   * @rmtoll APB1LENR     TIM2EN        LL_APB1_GRP1_IsEnabledClock\n
   *         APB1LENR     TIM3EN        LL_APB1_GRP1_IsEnabledClock\n
@@ -1928,11 +1928,11 @@ __STATIC_INLINE void LL_APB1_GRP1_EnableClock(uint32_t Periphs)
   * @retval uint32_t
 */
 __STATIC_INLINE uint32_t LL_APB1_GRP1_IsEnabledClock(uint32_t Periphs)
-{
-  return ((READ_BIT(RCC->APB1LENR, Periphs) == Periphs) ? 1U : 0U);
-}
+	{
+		return ((READ_BIT(RCC->APB1LENR, Periphs) == Periphs) ? 1U : 0U);
+	}
 
-/**
+	/**
   * @brief  Disable APB1 peripherals clock.
   * @rmtoll APB1LENR     TIM2EN        LL_APB1_GRP1_DisableClock\n
   *         APB1LENR     TIM3EN        LL_APB1_GRP1_DisableClock\n
@@ -1992,11 +1992,11 @@ __STATIC_INLINE uint32_t LL_APB1_GRP1_IsEnabledClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_APB1_GRP1_DisableClock(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC->APB1LENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC->APB1LENR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Force APB1 peripherals reset.
   * @rmtoll APB1LRSTR    TIM2RST       LL_APB1_GRP1_ForceReset\n
   *         APB1LRSTR    TIM3RST       LL_APB1_GRP1_ForceReset\n
@@ -2054,11 +2054,11 @@ __STATIC_INLINE void LL_APB1_GRP1_DisableClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_APB1_GRP1_ForceReset(uint32_t Periphs)
-{
-  SET_BIT(RCC->APB1LRSTR, Periphs);
-}
+	{
+		SET_BIT(RCC->APB1LRSTR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Release APB1 peripherals reset.
   * @rmtoll APB1LRSTR    TIM2RST       LL_APB1_GRP1_ReleaseReset\n
   *         APB1LRSTR    TIM3RST       LL_APB1_GRP1_ReleaseReset\n
@@ -2116,11 +2116,11 @@ __STATIC_INLINE void LL_APB1_GRP1_ForceReset(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_APB1_GRP1_ReleaseReset(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC->APB1LRSTR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC->APB1LRSTR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Enable APB1 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll APB1LLPENR   TIM2LPEN      LL_APB1_GRP1_EnableClockSleep\n
   *         APB1LLPENR   TIM3LPEN      LL_APB1_GRP1_EnableClockSleep\n
@@ -2180,15 +2180,15 @@ __STATIC_INLINE void LL_APB1_GRP1_ReleaseReset(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_APB1_GRP1_EnableClockSleep(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC->APB1LLPENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC->APB1LLPENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC->APB1LLPENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC->APB1LLPENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Disable APB1 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll APB1LLPENR   TIM2LPEN      LL_APB1_GRP1_DisableClockSleep\n
   *         APB1LLPENR   TIM3LPEN      LL_APB1_GRP1_DisableClockSleep\n
@@ -2248,11 +2248,11 @@ __STATIC_INLINE void LL_APB1_GRP1_EnableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_APB1_GRP1_DisableClockSleep(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC->APB1LLPENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC->APB1LLPENR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Enable APB1 peripherals clock.
   * @rmtoll APB1HENR     CRSEN         LL_APB1_GRP2_EnableClock\n
   *         APB1HENR     SWPMIEN       LL_APB1_GRP2_EnableClock\n
@@ -2272,15 +2272,15 @@ __STATIC_INLINE void LL_APB1_GRP1_DisableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_APB1_GRP2_EnableClock(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC->APB1HENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC->APB1HENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC->APB1HENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC->APB1HENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Check if APB1 peripheral clock is enabled or not
   * @rmtoll APB1HENR     CRSEN         LL_APB1_GRP2_IsEnabledClock\n
   *         APB1HENR     SWPMIEN       LL_APB1_GRP2_IsEnabledClock\n
@@ -2300,11 +2300,11 @@ __STATIC_INLINE void LL_APB1_GRP2_EnableClock(uint32_t Periphs)
   * @retval uint32_t
 */
 __STATIC_INLINE uint32_t LL_APB1_GRP2_IsEnabledClock(uint32_t Periphs)
-{
-  return ((READ_BIT(RCC->APB1HENR, Periphs) == Periphs) ? 1U : 0U);
-}
+	{
+		return ((READ_BIT(RCC->APB1HENR, Periphs) == Periphs) ? 1U : 0U);
+	}
 
-/**
+	/**
   * @brief  Disable APB1 peripherals clock.
   * @rmtoll APB1HENR     CRSEN         LL_APB1_GRP2_DisableClock\n
   *         APB1HENR     SWPMIEN       LL_APB1_GRP2_DisableClock\n
@@ -2324,11 +2324,11 @@ __STATIC_INLINE uint32_t LL_APB1_GRP2_IsEnabledClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_APB1_GRP2_DisableClock(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC->APB1HENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC->APB1HENR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Force APB1 peripherals reset.
   * @rmtoll APB1HRSTR    CRSRST        LL_APB1_GRP2_ForceReset\n
   *         APB1HRSTR    SWPMIRST      LL_APB1_GRP2_ForceReset\n
@@ -2348,11 +2348,11 @@ __STATIC_INLINE void LL_APB1_GRP2_DisableClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_APB1_GRP2_ForceReset(uint32_t Periphs)
-{
-  SET_BIT(RCC->APB1HRSTR, Periphs);
-}
+	{
+		SET_BIT(RCC->APB1HRSTR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Release APB1 peripherals reset.
   * @rmtoll APB1HRSTR    CRSRST        LL_APB1_GRP2_ReleaseReset\n
   *         APB1HRSTR    SWPMIRST      LL_APB1_GRP2_ReleaseReset\n
@@ -2372,11 +2372,11 @@ __STATIC_INLINE void LL_APB1_GRP2_ForceReset(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_APB1_GRP2_ReleaseReset(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC->APB1HRSTR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC->APB1HRSTR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Enable APB1 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll APB1HLPENR   CRSLPEN       LL_APB1_GRP2_EnableClockSleep\n
   *         APB1HLPENR   SWPMILPEN     LL_APB1_GRP2_EnableClockSleep\n
@@ -2396,15 +2396,15 @@ __STATIC_INLINE void LL_APB1_GRP2_ReleaseReset(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_APB1_GRP2_EnableClockSleep(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC->APB1HLPENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC->APB1HLPENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC->APB1HLPENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC->APB1HLPENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Disable APB1 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll APB1HLPENR   CRSLPEN       LL_APB1_GRP2_DisableClockSleep\n
   *         APB1HLPENR   SWPMILPEN     LL_APB1_GRP2_DisableClockSleep\n
@@ -2424,19 +2424,19 @@ __STATIC_INLINE void LL_APB1_GRP2_EnableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_APB1_GRP2_DisableClockSleep(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC->APB1HLPENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC->APB1HLPENR, Periphs);
+	}
 
-/**
+	/**
   * @}
   */
 
-/** @defgroup BUS_LL_EF_APB2 APB2
+	/** @defgroup BUS_LL_EF_APB2 APB2
   * @{
   */
 
-/**
+	/**
   * @brief  Enable APB2 peripherals clock.
   * @rmtoll APB2ENR      TIM1EN        LL_APB2_GRP1_EnableClock\n
   *         APB2ENR      TIM8EN        LL_APB2_GRP1_EnableClock\n
@@ -2478,15 +2478,15 @@ __STATIC_INLINE void LL_APB1_GRP2_DisableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_APB2_GRP1_EnableClock(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC->APB2ENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC->APB2ENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC->APB2ENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC->APB2ENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Check if APB2 peripheral clock is enabled or not
   * @rmtoll APB2ENR      TIM1EN        LL_APB2_GRP1_IsEnabledClock\n
   *         APB2ENR      TIM8EN        LL_APB2_GRP1_IsEnabledClock\n
@@ -2528,11 +2528,11 @@ __STATIC_INLINE void LL_APB2_GRP1_EnableClock(uint32_t Periphs)
   * @retval uint32_t
 */
 __STATIC_INLINE uint32_t LL_APB2_GRP1_IsEnabledClock(uint32_t Periphs)
-{
-  return ((READ_BIT(RCC->APB2ENR, Periphs) == Periphs) ? 1U : 0U);
-}
+	{
+		return ((READ_BIT(RCC->APB2ENR, Periphs) == Periphs) ? 1U : 0U);
+	}
 
-/**
+	/**
   * @brief  Disable APB2 peripherals clock.
   * @rmtoll APB2ENR      TIM1EN        LL_APB2_GRP1_DisableClock\n
   *         APB2ENR      TIM8EN        LL_APB2_GRP1_DisableClock\n
@@ -2574,11 +2574,11 @@ __STATIC_INLINE uint32_t LL_APB2_GRP1_IsEnabledClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_APB2_GRP1_DisableClock(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC->APB2ENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC->APB2ENR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Force APB2 peripherals reset.
   * @rmtoll APB2RSTR     TIM1RST       LL_APB2_GRP1_ForceReset\n
   *         APB2RSTR     TIM8RST       LL_APB2_GRP1_ForceReset\n
@@ -2620,11 +2620,11 @@ __STATIC_INLINE void LL_APB2_GRP1_DisableClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_APB2_GRP1_ForceReset(uint32_t Periphs)
-{
-  SET_BIT(RCC->APB2RSTR, Periphs);
-}
+	{
+		SET_BIT(RCC->APB2RSTR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Release APB2 peripherals reset.
   * @rmtoll APB2RSTR     TIM1RST       LL_APB2_GRP1_ReleaseReset\n
   *         APB2RSTR     TIM8RST       LL_APB2_GRP1_ReleaseReset\n
@@ -2666,11 +2666,11 @@ __STATIC_INLINE void LL_APB2_GRP1_ForceReset(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_APB2_GRP1_ReleaseReset(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC->APB2RSTR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC->APB2RSTR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Enable APB2 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll APB2LPENR    TIM1LPEN      LL_APB2_GRP1_EnableClockSleep\n
   *         APB2LPENR    TIM8LPEN      LL_APB2_GRP1_EnableClockSleep\n
@@ -2712,15 +2712,15 @@ __STATIC_INLINE void LL_APB2_GRP1_ReleaseReset(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_APB2_GRP1_EnableClockSleep(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC->APB2LPENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC->APB2LPENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC->APB2LPENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC->APB2LPENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Disable APB2 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll APB2LPENR    TIM1LPEN      LL_APB2_GRP1_DisableClockSleep\n
   *         APB2LPENR    TIM8LPEN      LL_APB2_GRP1_DisableClockSleep\n
@@ -2762,19 +2762,19 @@ __STATIC_INLINE void LL_APB2_GRP1_EnableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_APB2_GRP1_DisableClockSleep(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC->APB2LPENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC->APB2LPENR, Periphs);
+	}
 
-/**
+	/**
   * @}
   */
 
-/** @defgroup BUS_LL_EF_APB4 APB4
+	/** @defgroup BUS_LL_EF_APB4 APB4
   * @{
   */
 
-/**
+	/**
   * @brief  Enable APB4 peripherals clock.
   * @rmtoll APB4ENR      SYSCFGEN      LL_APB4_GRP1_EnableClock\n
   *         APB4ENR      LPUART1EN     LL_APB4_GRP1_EnableClock\n
@@ -2812,15 +2812,15 @@ __STATIC_INLINE void LL_APB2_GRP1_DisableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_APB4_GRP1_EnableClock(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC->APB4ENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC->APB4ENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC->APB4ENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC->APB4ENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Check if APB4 peripheral clock is enabled or not
   * @rmtoll APB4ENR      SYSCFGEN      LL_APB4_GRP1_IsEnabledClock\n
   *         APB4ENR      LPUART1EN     LL_APB4_GRP1_IsEnabledClock\n
@@ -2858,11 +2858,11 @@ __STATIC_INLINE void LL_APB4_GRP1_EnableClock(uint32_t Periphs)
   * @retval uint32_t
 */
 __STATIC_INLINE uint32_t LL_APB4_GRP1_IsEnabledClock(uint32_t Periphs)
-{
-  return ((READ_BIT(RCC->APB4ENR, Periphs) == Periphs) ? 1U : 0U);
-}
+	{
+		return ((READ_BIT(RCC->APB4ENR, Periphs) == Periphs) ? 1U : 0U);
+	}
 
-/**
+	/**
   * @brief  Disable APB4 peripherals clock.
   * @rmtoll APB4ENR      SYSCFGEN      LL_APB4_GRP1_DisableClock\n
   *         APB4ENR      LPUART1EN     LL_APB4_GRP1_DisableClock\n
@@ -2900,11 +2900,11 @@ __STATIC_INLINE uint32_t LL_APB4_GRP1_IsEnabledClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_APB4_GRP1_DisableClock(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC->APB4ENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC->APB4ENR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Force APB4 peripherals reset.
   * @rmtoll APB4RSTR     SYSCFGRST     LL_APB4_GRP1_ForceReset\n
   *         APB4RSTR     LPUART1RST    LL_APB4_GRP1_ForceReset\n
@@ -2940,11 +2940,11 @@ __STATIC_INLINE void LL_APB4_GRP1_DisableClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_APB4_GRP1_ForceReset(uint32_t Periphs)
-{
-  SET_BIT(RCC->APB4RSTR, Periphs);
-}
+	{
+		SET_BIT(RCC->APB4RSTR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Release APB4 peripherals reset.
   * @rmtoll APB4RSTR     SYSCFGRST     LL_APB4_GRP1_ReleaseReset\n
   *         APB4RSTR     LPUART1RST    LL_APB4_GRP1_ReleaseReset\n
@@ -2980,11 +2980,11 @@ __STATIC_INLINE void LL_APB4_GRP1_ForceReset(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_APB4_GRP1_ReleaseReset(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC->APB4RSTR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC->APB4RSTR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Enable APB4 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll APB4LPENR    SYSCFGLPEN    LL_APB4_GRP1_EnableClockSleep\n
   *         APB4LPENR    LPUART1LPEN   LL_APB4_GRP1_EnableClockSleep\n
@@ -3022,15 +3022,15 @@ __STATIC_INLINE void LL_APB4_GRP1_ReleaseReset(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_APB4_GRP1_EnableClockSleep(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC->APB4LPENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC->APB4LPENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC->APB4LPENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC->APB4LPENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Disable APB4 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll APB4LPENR    SYSCFGLPEN    LL_APB4_GRP1_DisableClockSleep\n
   *         APB4LPENR    LPUART1LPEN   LL_APB4_GRP1_DisableClockSleep\n
@@ -3068,19 +3068,19 @@ __STATIC_INLINE void LL_APB4_GRP1_EnableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_APB4_GRP1_DisableClockSleep(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC->APB4LPENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC->APB4LPENR, Periphs);
+	}
 
-/**
+	/**
   * @}
   */
 
-/** @defgroup BUS_LL_EF_CLKAM CLKAM
+	/** @defgroup BUS_LL_EF_CLKAM CLKAM
   * @{
   */
 
-/**
+	/**
   * @brief  Enable peripherals clock for CLKAM Mode.
   * @rmtoll D3AMR / SRDAMR         BDMA          LL_CLKAM_Enable\n
   *         D3AMR / SRDAMR         LPUART1       LL_CLKAM_Enable\n
@@ -3127,22 +3127,22 @@ __STATIC_INLINE void LL_APB4_GRP1_DisableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_CLKAM_Enable(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
+	{
+		__IO uint32_t tmpreg;
 
 #if defined(RCC_D3AMR_BDMAAMEN)
-  SET_BIT(RCC->D3AMR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC->D3AMR, Periphs);
+	SET_BIT (RCC->D3AMR, Periphs);
+	/* Delay after an RCC peripheral clock enabling */
+	tmpreg= READ_BIT(RCC->D3AMR, Periphs);
 #else
-  SET_BIT(RCC->SRDAMR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC->SRDAMR, Periphs);
+	SET_BIT (RCC->SRDAMR, Periphs);
+	/* Delay after an RCC peripheral clock enabling */
+	tmpreg= READ_BIT(RCC->SRDAMR, Periphs);
 #endif /* RCC_D3AMR_BDMAAMEN */
-  (void)tmpreg;
+	(void)tmpreg;
 }
 
-/**
+	/**
   * @brief  Disable peripherals clock for CLKAM Mode.
   * @rmtoll D3AMR / SRDAMR        BDMA          LL_CLKAM_Disable\n
   *         D3AMR / SRDAMR        LPUART1       LL_CLKAM_Disable\n
@@ -3189,38 +3189,39 @@ __STATIC_INLINE void LL_CLKAM_Enable(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_CLKAM_Disable(uint32_t Periphs)
-{
-#if defined(RCC_D3AMR_BDMAAMEN)
-  CLEAR_BIT(RCC->D3AMR, Periphs);
-#else
-  CLEAR_BIT(RCC->SRDAMR, Periphs);
-#endif /* RCC_D3AMR_BDMAAMEN */
-}
+	{
 
-/**
+#if defined(RCC_D3AMR_BDMAAMEN)
+	CLEAR_BIT (RCC->D3AMR, Periphs);
+#else
+	CLEAR_BIT (RCC->SRDAMR, Periphs);
+#endif /* RCC_D3AMR_BDMAAMEN */
+	}
+
+	/**
   * @}
   */
 
-/** @defgroup BUS_LL_EF_CKGA CKGA
+	/** @defgroup BUS_LL_EF_CKGA CKGA
   * @{
   */
 
 #if defined(RCC_CKGAENR_AXICKG)
 
 
-/**
+	/**
   * @brief  Enable clock gating for AXI bus peripherals.
   * @rmtoll CKGAENR      AXICKG          LL_CKGA_Enable\n
   *         CKGAENR      AHBCKG          LL_CKGA_Enable\n
   *         CKGAENR      CPUCKG          LL_CKGA_Enable\n
   *         CKGAENR      SDMMCCKG        LL_CKGA_Enable\n
-  *         CKGAENR      MDMACKG         LL_CKGA_Enable\n 
-  *         CKGAENR      DMA2DCKG        LL_CKGA_Enable\n 
-  *         CKGAENR      LTDCCKG         LL_CKGA_Enable\n 
-  *         CKGAENR      GFXMMUMCKG      LL_CKGA_Enable\n 
-  *         CKGAENR      AHB12CKG        LL_CKGA_Enable\n 
-  *         CKGAENR      AHB34CKG        LL_CKGA_Enable\n 
-  *         CKGAENR      FLIFTCKG        LL_CKGA_Enable\n 
+  *         CKGAENR      MDMACKG         LL_CKGA_Enable\n
+  *         CKGAENR      DMA2DCKG        LL_CKGA_Enable\n
+  *         CKGAENR      LTDCCKG         LL_CKGA_Enable\n
+  *         CKGAENR      GFXMMUMCKG      LL_CKGA_Enable\n
+  *         CKGAENR      AHB12CKG        LL_CKGA_Enable\n
+  *         CKGAENR      AHB34CKG        LL_CKGA_Enable\n
+  *         CKGAENR      FLIFTCKG        LL_CKGA_Enable\n
   *         CKGAENR      OCTOSPI2CKG     LL_CKGA_Enable\n
   *         CKGAENR      FMCCKG          LL_CKGA_Enable\n
   *         CKGAENR      OCTOSPI1CKG     LL_CKGA_Enable\n
@@ -3236,19 +3237,19 @@ __STATIC_INLINE void LL_CLKAM_Disable(uint32_t Periphs)
   *         @arg @ref LL_CKGA_PERIPH_AHB
   *         @arg @ref LL_CKGA_PERIPH_CPU
   *         @arg @ref LL_CKGA_PERIPH_SDMMC
-  *         @arg @ref LL_CKGA_PERIPH_MDMA     
-  *         @arg @ref LL_CKGA_PERIPH_DMA2D   
-  *         @arg @ref LL_CKGA_PERIPH_LTDC   
-  *         @arg @ref LL_CKGA_PERIPH_GFXMMUM  
-  *         @arg @ref LL_CKGA_PERIPH_AHB12 
-  *         @arg @ref LL_CKGA_PERIPH_AHB34 
-  *         @arg @ref LL_CKGA_PERIPH_FLIFT  
+  *         @arg @ref LL_CKGA_PERIPH_MDMA
+  *         @arg @ref LL_CKGA_PERIPH_DMA2D
+  *         @arg @ref LL_CKGA_PERIPH_LTDC
+  *         @arg @ref LL_CKGA_PERIPH_GFXMMUM
+  *         @arg @ref LL_CKGA_PERIPH_AHB12
+  *         @arg @ref LL_CKGA_PERIPH_AHB34
+  *         @arg @ref LL_CKGA_PERIPH_FLIFT
   *         @arg @ref LL_CKGA_PERIPH_OCTOSPI2
-  *         @arg @ref LL_CKGA_PERIPH_FMC 
+  *         @arg @ref LL_CKGA_PERIPH_FMC
   *         @arg @ref LL_CKGA_PERIPH_OCTOSPI1
-  *         @arg @ref LL_CKGA_PERIPH_AXIRAM1 
+  *         @arg @ref LL_CKGA_PERIPH_AXIRAM1
   *         @arg @ref LL_CKGA_PERIPH_AXIRAM2
-  *         @arg @ref LL_CKGA_PERIPH_AXIRAM3 
+  *         @arg @ref LL_CKGA_PERIPH_AXIRAM3
   *         @arg @ref LL_CKGA_PERIPH_GFXMMUS
   *         @arg @ref LL_CKGA_PERIPH_ECCRAM
   *         @arg @ref LL_CKGA_PERIPH_EXTI
@@ -3256,31 +3257,31 @@ __STATIC_INLINE void LL_CLKAM_Disable(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_CKGA_Enable(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC->CKGAENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC->CKGAENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC->CKGAENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC->CKGAENR, Periphs);
+		(void)tmpreg;
+	}
 
 #endif /* RCC_CKGAENR_AXICKG */
 
 #if defined(RCC_CKGAENR_AXICKG)
 
-/**
+	/**
   * @brief  Disable  clock gating for AXI bus peripherals.
   * @rmtoll CKGAENR      AXICKG          LL_CKGA_Enable\n
   *         CKGAENR      AHBCKG          LL_CKGA_Enable\n
   *         CKGAENR      CPUCKG          LL_CKGA_Enable\n
   *         CKGAENR      SDMMCCKG        LL_CKGA_Enable\n
-  *         CKGAENR      MDMACKG         LL_CKGA_Enable\n 
-  *         CKGAENR      DMA2DCKG        LL_CKGA_Enable\n 
-  *         CKGAENR      LTDCCKG         LL_CKGA_Enable\n 
-  *         CKGAENR      GFXMMUMCKG      LL_CKGA_Enable\n 
-  *         CKGAENR      AHB12CKG        LL_CKGA_Enable\n 
-  *         CKGAENR      AHB34CKG        LL_CKGA_Enable\n 
-  *         CKGAENR      FLIFTCKG        LL_CKGA_Enable\n 
+  *         CKGAENR      MDMACKG         LL_CKGA_Enable\n
+  *         CKGAENR      DMA2DCKG        LL_CKGA_Enable\n
+  *         CKGAENR      LTDCCKG         LL_CKGA_Enable\n
+  *         CKGAENR      GFXMMUMCKG      LL_CKGA_Enable\n
+  *         CKGAENR      AHB12CKG        LL_CKGA_Enable\n
+  *         CKGAENR      AHB34CKG        LL_CKGA_Enable\n
+  *         CKGAENR      FLIFTCKG        LL_CKGA_Enable\n
   *         CKGAENR      OCTOSPI2CKG     LL_CKGA_Enable\n
   *         CKGAENR      FMCCKG          LL_CKGA_Enable\n
   *         CKGAENR      OCTOSPI1CKG     LL_CKGA_Enable\n
@@ -3296,19 +3297,19 @@ __STATIC_INLINE void LL_CKGA_Enable(uint32_t Periphs)
   *         @arg @ref LL_CKGA_PERIPH_AHB
   *         @arg @ref LL_CKGA_PERIPH_CPU
   *         @arg @ref LL_CKGA_PERIPH_SDMMC
-  *         @arg @ref LL_CKGA_PERIPH_MDMA     
-  *         @arg @ref LL_CKGA_PERIPH_DMA2D   
-  *         @arg @ref LL_CKGA_PERIPH_LTDC   
-  *         @arg @ref LL_CKGA_PERIPH_GFXMMUM  
-  *         @arg @ref LL_CKGA_PERIPH_AHB12 
-  *         @arg @ref LL_CKGA_PERIPH_AHB34 
-  *         @arg @ref LL_CKGA_PERIPH_FLIFT  
+  *         @arg @ref LL_CKGA_PERIPH_MDMA
+  *         @arg @ref LL_CKGA_PERIPH_DMA2D
+  *         @arg @ref LL_CKGA_PERIPH_LTDC
+  *         @arg @ref LL_CKGA_PERIPH_GFXMMUM
+  *         @arg @ref LL_CKGA_PERIPH_AHB12
+  *         @arg @ref LL_CKGA_PERIPH_AHB34
+  *         @arg @ref LL_CKGA_PERIPH_FLIFT
   *         @arg @ref LL_CKGA_PERIPH_OCTOSPI2
-  *         @arg @ref LL_CKGA_PERIPH_FMC 
+  *         @arg @ref LL_CKGA_PERIPH_FMC
   *         @arg @ref LL_CKGA_PERIPH_OCTOSPI1
-  *         @arg @ref LL_CKGA_PERIPH_AXIRAM1 
+  *         @arg @ref LL_CKGA_PERIPH_AXIRAM1
   *         @arg @ref LL_CKGA_PERIPH_AXIRAM2
-  *         @arg @ref LL_CKGA_PERIPH_AXIRAM3 
+  *         @arg @ref LL_CKGA_PERIPH_AXIRAM3
   *         @arg @ref LL_CKGA_PERIPH_GFXMMUS
   *         @arg @ref LL_CKGA_PERIPH_ECCRAM
   *         @arg @ref LL_CKGA_PERIPH_EXTI
@@ -3316,22 +3317,22 @@ __STATIC_INLINE void LL_CKGA_Enable(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_CKGA_Disable(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC->CKGAENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC->CKGAENR, Periphs);
+	}
 
 #endif /* RCC_CKGAENR_AXICKG */
 
-/**
+	/**
   * @}
   */
 
 #if defined(DUAL_CORE)
-/** @addtogroup BUS_LL_EF_AHB3 AHB3
+	/** @addtogroup BUS_LL_EF_AHB3 AHB3
   * @{
   */
 
-/**
+	/**
   * @brief  Enable C1 AHB3 peripherals clock.
   * @rmtoll AHB3ENR      MDMAEN        LL_C1_AHB3_GRP1_EnableClock\n
   *         AHB3ENR      DMA2DEN       LL_C1_AHB3_GRP1_EnableClock\n
@@ -3363,15 +3364,15 @@ __STATIC_INLINE void LL_CKGA_Disable(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_AHB3_GRP1_EnableClock(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C1->AHB3ENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C1->AHB3ENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C1->AHB3ENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C1->AHB3ENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Check if C1 AHB3 peripheral clock is enabled or not
   * @rmtoll AHB3ENR      MDMAEN        LL_C1_AHB3_GRP1_IsEnabledClock\n
   *         AHB3ENR      DMA2DEN       LL_C1_AHB3_GRP1_IsEnabledClock\n
@@ -3403,11 +3404,11 @@ __STATIC_INLINE void LL_C1_AHB3_GRP1_EnableClock(uint32_t Periphs)
   * @retval uint32_t
 */
 __STATIC_INLINE uint32_t LL_C1_AHB3_GRP1_IsEnabledClock(uint32_t Periphs)
-{
-  return ((READ_BIT(RCC_C1->AHB3ENR, Periphs) == Periphs) ? 1U : 0U);
-}
+	{
+		return ((READ_BIT(RCC_C1->AHB3ENR, Periphs) == Periphs) ? 1U : 0U);
+	}
 
-/**
+	/**
   * @brief  Disable C1 AHB3 peripherals clock.
   * @rmtoll AHB3ENR      MDMAEN        LL_C1_AHB3_GRP1_DisableClock\n
   *         AHB3ENR      DMA2DEN       LL_C1_AHB3_GRP1_DisableClock\n
@@ -3439,11 +3440,11 @@ __STATIC_INLINE uint32_t LL_C1_AHB3_GRP1_IsEnabledClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_AHB3_GRP1_DisableClock(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C1->AHB3ENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C1->AHB3ENR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Enable C1 AHB3 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll AHB3LPENR    MDMALPEN      LL_C1_AHB3_GRP1_EnableClockSleep\n
   *         AHB3LPENR    DMA2DLPEN     LL_C1_AHB3_GRP1_EnableClockSleep\n
@@ -3484,15 +3485,15 @@ __STATIC_INLINE void LL_C1_AHB3_GRP1_DisableClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_AHB3_GRP1_EnableClockSleep(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C1->AHB3LPENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C1->AHB3LPENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C1->AHB3LPENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C1->AHB3LPENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Disable C1 AHB3 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll AHB3LPENR    MDMALPEN      LL_C1_AHB3_GRP1_DisableClockSleep\n
   *         AHB3LPENR    DMA2DLPEN     LL_C1_AHB3_GRP1_DisableClockSleep\n
@@ -3533,19 +3534,19 @@ __STATIC_INLINE void LL_C1_AHB3_GRP1_EnableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_AHB3_GRP1_DisableClockSleep(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C1->AHB3LPENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C1->AHB3LPENR, Periphs);
+	}
 
-/**
+	/**
   * @}
   */
 
-/** @addtogroup BUS_LL_EF_AHB1 AHB1
+	/** @addtogroup BUS_LL_EF_AHB1 AHB1
   * @{
   */
 
-/**
+	/**
   * @brief  Enable C1 AHB1 peripherals clock.
   * @rmtoll AHB1ENR      DMA1EN        LL_C1_AHB1_GRP1_EnableClock\n
   *         AHB1ENR      DMA2EN        LL_C1_AHB1_GRP1_EnableClock\n
@@ -3577,15 +3578,15 @@ __STATIC_INLINE void LL_C1_AHB3_GRP1_DisableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_AHB1_GRP1_EnableClock(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C1->AHB1ENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C1->AHB1ENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C1->AHB1ENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C1->AHB1ENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Check if C1 AHB1 peripheral clock is enabled or not
   * @rmtoll AHB1ENR      DMA1EN        LL_C1_AHB1_GRP1_IsEnabledClock\n
   *         AHB1ENR      DMA2EN        LL_C1_AHB1_GRP1_IsEnabledClock\n
@@ -3617,11 +3618,11 @@ __STATIC_INLINE void LL_C1_AHB1_GRP1_EnableClock(uint32_t Periphs)
   * @retval uint32_t
 */
 __STATIC_INLINE uint32_t LL_C1_AHB1_GRP1_IsEnabledClock(uint32_t Periphs)
-{
-  return ((READ_BIT(RCC_C1->AHB1ENR, Periphs) == Periphs) ? 1U : 0U);
-}
+	{
+		return ((READ_BIT(RCC_C1->AHB1ENR, Periphs) == Periphs) ? 1U : 0U);
+	}
 
-/**
+	/**
   * @brief  Disable C1 AHB1 peripherals clock.
   * @rmtoll AHB1ENR      DMA1EN        LL_C1_AHB1_GRP1_DisableClock\n
   *         AHB1ENR      DMA2EN        LL_C1_AHB1_GRP1_DisableClock\n
@@ -3653,11 +3654,11 @@ __STATIC_INLINE uint32_t LL_C1_AHB1_GRP1_IsEnabledClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_AHB1_GRP1_DisableClock(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C1->AHB1ENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C1->AHB1ENR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Enable C1 AHB1 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll AHB1LPENR    DMA1LPEN      LL_C1_AHB1_GRP1_EnableClockSleep\n
   *         AHB1LPENR    DMA2LPEN      LL_C1_AHB1_GRP1_EnableClockSleep\n
@@ -3689,15 +3690,15 @@ __STATIC_INLINE void LL_C1_AHB1_GRP1_DisableClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_AHB1_GRP1_EnableClockSleep(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C1->AHB1LPENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C1->AHB1LPENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C1->AHB1LPENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C1->AHB1LPENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Disable C1 AHB1 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll AHB1LPENR    DMA1LPEN      LL_C1_AHB1_GRP1_DisableClockSleep\n
   *         AHB1LPENR    DMA2LPEN      LL_C1_AHB1_GRP1_DisableClockSleep\n
@@ -3729,19 +3730,19 @@ __STATIC_INLINE void LL_C1_AHB1_GRP1_EnableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_AHB1_GRP1_DisableClockSleep(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C1->AHB1LPENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C1->AHB1LPENR, Periphs);
+	}
 
-/**
+	/**
   * @}
   */
 
-/** @addtogroup BUS_LL_EF_AHB2 AHB2
+	/** @addtogroup BUS_LL_EF_AHB2 AHB2
   * @{
   */
 
-/**
+	/**
   * @brief  Enable C1 AHB2 peripherals clock.
   * @rmtoll AHB2ENR      DCMIEN        LL_C1_AHB2_GRP1_EnableClock\n
   *         AHB2ENR      HSEMEN        LL_C1_AHB2_GRP1_EnableClock\n (*)
@@ -3769,15 +3770,15 @@ __STATIC_INLINE void LL_C1_AHB1_GRP1_DisableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_AHB2_GRP1_EnableClock(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C1->AHB2ENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C1->AHB2ENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C1->AHB2ENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C1->AHB2ENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Check if C1 AHB2 peripheral clock is enabled or not
   * @rmtoll AHB2ENR      DCMIEN        LL_C1_AHB2_GRP1_IsEnabledClock\n
   *         AHB2ENR      HSEMEN        LL_C1_AHB2_GRP1_IsEnabledClock\n (*)
@@ -3805,11 +3806,11 @@ __STATIC_INLINE void LL_C1_AHB2_GRP1_EnableClock(uint32_t Periphs)
   * @retval uint32_t
 */
 __STATIC_INLINE uint32_t LL_C1_AHB2_GRP1_IsEnabledClock(uint32_t Periphs)
-{
-  return ((READ_BIT(RCC_C1->AHB2ENR, Periphs) == Periphs) ? 1U : 0U);
-}
+	{
+		return ((READ_BIT(RCC_C1->AHB2ENR, Periphs) == Periphs) ? 1U : 0U);
+	}
 
-/**
+	/**
   * @brief  Disable C1 AHB2 peripherals clock.
   * @rmtoll AHB2ENR      DCMIEN        LL_C1_AHB2_GRP1_DisableClock\n
   *         AHB2ENR      HSEMEN        LL_C1_AHB2_GRP1_DisableClock\n (*)
@@ -3837,11 +3838,11 @@ __STATIC_INLINE uint32_t LL_C1_AHB2_GRP1_IsEnabledClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_AHB2_GRP1_DisableClock(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C1->AHB2ENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C1->AHB2ENR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Enable C1 AHB2 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll AHB2LPENR    DCMILPEN      LL_C1_AHB2_GRP1_EnableClockSleep\n
   *         AHB2LPENR    CRYPLPEN      LL_C1_AHB2_GRP1_EnableClockSleep\n (*)
@@ -3867,15 +3868,15 @@ __STATIC_INLINE void LL_C1_AHB2_GRP1_DisableClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_AHB2_GRP1_EnableClockSleep(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C1->AHB2LPENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C1->AHB2LPENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C1->AHB2LPENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C1->AHB2LPENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Disable C1 AHB2 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll AHB2LPENR    DCMILPEN      LL_C1_AHB2_GRP1_DisableClockSleep\n
   *         AHB2LPENR    CRYPLPEN      LL_C1_AHB2_GRP1_DisableClockSleep\n (*)
@@ -3901,19 +3902,19 @@ __STATIC_INLINE void LL_C1_AHB2_GRP1_EnableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_AHB2_GRP1_DisableClockSleep(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C1->AHB2LPENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C1->AHB2LPENR, Periphs);
+	}
 
-/**
+	/**
   * @}
   */
 
-/** @addtogroup BUS_LL_EF_AHB4 AHB4
+	/** @addtogroup BUS_LL_EF_AHB4 AHB4
   * @{
   */
 
-/**
+	/**
   * @brief  Enable C1 AHB4 peripherals clock.
   * @rmtoll AHB4ENR      GPIOAEN       LL_C1_AHB4_GRP1_EnableClock\n
   *         AHB4ENR      GPIOBEN       LL_C1_AHB4_GRP1_EnableClock\n
@@ -3955,15 +3956,15 @@ __STATIC_INLINE void LL_C1_AHB2_GRP1_DisableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_AHB4_GRP1_EnableClock(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C1->AHB4ENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C1->AHB4ENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C1->AHB4ENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C1->AHB4ENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Check if C1 AHB4 peripheral clock is enabled or not
   * @rmtoll AHB4ENR      GPIOAEN       LL_C1_AHB4_GRP1_IsEnabledClock\n
   *         AHB4ENR      GPIOBEN       LL_C1_AHB4_GRP1_IsEnabledClock\n
@@ -4005,11 +4006,11 @@ __STATIC_INLINE void LL_C1_AHB4_GRP1_EnableClock(uint32_t Periphs)
   * @retval uint32_t
 */
 __STATIC_INLINE uint32_t LL_C1_AHB4_GRP1_IsEnabledClock(uint32_t Periphs)
-{
-  return ((READ_BIT(RCC_C1->AHB4ENR, Periphs) == Periphs) ? 1U : 0U);
-}
+	{
+		return ((READ_BIT(RCC_C1->AHB4ENR, Periphs) == Periphs) ? 1U : 0U);
+	}
 
-/**
+	/**
   * @brief  Disable C1 AHB4 peripherals clock.
   * @rmtoll AHB4ENR      GPIOAEN       LL_C1_AHB4_GRP1_DisableClock\n
   *         AHB4ENR      GPIOBEN       LL_C1_AHB4_GRP1_DisableClock\n
@@ -4051,11 +4052,11 @@ __STATIC_INLINE uint32_t LL_C1_AHB4_GRP1_IsEnabledClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_AHB4_GRP1_DisableClock(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C1->AHB4ENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C1->AHB4ENR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Enable C1 AHB4 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll AHB4LPENR    GPIOALPEN     LL_C1_AHB4_GRP1_EnableClockSleep\n
   *         AHB4LPENR    GPIOBLPEN     LL_C1_AHB4_GRP1_EnableClockSleep\n
@@ -4093,15 +4094,15 @@ __STATIC_INLINE void LL_C1_AHB4_GRP1_DisableClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_AHB4_GRP1_EnableClockSleep(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C1->AHB4LPENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C1->AHB4LPENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C1->AHB4LPENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C1->AHB4LPENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Disable C1 AHB4 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll AHB4LPENR    GPIOALPEN     LL_C1_AHB4_GRP1_DisableClockSleep\n
   *         AHB4LPENR    GPIOBLPEN     LL_C1_AHB4_GRP1_DisableClockSleep\n
@@ -4139,19 +4140,19 @@ __STATIC_INLINE void LL_C1_AHB4_GRP1_EnableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_AHB4_GRP1_DisableClockSleep(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C1->AHB4LPENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C1->AHB4LPENR, Periphs);
+	}
 
-/**
+	/**
   * @}
   */
 
-/** @addtogroup BUS_LL_EF_APB3 APB3
+	/** @addtogroup BUS_LL_EF_APB3 APB3
   * @{
   */
 
-/**
+	/**
   * @brief  Enable C1 APB3 peripherals clock.
   * @rmtoll APB3ENR      LTDCEN        LL_C1_APB3_GRP1_EnableClock\n (*)
   *         APB3ENR      DSIEN         LL_C1_APB3_GRP1_EnableClock\n (*)
@@ -4165,15 +4166,15 @@ __STATIC_INLINE void LL_C1_AHB4_GRP1_DisableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_APB3_GRP1_EnableClock(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C1->APB3ENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C1->APB3ENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C1->APB3ENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C1->APB3ENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Check if C1 APB3 peripheral clock is enabled or not
   * @rmtoll APB3ENR      LTDCEN        LL_C1_APB3_GRP1_IsEnabledClock\n (*)
   *         APB3ENR      DSIEN         LL_C1_APB3_GRP1_IsEnabledClock\n (*)
@@ -4187,11 +4188,11 @@ __STATIC_INLINE void LL_C1_APB3_GRP1_EnableClock(uint32_t Periphs)
   * @retval uint32_t
 */
 __STATIC_INLINE uint32_t LL_C1_APB3_GRP1_IsEnabledClock(uint32_t Periphs)
-{
-  return ((READ_BIT(RCC_C1->APB3ENR, Periphs) == Periphs) ? 1U : 0U);
-}
+	{
+		return ((READ_BIT(RCC_C1->APB3ENR, Periphs) == Periphs) ? 1U : 0U);
+	}
 
-/**
+	/**
   * @brief  Disable C1 APB3 peripherals clock.
   * @rmtoll APB3ENR      LTDCEN        LL_C1_APB3_GRP1_DisableClock\n (*)
   *         APB3ENR      DSIEN         LL_C1_APB3_GRP1_DisableClock\n (*)
@@ -4206,11 +4207,11 @@ __STATIC_INLINE uint32_t LL_C1_APB3_GRP1_IsEnabledClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_APB3_GRP1_DisableClock(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C1->APB3ENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C1->APB3ENR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Enable C1 APB3 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll APB3LPENR    LTDCLPEN      LL_C1_APB3_GRP1_EnableClockSleep\n (*)
   *         APB3LPENR    DSILPEN       LL_C1_APB3_GRP1_EnableClockSleep\n (*)
@@ -4224,15 +4225,15 @@ __STATIC_INLINE void LL_C1_APB3_GRP1_DisableClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_APB3_GRP1_EnableClockSleep(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C1->APB3LPENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C1->APB3LPENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C1->APB3LPENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C1->APB3LPENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Disable C1 APB3 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll APB3LPENR    LTDCLPEN      LL_C1_APB3_GRP1_DisableClockSleep\n (*)
   *         APB3LPENR    DSILPEN       LL_C1_APB3_GRP1_DisableClockSleep\n (*)
@@ -4246,19 +4247,19 @@ __STATIC_INLINE void LL_C1_APB3_GRP1_EnableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_APB3_GRP1_DisableClockSleep(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C1->APB3LPENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C1->APB3LPENR, Periphs);
+	}
 
-/**
+	/**
   * @}
   */
 
-/** @addtogroup BUS_LL_EF_APB1 APB1
+	/** @addtogroup BUS_LL_EF_APB1 APB1
   * @{
   */
 
-/**
+	/**
   * @brief  Enable C1 APB1 peripherals clock.
   * @rmtoll APB1LENR     TIM2EN        LL_C1_APB1_GRP1_EnableClock\n
   *         APB1LENR     TIM3EN        LL_C1_APB1_GRP1_EnableClock\n
@@ -4316,15 +4317,15 @@ __STATIC_INLINE void LL_C1_APB3_GRP1_DisableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_APB1_GRP1_EnableClock(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C1->APB1LENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C1->APB1LENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C1->APB1LENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C1->APB1LENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Check if C1 APB1 peripheral clock is enabled or not
   * @rmtoll APB1LENR     TIM2EN        LL_C1_APB1_GRP1_IsEnabledClock\n
   *         APB1LENR     TIM3EN        LL_C1_APB1_GRP1_IsEnabledClock\n
@@ -4382,11 +4383,11 @@ __STATIC_INLINE void LL_C1_APB1_GRP1_EnableClock(uint32_t Periphs)
   * @retval uint32_t
 */
 __STATIC_INLINE uint32_t LL_C1_APB1_GRP1_IsEnabledClock(uint32_t Periphs)
-{
-  return ((READ_BIT(RCC_C1->APB1LENR, Periphs) == Periphs) ? 1U : 0U);
-}
+	{
+		return ((READ_BIT(RCC_C1->APB1LENR, Periphs) == Periphs) ? 1U : 0U);
+	}
 
-/**
+	/**
   * @brief  Disable C1 APB1 peripherals clock.
   * @rmtoll APB1LENR     TIM2EN        LL_C1_APB1_GRP1_DisableClock\n
   *         APB1LENR     TIM3EN        LL_C1_APB1_GRP1_DisableClock\n
@@ -4444,11 +4445,11 @@ __STATIC_INLINE uint32_t LL_C1_APB1_GRP1_IsEnabledClock(uint32_t Periphs)
   * @retval uint32_t
 */
 __STATIC_INLINE void LL_C1_APB1_GRP1_DisableClock(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C1->APB1LENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C1->APB1LENR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Enable C1 APB1 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll APB1LLPENR   TIM2LPEN      LL_C1_APB1_GRP1_EnableClockSleep\n
   *         APB1LLPENR   TIM3LPEN      LL_C1_APB1_GRP1_EnableClockSleep\n
@@ -4506,15 +4507,15 @@ __STATIC_INLINE void LL_C1_APB1_GRP1_DisableClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_APB1_GRP1_EnableClockSleep(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C1->APB1LLPENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C1->APB1LLPENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C1->APB1LLPENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C1->APB1LLPENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Disable C1 APB1 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll APB1LLPENR   TIM2LPEN      LL_C1_APB1_GRP1_DisableClockSleep\n
   *         APB1LLPENR   TIM3LPEN      LL_C1_APB1_GRP1_DisableClockSleep\n
@@ -4572,11 +4573,11 @@ __STATIC_INLINE void LL_C1_APB1_GRP1_EnableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_APB1_GRP1_DisableClockSleep(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C1->APB1LLPENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C1->APB1LLPENR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Enable C1 APB1 peripherals clock.
   * @rmtoll APB1HENR     CRSEN         LL_C1_APB1_GRP2_EnableClock\n
   *         APB1HENR     SWPMIEN       LL_C1_APB1_GRP2_EnableClock\n
@@ -4596,15 +4597,15 @@ __STATIC_INLINE void LL_C1_APB1_GRP1_DisableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_APB1_GRP2_EnableClock(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C1->APB1HENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C1->APB1HENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C1->APB1HENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C1->APB1HENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Check if C1 APB1 peripheral clock is enabled or not
   * @rmtoll APB1HENR     CRSEN         LL_C1_APB1_GRP2_IsEnabledClock\n
   *         APB1HENR     SWPMIEN       LL_C1_APB1_GRP2_IsEnabledClock\n
@@ -4624,11 +4625,11 @@ __STATIC_INLINE void LL_C1_APB1_GRP2_EnableClock(uint32_t Periphs)
   * @retval uint32_t
 */
 __STATIC_INLINE uint32_t LL_C1_APB1_GRP2_IsEnabledClock(uint32_t Periphs)
-{
-  return ((READ_BIT(RCC_C1->APB1HENR, Periphs) == Periphs) ? 1U : 0U);
-}
+	{
+		return ((READ_BIT(RCC_C1->APB1HENR, Periphs) == Periphs) ? 1U : 0U);
+	}
 
-/**
+	/**
   * @brief  Disable C1 APB1 peripherals clock.
   * @rmtoll APB1HENR     CRSEN         LL_C1_APB1_GRP2_DisableClock\n
   *         APB1HENR     SWPMIEN       LL_C1_APB1_GRP2_DisableClock\n
@@ -4648,11 +4649,11 @@ __STATIC_INLINE uint32_t LL_C1_APB1_GRP2_IsEnabledClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_APB1_GRP2_DisableClock(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C1->APB1HENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C1->APB1HENR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Enable C1 APB1 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll APB1HLPENR   CRSLPEN       LL_C1_APB1_GRP2_EnableClockSleep\n
   *         APB1HLPENR   SWPMILPEN     LL_C1_APB1_GRP2_EnableClockSleep\n
@@ -4672,15 +4673,15 @@ __STATIC_INLINE void LL_C1_APB1_GRP2_DisableClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_APB1_GRP2_EnableClockSleep(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C1->APB1HLPENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C1->APB1HLPENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C1->APB1HLPENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C1->APB1HLPENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Disable C1 APB1 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll APB1HLPENR   CRSLPEN       LL_C1_APB1_GRP2_DisableClockSleep\n
   *         APB1HLPENR   SWPMILPEN     LL_C1_APB1_GRP2_DisableClockSleep\n
@@ -4700,19 +4701,19 @@ __STATIC_INLINE void LL_C1_APB1_GRP2_EnableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_APB1_GRP2_DisableClockSleep(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C1->APB1HLPENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C1->APB1HLPENR, Periphs);
+	}
 
-/**
+	/**
   * @}
   */
 
-/** @addtogroup BUS_LL_EF_APB2 APB2
+	/** @addtogroup BUS_LL_EF_APB2 APB2
   * @{
   */
 
-/**
+	/**
   * @brief  Enable C1 APB2 peripherals clock.
   * @rmtoll APB2ENR      TIM1EN        LL_C1_APB2_GRP1_EnableClock\n
   *         APB2ENR      TIM8EN        LL_C1_APB2_GRP1_EnableClock\n
@@ -4754,15 +4755,15 @@ __STATIC_INLINE void LL_C1_APB1_GRP2_DisableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_APB2_GRP1_EnableClock(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C1->APB2ENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C1->APB2ENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C1->APB2ENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C1->APB2ENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Check if C1 APB2 peripheral clock is enabled or not
   * @rmtoll APB2ENR      TIM1EN        LL_C1_APB2_GRP1_IsEnabledClock\n
   *         APB2ENR      TIM8EN        LL_C1_APB2_GRP1_IsEnabledClock\n
@@ -4804,11 +4805,11 @@ __STATIC_INLINE void LL_C1_APB2_GRP1_EnableClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE uint32_t LL_C1_APB2_GRP1_IsEnabledClock(uint32_t Periphs)
-{
-  return ((READ_BIT(RCC_C1->APB2ENR, Periphs) == Periphs) ? 1U : 0U);
-}
+	{
+		return ((READ_BIT(RCC_C1->APB2ENR, Periphs) == Periphs) ? 1U : 0U);
+	}
 
-/**
+	/**
   * @brief  Disable C1 APB2 peripherals clock.
   * @rmtoll APB2ENR      TIM1EN        LL_C1_APB2_GRP1_DisableClock\n
   *         APB2ENR      TIM8EN        LL_C1_APB2_GRP1_DisableClock\n
@@ -4850,11 +4851,11 @@ __STATIC_INLINE uint32_t LL_C1_APB2_GRP1_IsEnabledClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_APB2_GRP1_DisableClock(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C1->APB2ENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C1->APB2ENR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Enable C1 APB2 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll APB2LPENR    TIM1LPEN      LL_C1_APB2_GRP1_EnableClockSleep\n
   *         APB2LPENR    TIM8LPEN      LL_C1_APB2_GRP1_EnableClockSleep\n
@@ -4896,15 +4897,15 @@ __STATIC_INLINE void LL_C1_APB2_GRP1_DisableClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_APB2_GRP1_EnableClockSleep(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C1->APB2LPENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C1->APB2LPENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C1->APB2LPENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C1->APB2LPENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Disable C1 APB2 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll APB2LPENR    TIM1LPEN      LL_C1_APB2_GRP1_DisableClockSleep\n
   *         APB2LPENR    TIM8LPEN      LL_C1_APB2_GRP1_DisableClockSleep\n
@@ -4946,19 +4947,19 @@ __STATIC_INLINE void LL_C1_APB2_GRP1_EnableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_APB2_GRP1_DisableClockSleep(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C1->APB2LPENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C1->APB2LPENR, Periphs);
+	}
 
-/**
+	/**
   * @}
   */
 
-/** @addtogroup BUS_LL_EF_APB4 APB4
+	/** @addtogroup BUS_LL_EF_APB4 APB4
   * @{
   */
 
-/**
+	/**
   * @brief  Enable C1 APB4 peripherals clock.
   * @rmtoll APB4ENR      SYSCFGEN      LL_C1_APB4_GRP1_EnableClock\n
   *         APB4ENR      LPUART1EN     LL_C1_APB4_GRP1_EnableClock\n
@@ -4995,15 +4996,15 @@ __STATIC_INLINE void LL_C1_APB2_GRP1_DisableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_APB4_GRP1_EnableClock(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C1->APB4ENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C1->APB4ENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C1->APB4ENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C1->APB4ENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Check if C1 APB4 peripheral clock is enabled or not
   * @rmtoll APB4ENR      SYSCFGEN      LL_C1_APB4_GRP1_IsEnabledClock\n
   *         APB4ENR      LPUART1EN     LL_C1_APB4_GRP1_IsEnabledClock\n
@@ -5038,11 +5039,11 @@ __STATIC_INLINE void LL_C1_APB4_GRP1_EnableClock(uint32_t Periphs)
   * @retval uint32_t
 */
 __STATIC_INLINE uint32_t LL_C1_APB4_GRP1_IsEnabledClock(uint32_t Periphs)
-{
-  return ((READ_BIT(RCC_C1->APB4ENR, Periphs) == Periphs) ? 1U : 0U);
-}
+	{
+		return ((READ_BIT(RCC_C1->APB4ENR, Periphs) == Periphs) ? 1U : 0U);
+	}
 
-/**
+	/**
   * @brief  Disable C1 APB4 peripherals clock.
   * @rmtoll APB4ENR      SYSCFGEN      LL_C1_APB4_GRP1_DisableClock\n
   *         APB4ENR      LPUART1EN     LL_C1_APB4_GRP1_DisableClock\n
@@ -5078,11 +5079,11 @@ __STATIC_INLINE uint32_t LL_C1_APB4_GRP1_IsEnabledClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_APB4_GRP1_DisableClock(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C1->APB4ENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C1->APB4ENR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Enable C1 APB4 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll APB4LPENR    SYSCFGLPEN    LL_C1_APB4_GRP1_EnableClockSleep\n
   *         APB4LPENR    LPUART1LPEN   LL_C1_APB4_GRP1_EnableClockSleep\n
@@ -5118,15 +5119,15 @@ __STATIC_INLINE void LL_C1_APB4_GRP1_DisableClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_APB4_GRP1_EnableClockSleep(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C1->APB4LPENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C1->APB4LPENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C1->APB4LPENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C1->APB4LPENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Disable C1 APB4 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll APB4LPENR    SYSCFGLPEN    LL_C1_APB4_GRP1_DisableClockSleep\n
   *         APB4LPENR    LPUART1LPEN   LL_C1_APB4_GRP1_DisableClockSleep\n
@@ -5162,19 +5163,19 @@ __STATIC_INLINE void LL_C1_APB4_GRP1_EnableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C1_APB4_GRP1_DisableClockSleep(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C1->APB4LPENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C1->APB4LPENR, Periphs);
+	}
 
-/**
+	/**
   * @}
   */
 
-/** @addtogroup BUS_LL_EF_AHB3 AHB3
+	/** @addtogroup BUS_LL_EF_AHB3 AHB3
   * @{
   */
 
-/**
+	/**
   * @brief  Enable C2 AHB3 peripherals clock.
   * @rmtoll AHB3ENR      MDMAEN        LL_C2_AHB3_GRP1_EnableClock\n
   *         AHB3ENR      DMA2DEN       LL_C2_AHB3_GRP1_EnableClock\n
@@ -5202,15 +5203,15 @@ __STATIC_INLINE void LL_C1_APB4_GRP1_DisableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_AHB3_GRP1_EnableClock(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C2->AHB3ENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C2->AHB3ENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C2->AHB3ENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C2->AHB3ENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Check if C2 AHB3 peripheral clock is enabled or not
   * @rmtoll AHB3ENR      MDMAEN        LL_C2_AHB3_GRP1_IsEnabledClock\n
   *         AHB3ENR      DMA2DEN       LL_C2_AHB3_GRP1_IsEnabledClock\n
@@ -5238,11 +5239,11 @@ __STATIC_INLINE void LL_C2_AHB3_GRP1_EnableClock(uint32_t Periphs)
   * @retval uint32_t
 */
 __STATIC_INLINE uint32_t LL_C2_AHB3_GRP1_IsEnabledClock(uint32_t Periphs)
-{
-  return ((READ_BIT(RCC_C2->AHB3ENR, Periphs) == Periphs) ? 1U : 0U);
-}
+	{
+		return ((READ_BIT(RCC_C2->AHB3ENR, Periphs) == Periphs) ? 1U : 0U);
+	}
 
-/**
+	/**
   * @brief  Disable C2 AHB3 peripherals clock.
   * @rmtoll AHB3ENR      MDMAEN        LL_C2_AHB3_GRP1_DisableClock\n
   *         AHB3ENR      DMA2DEN       LL_C2_AHB3_GRP1_DisableClock\n
@@ -5270,11 +5271,11 @@ __STATIC_INLINE uint32_t LL_C2_AHB3_GRP1_IsEnabledClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_AHB3_GRP1_DisableClock(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C2->AHB3ENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C2->AHB3ENR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Enable C2 AHB3 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll AHB3LPENR    MDMALPEN      LL_C2_AHB3_GRP1_EnableClockSleep\n
   *         AHB3LPENR    DMA2DLPEN     LL_C2_AHB3_GRP1_EnableClockSleep\n
@@ -5301,15 +5302,15 @@ __STATIC_INLINE void LL_C2_AHB3_GRP1_DisableClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_AHB3_GRP1_EnableClockSleep(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C2->AHB3LPENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C2->AHB3LPENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C2->AHB3LPENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C2->AHB3LPENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Disable C2 AHB3 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll AHB3LPENR    MDMALPEN      LL_C2_AHB3_GRP1_DisableClockSleep\n
   *         AHB3LPENR    DMA2DLPEN     LL_C2_AHB3_GRP1_DisableClockSleep\n
@@ -5336,19 +5337,19 @@ __STATIC_INLINE void LL_C2_AHB3_GRP1_EnableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_AHB3_GRP1_DisableClockSleep(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C2->AHB3LPENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C2->AHB3LPENR, Periphs);
+	}
 
-/**
+	/**
   * @}
   */
 
-/** @addtogroup BUS_LL_EF_AHB1 AHB1
+	/** @addtogroup BUS_LL_EF_AHB1 AHB1
   * @{
   */
 
-/**
+	/**
   * @brief  Enable C2 AHB1 peripherals clock.
   * @rmtoll AHB1ENR      DMA1EN        LL_C2_AHB1_GRP1_EnableClock\n
   *         AHB1ENR      DMA2EN        LL_C2_AHB1_GRP1_EnableClock\n
@@ -5378,15 +5379,15 @@ __STATIC_INLINE void LL_C2_AHB3_GRP1_DisableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_AHB1_GRP1_EnableClock(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C2->AHB1ENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C2->AHB1ENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C2->AHB1ENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C2->AHB1ENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Check if C2 AHB1 peripheral clock is enabled or not
   * @rmtoll AHB1ENR      DMA1EN        LL_C2_AHB1_GRP1_IsEnabledClock\n
   *         AHB1ENR      DMA2EN        LL_C2_AHB1_GRP1_IsEnabledClock\n
@@ -5416,11 +5417,11 @@ __STATIC_INLINE void LL_C2_AHB1_GRP1_EnableClock(uint32_t Periphs)
   * @retval uint32_t
 */
 __STATIC_INLINE uint32_t LL_C2_AHB1_GRP1_IsEnabledClock(uint32_t Periphs)
-{
-  return ((READ_BIT(RCC_C2->AHB1ENR, Periphs) == Periphs) ? 1U : 0U);
-}
+	{
+		return ((READ_BIT(RCC_C2->AHB1ENR, Periphs) == Periphs) ? 1U : 0U);
+	}
 
-/**
+	/**
   * @brief  Disable C2 AHB1 peripherals clock.
   * @rmtoll AHB1ENR      DMA1EN        LL_C2_AHB1_GRP1_DisableClock\n
   *         AHB1ENR      DMA2EN        LL_C2_AHB1_GRP1_DisableClock\n
@@ -5450,11 +5451,11 @@ __STATIC_INLINE uint32_t LL_C2_AHB1_GRP1_IsEnabledClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_AHB1_GRP1_DisableClock(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C2->AHB1ENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C2->AHB1ENR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Enable C2 AHB1 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll AHB1LPENR    DMA1LPEN      LL_C2_AHB1_GRP1_EnableClockSleep\n
   *         AHB1LPENR    DMA2LPEN      LL_C2_AHB1_GRP1_EnableClockSleep\n
@@ -5484,15 +5485,15 @@ __STATIC_INLINE void LL_C2_AHB1_GRP1_DisableClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_AHB1_GRP1_EnableClockSleep(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C2->AHB1LPENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C2->AHB1LPENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C2->AHB1LPENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C2->AHB1LPENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Disable C2 AHB1 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll AHB1LPENR    DMA1LPEN      LL_C2_AHB1_GRP1_DisableClockSleep\n
   *         AHB1LPENR    DMA2LPEN      LL_C2_AHB1_GRP1_DisableClockSleep\n
@@ -5522,19 +5523,19 @@ __STATIC_INLINE void LL_C2_AHB1_GRP1_EnableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_AHB1_GRP1_DisableClockSleep(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C2->AHB1LPENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C2->AHB1LPENR, Periphs);
+	}
 
-/**
+	/**
   * @}
   */
 
-/** @addtogroup BUS_LL_EF_AHB2 AHB2
+	/** @addtogroup BUS_LL_EF_AHB2 AHB2
   * @{
   */
 
-/**
+	/**
   * @brief  Enable C2 AHB2 peripherals clock.
   * @rmtoll AHB2ENR      DCMIEN        LL_C2_AHB2_GRP1_EnableClock\n
   *         AHB2ENR      CRYPEN        LL_C2_AHB2_GRP1_EnableClock\n
@@ -5552,15 +5553,15 @@ __STATIC_INLINE void LL_C2_AHB1_GRP1_DisableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_AHB2_GRP1_EnableClock(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C2->AHB2ENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C2->AHB2ENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C2->AHB2ENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C2->AHB2ENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Check if C2 AHB2 peripheral clock is enabled or not
   * @rmtoll AHB2ENR      DCMIEN        LL_C2_AHB2_GRP1_IsEnabledClock\n
   *         AHB2ENR      CRYPEN        LL_C2_AHB2_GRP1_IsEnabledClock\n
@@ -5578,11 +5579,11 @@ __STATIC_INLINE void LL_C2_AHB2_GRP1_EnableClock(uint32_t Periphs)
   * @retval uint32_t
 */
 __STATIC_INLINE uint32_t LL_C2_AHB2_GRP1_IsEnabledClock(uint32_t Periphs)
-{
-  return ((READ_BIT(RCC_C2->AHB2ENR, Periphs) == Periphs) ? 1U : 0U);
-}
+	{
+		return ((READ_BIT(RCC_C2->AHB2ENR, Periphs) == Periphs) ? 1U : 0U);
+	}
 
-/**
+	/**
   * @brief  Disable C2 AHB2 peripherals clock.
   * @rmtoll AHB2ENR      DCMIEN        LL_C2_AHB2_GRP1_DisableClock\n
   *         AHB2ENR      CRYPEN        LL_C2_AHB2_GRP1_DisableClock\n
@@ -5600,11 +5601,11 @@ __STATIC_INLINE uint32_t LL_C2_AHB2_GRP1_IsEnabledClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_AHB2_GRP1_DisableClock(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C2->AHB2ENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C2->AHB2ENR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Enable C2 AHB2 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll AHB2LPENR    DCMILPEN      LL_C2_AHB2_GRP1_EnableClockSleep\n
   *         AHB2LPENR    CRYPLPEN      LL_C2_AHB2_GRP1_EnableClockSleep\n
@@ -5628,15 +5629,15 @@ __STATIC_INLINE void LL_C2_AHB2_GRP1_DisableClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_AHB2_GRP1_EnableClockSleep(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C2->AHB2LPENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C2->AHB2LPENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C2->AHB2LPENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C2->AHB2LPENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Disable C2 AHB2 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll AHB2LPENR    DCMILPEN      LL_C2_AHB2_GRP1_DisableClockSleep\n
   *         AHB2LPENR    CRYPLPEN      LL_C2_AHB2_GRP1_DisableClockSleep\n
@@ -5660,19 +5661,19 @@ __STATIC_INLINE void LL_C2_AHB2_GRP1_EnableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_AHB2_GRP1_DisableClockSleep(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C2->AHB2LPENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C2->AHB2LPENR, Periphs);
+	}
 
-/**
+	/**
   * @}
   */
 
-/** @addtogroup BUS_LL_EF_AHB4 AHB4
+	/** @addtogroup BUS_LL_EF_AHB4 AHB4
   * @{
   */
 
-/**
+	/**
   * @brief  Enable C2 AHB4 peripherals clock.
   * @rmtoll AHB4ENR      GPIOAEN       LL_C2_AHB4_GRP1_EnableClock\n
   *         AHB4ENR      GPIOBEN       LL_C2_AHB4_GRP1_EnableClock\n
@@ -5714,15 +5715,15 @@ __STATIC_INLINE void LL_C2_AHB2_GRP1_DisableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_AHB4_GRP1_EnableClock(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C2->AHB4ENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C2->AHB4ENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C2->AHB4ENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C2->AHB4ENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Check if C2 AHB4 peripheral clock is enabled or not
   * @rmtoll AHB4ENR      GPIOAEN       LL_C2_AHB4_GRP1_IsEnabledClock\n
   *         AHB4ENR      GPIOBEN       LL_C2_AHB4_GRP1_IsEnabledClock\n
@@ -5764,11 +5765,11 @@ __STATIC_INLINE void LL_C2_AHB4_GRP1_EnableClock(uint32_t Periphs)
   * @retval uint32_t
 */
 __STATIC_INLINE uint32_t LL_C2_AHB4_GRP1_IsEnabledClock(uint32_t Periphs)
-{
-  return ((READ_BIT(RCC_C2->AHB4ENR, Periphs) == Periphs) ? 1U : 0U);
-}
+	{
+		return ((READ_BIT(RCC_C2->AHB4ENR, Periphs) == Periphs) ? 1U : 0U);
+	}
 
-/**
+	/**
   * @brief  Disable C2 AHB4 peripherals clock.
   * @rmtoll AHB4ENR      GPIOAEN       LL_C2_AHB4_GRP1_DisableClock\n
   *         AHB4ENR      GPIOBEN       LL_C2_AHB4_GRP1_DisableClock\n
@@ -5810,11 +5811,11 @@ __STATIC_INLINE uint32_t LL_C2_AHB4_GRP1_IsEnabledClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_AHB4_GRP1_DisableClock(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C2->AHB4ENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C2->AHB4ENR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Enable C2 AHB4 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll AHB4LPENR    GPIOALPEN     LL_C2_AHB4_GRP1_EnableClockSleep\n
   *         AHB4LPENR    GPIOBLPEN     LL_C2_AHB4_GRP1_EnableClockSleep\n
@@ -5852,15 +5853,15 @@ __STATIC_INLINE void LL_C2_AHB4_GRP1_DisableClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_AHB4_GRP1_EnableClockSleep(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C2->AHB4LPENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C2->AHB4LPENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C2->AHB4LPENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C2->AHB4LPENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Disable C2 AHB4 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll AHB4LPENR    GPIOALPEN     LL_C2_AHB4_GRP1_DisableClockSleep\n
   *         AHB4LPENR    GPIOBLPEN     LL_C2_AHB4_GRP1_DisableClockSleep\n
@@ -5898,19 +5899,19 @@ __STATIC_INLINE void LL_C2_AHB4_GRP1_EnableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_AHB4_GRP1_DisableClockSleep(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C2->AHB4LPENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C2->AHB4LPENR, Periphs);
+	}
 
-/**
+	/**
   * @}
   */
 
-/** @addtogroup BUS_LL_EF_APB3 APB3
+	/** @addtogroup BUS_LL_EF_APB3 APB3
   * @{
   */
 
-/**
+	/**
   * @brief  Enable C2 APB3 peripherals clock.
   * @rmtoll APB3ENR      LTDCEN        LL_C2_APB3_GRP1_EnableClock\n
   *         APB3ENR      DSIEN         LL_C2_APB3_GRP1_EnableClock\n
@@ -5924,15 +5925,15 @@ __STATIC_INLINE void LL_C2_AHB4_GRP1_DisableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_APB3_GRP1_EnableClock(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C2->APB3ENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C2->APB3ENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C2->APB3ENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C2->APB3ENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Check if C2 APB3 peripheral clock is enabled or not
   * @rmtoll APB3ENR      LTDCEN        LL_C2_APB3_GRP1_IsEnabledClock\n
   *         APB3ENR      DSIEN         LL_C2_APB3_GRP1_IsEnabledClock\n
@@ -5946,11 +5947,11 @@ __STATIC_INLINE void LL_C2_APB3_GRP1_EnableClock(uint32_t Periphs)
   * @retval uint32_t
 */
 __STATIC_INLINE uint32_t LL_C2_APB3_GRP1_IsEnabledClock(uint32_t Periphs)
-{
-  return ((READ_BIT(RCC_C2->APB3ENR, Periphs) == Periphs) ? 1U : 0U);
-}
+	{
+		return ((READ_BIT(RCC_C2->APB3ENR, Periphs) == Periphs) ? 1U : 0U);
+	}
 
-/**
+	/**
   * @brief  Disable C2 APB3 peripherals clock.
   * @rmtoll APB3ENR      LTDCEN        LL_C2_APB3_GRP1_DisableClock\n
   *         APB3ENR      DSIEN         LL_C2_APB3_GRP1_DisableClock\n
@@ -5964,11 +5965,11 @@ __STATIC_INLINE uint32_t LL_C2_APB3_GRP1_IsEnabledClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_APB3_GRP1_DisableClock(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C2->APB3ENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C2->APB3ENR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Enable C2 APB3 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll APB3LPENR    LTDCLPEN      LL_C2_APB3_GRP1_EnableClockSleep\n
   *         APB3LPENR    DSILPEN       LL_C2_APB3_GRP1_EnableClockSleep\n
@@ -5982,15 +5983,15 @@ __STATIC_INLINE void LL_C2_APB3_GRP1_DisableClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_APB3_GRP1_EnableClockSleep(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C2->APB3LPENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C2->APB3LPENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C2->APB3LPENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C2->APB3LPENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Disable C2 APB3 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll APB3LPENR    LTDCLPEN      LL_C2_APB3_GRP1_DisableClockSleep\n
   *         APB3LPENR    DSILPEN       LL_C2_APB3_GRP1_DisableClockSleep\n
@@ -6004,19 +6005,19 @@ __STATIC_INLINE void LL_C2_APB3_GRP1_EnableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_APB3_GRP1_DisableClockSleep(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C2->APB3LPENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C2->APB3LPENR, Periphs);
+	}
 
-/**
+	/**
   * @}
   */
 
-/** @addtogroup BUS_LL_EF_APB1 APB1
+	/** @addtogroup BUS_LL_EF_APB1 APB1
   * @{
   */
 
-/**
+	/**
   * @brief  Enable C2 APB1 peripherals clock.
   * @rmtoll APB1LENR     TIM2EN        LL_C2_APB1_GRP1_EnableClock\n
   *         APB1LENR     TIM3EN        LL_C2_APB1_GRP1_EnableClock\n
@@ -6074,15 +6075,15 @@ __STATIC_INLINE void LL_C2_APB3_GRP1_DisableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_APB1_GRP1_EnableClock(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C2->APB1LENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C2->APB1LENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C2->APB1LENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C2->APB1LENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Check if C2 APB1 peripheral clock is enabled or not
   * @rmtoll APB1LENR     TIM2EN        LL_C2_APB1_GRP1_IsEnabledClock\n
   *         APB1LENR     TIM3EN        LL_C2_APB1_GRP1_IsEnabledClock\n
@@ -6140,11 +6141,11 @@ __STATIC_INLINE void LL_C2_APB1_GRP1_EnableClock(uint32_t Periphs)
   * @retval uint32_t
 */
 __STATIC_INLINE uint32_t LL_C2_APB1_GRP1_IsEnabledClock(uint32_t Periphs)
-{
-  return ((READ_BIT(RCC_C2->APB1LENR, Periphs) == Periphs) ? 1U : 0U);
-}
+	{
+		return ((READ_BIT(RCC_C2->APB1LENR, Periphs) == Periphs) ? 1U : 0U);
+	}
 
-/**
+	/**
   * @brief  Disable C2 APB1 peripherals clock.
   * @rmtoll APB1LENR     TIM2EN        LL_C2_APB1_GRP1_DisableClock\n
   *         APB1LENR     TIM3EN        LL_C2_APB1_GRP1_DisableClock\n
@@ -6202,11 +6203,11 @@ __STATIC_INLINE uint32_t LL_C2_APB1_GRP1_IsEnabledClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_APB1_GRP1_DisableClock(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C2->APB1LENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C2->APB1LENR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Enable C2 APB1 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll APB1LLPENR   TIM2LPEN      LL_C2_APB1_GRP1_EnableClockSleep\n
   *         APB1LLPENR   TIM3LPEN      LL_C2_APB1_GRP1_EnableClockSleep\n
@@ -6264,15 +6265,15 @@ __STATIC_INLINE void LL_C2_APB1_GRP1_DisableClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_APB1_GRP1_EnableClockSleep(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C2->APB1LLPENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C2->APB1LLPENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C2->APB1LLPENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C2->APB1LLPENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Disable C2 APB1 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll APB1LLPENR   TIM2LPEN      LL_C2_APB1_GRP1_DisableClockSleep\n
   *         APB1LLPENR   TIM3LPEN      LL_C2_APB1_GRP1_DisableClockSleep\n
@@ -6330,11 +6331,11 @@ __STATIC_INLINE void LL_C2_APB1_GRP1_EnableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_APB1_GRP1_DisableClockSleep(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C2->APB1LLPENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C2->APB1LLPENR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Enable C2 APB1 peripherals clock.
   * @rmtoll APB1HENR     CRSEN         LL_C2_APB1_GRP2_EnableClock\n
   *         APB1HENR     SWPMIEN       LL_C2_APB1_GRP2_EnableClock\n
@@ -6354,15 +6355,15 @@ __STATIC_INLINE void LL_C2_APB1_GRP1_DisableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_APB1_GRP2_EnableClock(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C2->APB1HENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C2->APB1HENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C2->APB1HENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C2->APB1HENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Check if C2 APB1 peripheral clock is enabled or not
   * @rmtoll APB1HENR     CRSEN         LL_C2_APB1_GRP2_IsEnabledClock\n
   *         APB1HENR     SWPMIEN       LL_C2_APB1_GRP2_IsEnabledClock\n
@@ -6382,11 +6383,11 @@ __STATIC_INLINE void LL_C2_APB1_GRP2_EnableClock(uint32_t Periphs)
   * @retval uint32_t
 */
 __STATIC_INLINE uint32_t LL_C2_APB1_GRP2_IsEnabledClock(uint32_t Periphs)
-{
-  return ((READ_BIT(RCC_C2->APB1HENR, Periphs) == Periphs) ? 1U : 0U);
-}
+	{
+		return ((READ_BIT(RCC_C2->APB1HENR, Periphs) == Periphs) ? 1U : 0U);
+	}
 
-/**
+	/**
   * @brief  Disable C2 APB1 peripherals clock.
   * @rmtoll APB1HENR     CRSEN         LL_C2_APB1_GRP2_DisableClock\n
   *         APB1HENR     SWPMIEN       LL_C2_APB1_GRP2_DisableClock\n
@@ -6406,11 +6407,11 @@ __STATIC_INLINE uint32_t LL_C2_APB1_GRP2_IsEnabledClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_APB1_GRP2_DisableClock(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C2->APB1HENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C2->APB1HENR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Enable C2 APB1 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll APB1HLPENR   CRSLPEN       LL_C2_APB1_GRP2_EnableClockSleep\n
   *         APB1HLPENR   SWPMILPEN     LL_C2_APB1_GRP2_EnableClockSleep\n
@@ -6430,15 +6431,15 @@ __STATIC_INLINE void LL_C2_APB1_GRP2_DisableClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_APB1_GRP2_EnableClockSleep(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C2->APB1HLPENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C2->APB1HLPENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C2->APB1HLPENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C2->APB1HLPENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Disable C2 APB1 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll APB1HLPENR   CRSLPEN       LL_C2_APB1_GRP2_DisableClockSleep\n
   *         APB1HLPENR   SWPMILPEN     LL_C2_APB1_GRP2_DisableClockSleep\n
@@ -6458,19 +6459,19 @@ __STATIC_INLINE void LL_C2_APB1_GRP2_EnableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_APB1_GRP2_DisableClockSleep(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C2->APB1HLPENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C2->APB1HLPENR, Periphs);
+	}
 
-/**
+	/**
   * @}
   */
 
-/** @addtogroup BUS_LL_EF_APB2 APB2
+	/** @addtogroup BUS_LL_EF_APB2 APB2
   * @{
   */
 
-/**
+	/**
   * @brief  Enable C2 APB2 peripherals clock.
   * @rmtoll APB2ENR      TIM1EN        LL_C2_APB2_GRP1_EnableClock\n
   *         APB2ENR      TIM8EN        LL_C2_APB2_GRP1_EnableClock\n
@@ -6509,15 +6510,15 @@ __STATIC_INLINE void LL_C2_APB1_GRP2_DisableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_APB2_GRP1_EnableClock(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C2->APB2ENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C2->APB2ENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C2->APB2ENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C2->APB2ENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Check if C2 APB2 peripheral clock is enabled or not
   * @rmtoll APB2ENR      TIM1EN        LL_C2_APB2_GRP1_IsEnabledClock\n
   *         APB2ENR      TIM8EN        LL_C2_APB2_GRP1_IsEnabledClock\n
@@ -6555,11 +6556,11 @@ __STATIC_INLINE void LL_C2_APB2_GRP1_EnableClock(uint32_t Periphs)
   * @retval uint32_t
 */
 __STATIC_INLINE uint32_t LL_C2_APB2_GRP1_IsEnabledClock(uint32_t Periphs)
-{
-  return ((READ_BIT(RCC_C2->APB2ENR, Periphs) == Periphs) ? 1U : 0U);
-}
+	{
+		return ((READ_BIT(RCC_C2->APB2ENR, Periphs) == Periphs) ? 1U : 0U);
+	}
 
-/**
+	/**
   * @brief  Disable C2 APB2 peripherals clock.
   * @rmtoll APB2ENR      TIM1EN        LL_C2_APB2_GRP1_DisableClock\n
   *         APB2ENR      TIM8EN        LL_C2_APB2_GRP1_DisableClock\n
@@ -6597,11 +6598,11 @@ __STATIC_INLINE uint32_t LL_C2_APB2_GRP1_IsEnabledClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_APB2_GRP1_DisableClock(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C2->APB2ENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C2->APB2ENR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Enable C2 APB2 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll APB2LPENR    TIM1LPEN      LL_C2_APB2_GRP1_EnableClockSleep\n
   *         APB2LPENR    TIM8LPEN      LL_C2_APB2_GRP1_EnableClockSleep\n
@@ -6639,15 +6640,15 @@ __STATIC_INLINE void LL_C2_APB2_GRP1_DisableClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_APB2_GRP1_EnableClockSleep(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C2->APB2LPENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C2->APB2LPENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C2->APB2LPENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C2->APB2LPENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Disable C2 APB2 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll APB2LPENR    TIM1LPEN      LL_C2_APB2_GRP1_DisableClockSleep\n
   *         APB2LPENR    TIM8LPEN      LL_C2_APB2_GRP1_DisableClockSleep\n
@@ -6685,19 +6686,19 @@ __STATIC_INLINE void LL_C2_APB2_GRP1_EnableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_APB2_GRP1_DisableClockSleep(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C2->APB2LPENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C2->APB2LPENR, Periphs);
+	}
 
-/**
+	/**
   * @}
   */
 
-/** @addtogroup BUS_LL_EF_APB4 APB4
+	/** @addtogroup BUS_LL_EF_APB4 APB4
   * @{
   */
 
-/**
+	/**
   * @brief  Enable C2 APB4 peripherals clock.
   * @rmtoll APB4ENR      SYSCFGEN      LL_C2_APB4_GRP1_EnableClock\n
   *         APB4ENR      LPUART1EN     LL_C2_APB4_GRP1_EnableClock\n
@@ -6729,15 +6730,15 @@ __STATIC_INLINE void LL_C2_APB2_GRP1_DisableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_APB4_GRP1_EnableClock(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C2->APB4ENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C2->APB4ENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C2->APB4ENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C2->APB4ENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Check if C2 APB4 peripheral clock is enabled or not
   * @rmtoll APB4ENR      SYSCFGEN      LL_C2_APB4_GRP1_IsEnabledClock\n
   *         APB4ENR      LPUART1EN     LL_C2_APB4_GRP1_IsEnabledClock\n
@@ -6769,11 +6770,11 @@ __STATIC_INLINE void LL_C2_APB4_GRP1_EnableClock(uint32_t Periphs)
   * @retval uint32_t
 */
 __STATIC_INLINE uint32_t LL_C2_APB4_GRP1_IsEnabledClock(uint32_t Periphs)
-{
-  return ((READ_BIT(RCC_C2->APB4ENR, Periphs) == Periphs) ? 1U : 0U);
-}
+	{
+		return ((READ_BIT(RCC_C2->APB4ENR, Periphs) == Periphs) ? 1U : 0U);
+	}
 
-/**
+	/**
   * @brief  Disable C2 APB4 peripherals clock.
   * @rmtoll APB4ENR      SYSCFGEN      LL_C2_APB4_GRP1_DisableClock\n
   *         APB4ENR      LPUART1EN     LL_C2_APB4_GRP1_DisableClock\n
@@ -6805,11 +6806,11 @@ __STATIC_INLINE uint32_t LL_C2_APB4_GRP1_IsEnabledClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_APB4_GRP1_DisableClock(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C2->APB4ENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C2->APB4ENR, Periphs);
+	}
 
-/**
+	/**
   * @brief  Enable C2 APB4 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll APB4LPENR    SYSCFGLPEN    LL_C2_APB4_GRP1_EnableClockSleep\n
   *         APB4LPENR    LPUART1LPEN   LL_C2_APB4_GRP1_EnableClockSleep\n
@@ -6841,15 +6842,15 @@ __STATIC_INLINE void LL_C2_APB4_GRP1_DisableClock(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_APB4_GRP1_EnableClockSleep(uint32_t Periphs)
-{
-  __IO uint32_t tmpreg;
-  SET_BIT(RCC_C2->APB4LPENR, Periphs);
-  /* Delay after an RCC peripheral clock enabling */
-  tmpreg = READ_BIT(RCC_C2->APB4LPENR, Periphs);
-  (void)tmpreg;
-}
+	{
+		__IO uint32_t tmpreg;
+		SET_BIT(RCC_C2->APB4LPENR, Periphs);
+		/* Delay after an RCC peripheral clock enabling */
+		tmpreg = READ_BIT(RCC_C2->APB4LPENR, Periphs);
+		(void)tmpreg;
+	}
 
-/**
+	/**
   * @brief  Disable C2 APB4 peripherals clock during Low Power (Sleep) mode.
   * @rmtoll APB4LPENR    SYSCFGLPEN    LL_C2_APB4_GRP1_DisableClockSleep\n
   *         APB4LPENR    LPUART1LPEN   LL_C2_APB4_GRP1_DisableClockSleep\n
@@ -6881,27 +6882,27 @@ __STATIC_INLINE void LL_C2_APB4_GRP1_EnableClockSleep(uint32_t Periphs)
   * @retval None
 */
 __STATIC_INLINE void LL_C2_APB4_GRP1_DisableClockSleep(uint32_t Periphs)
-{
-  CLEAR_BIT(RCC_C2->APB4LPENR, Periphs);
-}
+	{
+		CLEAR_BIT(RCC_C2->APB4LPENR, Periphs);
+	}
 
-/**
+	/**
   * @}
   */
 
 #endif /*DUAL_CORE*/
 
-/**
+	/**
   * @}
   */
 
-/**
+	/**
   * @}
   */
 
 #endif /* defined(RCC) */
 
-/**
+	/**
   * @}
   */
 

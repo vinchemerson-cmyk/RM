@@ -56,29 +56,29 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
-extern PCD_HandleTypeDef hpcd_USB_OTG_HS;
+extern PCD_HandleTypeDef   hpcd_USB_OTG_HS;
 extern FDCAN_HandleTypeDef hfdcan1;
 extern FDCAN_HandleTypeDef hfdcan2;
 extern FDCAN_HandleTypeDef hfdcan3;
-extern DMA_HandleTypeDef hdma_uart5_rx;
-extern DMA_HandleTypeDef hdma_uart5_tx;
-extern DMA_HandleTypeDef hdma_uart7_rx;
-extern DMA_HandleTypeDef hdma_uart7_tx;
-extern DMA_HandleTypeDef hdma_uart8_rx;
-extern DMA_HandleTypeDef hdma_uart8_tx;
-extern DMA_HandleTypeDef hdma_uart9_rx;
-extern DMA_HandleTypeDef hdma_uart9_tx;
-extern DMA_HandleTypeDef hdma_usart1_rx;
-extern DMA_HandleTypeDef hdma_usart1_tx;
-extern DMA_HandleTypeDef hdma_usart10_rx;
-extern DMA_HandleTypeDef hdma_usart10_tx;
-extern UART_HandleTypeDef huart5;
-extern UART_HandleTypeDef huart7;
-extern UART_HandleTypeDef huart8;
-extern UART_HandleTypeDef huart9;
-extern UART_HandleTypeDef huart1;
-extern UART_HandleTypeDef huart10;
-extern TIM_HandleTypeDef htim6;
+extern DMA_HandleTypeDef   hdma_uart5_rx;
+extern DMA_HandleTypeDef   hdma_uart5_tx;
+extern DMA_HandleTypeDef   hdma_uart7_rx;
+extern DMA_HandleTypeDef   hdma_uart7_tx;
+extern DMA_HandleTypeDef   hdma_uart8_rx;
+extern DMA_HandleTypeDef   hdma_uart8_tx;
+extern DMA_HandleTypeDef   hdma_uart9_rx;
+extern DMA_HandleTypeDef   hdma_uart9_tx;
+extern DMA_HandleTypeDef   hdma_usart1_rx;
+extern DMA_HandleTypeDef   hdma_usart1_tx;
+extern DMA_HandleTypeDef   hdma_usart10_rx;
+extern DMA_HandleTypeDef   hdma_usart10_tx;
+extern UART_HandleTypeDef  huart5;
+extern UART_HandleTypeDef  huart7;
+extern UART_HandleTypeDef  huart8;
+extern UART_HandleTypeDef  huart9;
+extern UART_HandleTypeDef  huart1;
+extern UART_HandleTypeDef  huart10;
+extern TIM_HandleTypeDef   htim6;
 
 /* USER CODE BEGIN EV */
 
@@ -92,14 +92,14 @@ extern TIM_HandleTypeDef htim6;
   */
 void NMI_Handler(void)
 {
-  /* USER CODE BEGIN NonMaskableInt_IRQn 0 */
+	/* USER CODE BEGIN NonMaskableInt_IRQn 0 */
 
-  /* USER CODE END NonMaskableInt_IRQn 0 */
-  /* USER CODE BEGIN NonMaskableInt_IRQn 1 */
-   while (1)
-  {
-  }
-  /* USER CODE END NonMaskableInt_IRQn 1 */
+	/* USER CODE END NonMaskableInt_IRQn 0 */
+	/* USER CODE BEGIN NonMaskableInt_IRQn 1 */
+	while (1)
+	{
+	}
+	/* USER CODE END NonMaskableInt_IRQn 1 */
 }
 
 /**
@@ -107,14 +107,14 @@ void NMI_Handler(void)
   */
 void HardFault_Handler(void)
 {
-  /* USER CODE BEGIN HardFault_IRQn 0 */
+	/* USER CODE BEGIN HardFault_IRQn 0 */
 
-  /* USER CODE END HardFault_IRQn 0 */
-  while (1)
-  {
-    /* USER CODE BEGIN W1_HardFault_IRQn 0 */
-    /* USER CODE END W1_HardFault_IRQn 0 */
-  }
+	/* USER CODE END HardFault_IRQn 0 */
+	while (1)
+	{
+		/* USER CODE BEGIN W1_HardFault_IRQn 0 */
+		/* USER CODE END W1_HardFault_IRQn 0 */
+	}
 }
 
 /**
@@ -122,14 +122,14 @@ void HardFault_Handler(void)
   */
 void MemManage_Handler(void)
 {
-  /* USER CODE BEGIN MemoryManagement_IRQn 0 */
+	/* USER CODE BEGIN MemoryManagement_IRQn 0 */
 
-  /* USER CODE END MemoryManagement_IRQn 0 */
-  while (1)
-  {
-    /* USER CODE BEGIN W1_MemoryManagement_IRQn 0 */
-    /* USER CODE END W1_MemoryManagement_IRQn 0 */
-  }
+	/* USER CODE END MemoryManagement_IRQn 0 */
+	while (1)
+	{
+		/* USER CODE BEGIN W1_MemoryManagement_IRQn 0 */
+		/* USER CODE END W1_MemoryManagement_IRQn 0 */
+	}
 }
 
 /**
@@ -137,14 +137,14 @@ void MemManage_Handler(void)
   */
 void BusFault_Handler(void)
 {
-  /* USER CODE BEGIN BusFault_IRQn 0 */
+	/* USER CODE BEGIN BusFault_IRQn 0 */
 
-  /* USER CODE END BusFault_IRQn 0 */
-  while (1)
-  {
-    /* USER CODE BEGIN W1_BusFault_IRQn 0 */
-    /* USER CODE END W1_BusFault_IRQn 0 */
-  }
+	/* USER CODE END BusFault_IRQn 0 */
+	while (1)
+	{
+		/* USER CODE BEGIN W1_BusFault_IRQn 0 */
+		/* USER CODE END W1_BusFault_IRQn 0 */
+	}
 }
 
 /**
@@ -152,14 +152,14 @@ void BusFault_Handler(void)
   */
 void UsageFault_Handler(void)
 {
-  /* USER CODE BEGIN UsageFault_IRQn 0 */
+	/* USER CODE BEGIN UsageFault_IRQn 0 */
 
-  /* USER CODE END UsageFault_IRQn 0 */
-  while (1)
-  {
-    /* USER CODE BEGIN W1_UsageFault_IRQn 0 */
-    /* USER CODE END W1_UsageFault_IRQn 0 */
-  }
+	/* USER CODE END UsageFault_IRQn 0 */
+	while (1)
+	{
+		/* USER CODE BEGIN W1_UsageFault_IRQn 0 */
+		/* USER CODE END W1_UsageFault_IRQn 0 */
+	}
 }
 
 /**
@@ -167,12 +167,12 @@ void UsageFault_Handler(void)
   */
 void DebugMon_Handler(void)
 {
-  /* USER CODE BEGIN DebugMonitor_IRQn 0 */
+	/* USER CODE BEGIN DebugMonitor_IRQn 0 */
 
-  /* USER CODE END DebugMonitor_IRQn 0 */
-  /* USER CODE BEGIN DebugMonitor_IRQn 1 */
+	/* USER CODE END DebugMonitor_IRQn 0 */
+	/* USER CODE BEGIN DebugMonitor_IRQn 1 */
 
-  /* USER CODE END DebugMonitor_IRQn 1 */
+	/* USER CODE END DebugMonitor_IRQn 1 */
 }
 
 /******************************************************************************/
@@ -187,13 +187,13 @@ void DebugMon_Handler(void)
   */
 void DMA1_Stream0_IRQHandler(void)
 {
-  /* USER CODE BEGIN DMA1_Stream0_IRQn 0 */
+	/* USER CODE BEGIN DMA1_Stream0_IRQn 0 */
 
-  /* USER CODE END DMA1_Stream0_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_uart5_rx);
-  /* USER CODE BEGIN DMA1_Stream0_IRQn 1 */
+	/* USER CODE END DMA1_Stream0_IRQn 0 */
+	HAL_DMA_IRQHandler(&hdma_uart5_rx);
+	/* USER CODE BEGIN DMA1_Stream0_IRQn 1 */
 
-  /* USER CODE END DMA1_Stream0_IRQn 1 */
+	/* USER CODE END DMA1_Stream0_IRQn 1 */
 }
 
 /**
@@ -201,13 +201,13 @@ void DMA1_Stream0_IRQHandler(void)
   */
 void DMA1_Stream2_IRQHandler(void)
 {
-  /* USER CODE BEGIN DMA1_Stream2_IRQn 0 */
+	/* USER CODE BEGIN DMA1_Stream2_IRQn 0 */
 
-  /* USER CODE END DMA1_Stream2_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_uart5_tx);
-  /* USER CODE BEGIN DMA1_Stream2_IRQn 1 */
+	/* USER CODE END DMA1_Stream2_IRQn 0 */
+	HAL_DMA_IRQHandler(&hdma_uart5_tx);
+	/* USER CODE BEGIN DMA1_Stream2_IRQn 1 */
 
-  /* USER CODE END DMA1_Stream2_IRQn 1 */
+	/* USER CODE END DMA1_Stream2_IRQn 1 */
 }
 
 /**
@@ -215,13 +215,13 @@ void DMA1_Stream2_IRQHandler(void)
   */
 void DMA1_Stream3_IRQHandler(void)
 {
-  /* USER CODE BEGIN DMA1_Stream3_IRQn 0 */
+	/* USER CODE BEGIN DMA1_Stream3_IRQn 0 */
 
-  /* USER CODE END DMA1_Stream3_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_uart7_rx);
-  /* USER CODE BEGIN DMA1_Stream3_IRQn 1 */
+	/* USER CODE END DMA1_Stream3_IRQn 0 */
+	HAL_DMA_IRQHandler(&hdma_uart7_rx);
+	/* USER CODE BEGIN DMA1_Stream3_IRQn 1 */
 
-  /* USER CODE END DMA1_Stream3_IRQn 1 */
+	/* USER CODE END DMA1_Stream3_IRQn 1 */
 }
 
 /**
@@ -229,13 +229,13 @@ void DMA1_Stream3_IRQHandler(void)
   */
 void DMA1_Stream4_IRQHandler(void)
 {
-  /* USER CODE BEGIN DMA1_Stream4_IRQn 0 */
+	/* USER CODE BEGIN DMA1_Stream4_IRQn 0 */
 
-  /* USER CODE END DMA1_Stream4_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_uart7_tx);
-  /* USER CODE BEGIN DMA1_Stream4_IRQn 1 */
+	/* USER CODE END DMA1_Stream4_IRQn 0 */
+	HAL_DMA_IRQHandler(&hdma_uart7_tx);
+	/* USER CODE BEGIN DMA1_Stream4_IRQn 1 */
 
-  /* USER CODE END DMA1_Stream4_IRQn 1 */
+	/* USER CODE END DMA1_Stream4_IRQn 1 */
 }
 
 /**
@@ -243,13 +243,13 @@ void DMA1_Stream4_IRQHandler(void)
   */
 void DMA1_Stream5_IRQHandler(void)
 {
-  /* USER CODE BEGIN DMA1_Stream5_IRQn 0 */
+	/* USER CODE BEGIN DMA1_Stream5_IRQn 0 */
 
-  /* USER CODE END DMA1_Stream5_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_usart1_rx);
-  /* USER CODE BEGIN DMA1_Stream5_IRQn 1 */
+	/* USER CODE END DMA1_Stream5_IRQn 0 */
+	HAL_DMA_IRQHandler(&hdma_usart1_rx);
+	/* USER CODE BEGIN DMA1_Stream5_IRQn 1 */
 
-  /* USER CODE END DMA1_Stream5_IRQn 1 */
+	/* USER CODE END DMA1_Stream5_IRQn 1 */
 }
 
 /**
@@ -257,13 +257,13 @@ void DMA1_Stream5_IRQHandler(void)
   */
 void DMA1_Stream6_IRQHandler(void)
 {
-  /* USER CODE BEGIN DMA1_Stream6_IRQn 0 */
+	/* USER CODE BEGIN DMA1_Stream6_IRQn 0 */
 
-  /* USER CODE END DMA1_Stream6_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_usart1_tx);
-  /* USER CODE BEGIN DMA1_Stream6_IRQn 1 */
+	/* USER CODE END DMA1_Stream6_IRQn 0 */
+	HAL_DMA_IRQHandler(&hdma_usart1_tx);
+	/* USER CODE BEGIN DMA1_Stream6_IRQn 1 */
 
-  /* USER CODE END DMA1_Stream6_IRQn 1 */
+	/* USER CODE END DMA1_Stream6_IRQn 1 */
 }
 
 /**
@@ -271,13 +271,13 @@ void DMA1_Stream6_IRQHandler(void)
   */
 void FDCAN1_IT0_IRQHandler(void)
 {
-  /* USER CODE BEGIN FDCAN1_IT0_IRQn 0 */
+	/* USER CODE BEGIN FDCAN1_IT0_IRQn 0 */
 
-  /* USER CODE END FDCAN1_IT0_IRQn 0 */
-  HAL_FDCAN_IRQHandler(&hfdcan1);
-  /* USER CODE BEGIN FDCAN1_IT0_IRQn 1 */
+	/* USER CODE END FDCAN1_IT0_IRQn 0 */
+	HAL_FDCAN_IRQHandler(&hfdcan1);
+	/* USER CODE BEGIN FDCAN1_IT0_IRQn 1 */
 
-  /* USER CODE END FDCAN1_IT0_IRQn 1 */
+	/* USER CODE END FDCAN1_IT0_IRQn 1 */
 }
 
 /**
@@ -285,13 +285,13 @@ void FDCAN1_IT0_IRQHandler(void)
   */
 void FDCAN2_IT0_IRQHandler(void)
 {
-  /* USER CODE BEGIN FDCAN2_IT0_IRQn 0 */
+	/* USER CODE BEGIN FDCAN2_IT0_IRQn 0 */
 
-  /* USER CODE END FDCAN2_IT0_IRQn 0 */
-  HAL_FDCAN_IRQHandler(&hfdcan2);
-  /* USER CODE BEGIN FDCAN2_IT0_IRQn 1 */
+	/* USER CODE END FDCAN2_IT0_IRQn 0 */
+	HAL_FDCAN_IRQHandler(&hfdcan2);
+	/* USER CODE BEGIN FDCAN2_IT0_IRQn 1 */
 
-  /* USER CODE END FDCAN2_IT0_IRQn 1 */
+	/* USER CODE END FDCAN2_IT0_IRQn 1 */
 }
 
 /**
@@ -299,13 +299,13 @@ void FDCAN2_IT0_IRQHandler(void)
   */
 void FDCAN1_IT1_IRQHandler(void)
 {
-  /* USER CODE BEGIN FDCAN1_IT1_IRQn 0 */
+	/* USER CODE BEGIN FDCAN1_IT1_IRQn 0 */
 
-  /* USER CODE END FDCAN1_IT1_IRQn 0 */
-  HAL_FDCAN_IRQHandler(&hfdcan1);
-  /* USER CODE BEGIN FDCAN1_IT1_IRQn 1 */
+	/* USER CODE END FDCAN1_IT1_IRQn 0 */
+	HAL_FDCAN_IRQHandler(&hfdcan1);
+	/* USER CODE BEGIN FDCAN1_IT1_IRQn 1 */
 
-  /* USER CODE END FDCAN1_IT1_IRQn 1 */
+	/* USER CODE END FDCAN1_IT1_IRQn 1 */
 }
 
 /**
@@ -313,13 +313,13 @@ void FDCAN1_IT1_IRQHandler(void)
   */
 void FDCAN2_IT1_IRQHandler(void)
 {
-  /* USER CODE BEGIN FDCAN2_IT1_IRQn 0 */
+	/* USER CODE BEGIN FDCAN2_IT1_IRQn 0 */
 
-  /* USER CODE END FDCAN2_IT1_IRQn 0 */
-  HAL_FDCAN_IRQHandler(&hfdcan2);
-  /* USER CODE BEGIN FDCAN2_IT1_IRQn 1 */
+	/* USER CODE END FDCAN2_IT1_IRQn 0 */
+	HAL_FDCAN_IRQHandler(&hfdcan2);
+	/* USER CODE BEGIN FDCAN2_IT1_IRQn 1 */
 
-  /* USER CODE END FDCAN2_IT1_IRQn 1 */
+	/* USER CODE END FDCAN2_IT1_IRQn 1 */
 }
 
 /**
@@ -327,13 +327,13 @@ void FDCAN2_IT1_IRQHandler(void)
   */
 void USART1_IRQHandler(void)
 {
-  /* USER CODE BEGIN USART1_IRQn 0 */
+	/* USER CODE BEGIN USART1_IRQn 0 */
 
-  /* USER CODE END USART1_IRQn 0 */
-  HAL_UART_IRQHandler(&huart1);
-  /* USER CODE BEGIN USART1_IRQn 1 */
+	/* USER CODE END USART1_IRQn 0 */
+	HAL_UART_IRQHandler(&huart1);
+	/* USER CODE BEGIN USART1_IRQn 1 */
 
-  /* USER CODE END USART1_IRQn 1 */
+	/* USER CODE END USART1_IRQn 1 */
 }
 
 /**
@@ -341,13 +341,13 @@ void USART1_IRQHandler(void)
   */
 void DMA1_Stream7_IRQHandler(void)
 {
-  /* USER CODE BEGIN DMA1_Stream7_IRQn 0 */
+	/* USER CODE BEGIN DMA1_Stream7_IRQn 0 */
 
-  /* USER CODE END DMA1_Stream7_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_uart8_rx);
-  /* USER CODE BEGIN DMA1_Stream7_IRQn 1 */
+	/* USER CODE END DMA1_Stream7_IRQn 0 */
+	HAL_DMA_IRQHandler(&hdma_uart8_rx);
+	/* USER CODE BEGIN DMA1_Stream7_IRQn 1 */
 
-  /* USER CODE END DMA1_Stream7_IRQn 1 */
+	/* USER CODE END DMA1_Stream7_IRQn 1 */
 }
 
 /**
@@ -355,13 +355,13 @@ void DMA1_Stream7_IRQHandler(void)
   */
 void UART5_IRQHandler(void)
 {
-  /* USER CODE BEGIN UART5_IRQn 0 */
+	/* USER CODE BEGIN UART5_IRQn 0 */
 
-  /* USER CODE END UART5_IRQn 0 */
-  HAL_UART_IRQHandler(&huart5);
-  /* USER CODE BEGIN UART5_IRQn 1 */
+	/* USER CODE END UART5_IRQn 0 */
+	HAL_UART_IRQHandler(&huart5);
+	/* USER CODE BEGIN UART5_IRQn 1 */
 
-  /* USER CODE END UART5_IRQn 1 */
+	/* USER CODE END UART5_IRQn 1 */
 }
 
 /**
@@ -369,13 +369,13 @@ void UART5_IRQHandler(void)
   */
 void TIM6_DAC_IRQHandler(void)
 {
-  /* USER CODE BEGIN TIM6_DAC_IRQn 0 */
+	/* USER CODE BEGIN TIM6_DAC_IRQn 0 */
 
-  /* USER CODE END TIM6_DAC_IRQn 0 */
-  HAL_TIM_IRQHandler(&htim6);
-  /* USER CODE BEGIN TIM6_DAC_IRQn 1 */
+	/* USER CODE END TIM6_DAC_IRQn 0 */
+	HAL_TIM_IRQHandler(&htim6);
+	/* USER CODE BEGIN TIM6_DAC_IRQn 1 */
 
-  /* USER CODE END TIM6_DAC_IRQn 1 */
+	/* USER CODE END TIM6_DAC_IRQn 1 */
 }
 
 /**
@@ -383,13 +383,13 @@ void TIM6_DAC_IRQHandler(void)
   */
 void DMA2_Stream0_IRQHandler(void)
 {
-  /* USER CODE BEGIN DMA2_Stream0_IRQn 0 */
+	/* USER CODE BEGIN DMA2_Stream0_IRQn 0 */
 
-  /* USER CODE END DMA2_Stream0_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_uart8_tx);
-  /* USER CODE BEGIN DMA2_Stream0_IRQn 1 */
+	/* USER CODE END DMA2_Stream0_IRQn 0 */
+	HAL_DMA_IRQHandler(&hdma_uart8_tx);
+	/* USER CODE BEGIN DMA2_Stream0_IRQn 1 */
 
-  /* USER CODE END DMA2_Stream0_IRQn 1 */
+	/* USER CODE END DMA2_Stream0_IRQn 1 */
 }
 
 /**
@@ -397,13 +397,13 @@ void DMA2_Stream0_IRQHandler(void)
   */
 void DMA2_Stream1_IRQHandler(void)
 {
-  /* USER CODE BEGIN DMA2_Stream1_IRQn 0 */
+	/* USER CODE BEGIN DMA2_Stream1_IRQn 0 */
 
-  /* USER CODE END DMA2_Stream1_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_uart9_rx);
-  /* USER CODE BEGIN DMA2_Stream1_IRQn 1 */
+	/* USER CODE END DMA2_Stream1_IRQn 0 */
+	HAL_DMA_IRQHandler(&hdma_uart9_rx);
+	/* USER CODE BEGIN DMA2_Stream1_IRQn 1 */
 
-  /* USER CODE END DMA2_Stream1_IRQn 1 */
+	/* USER CODE END DMA2_Stream1_IRQn 1 */
 }
 
 /**
@@ -411,13 +411,13 @@ void DMA2_Stream1_IRQHandler(void)
   */
 void DMA2_Stream2_IRQHandler(void)
 {
-  /* USER CODE BEGIN DMA2_Stream2_IRQn 0 */
+	/* USER CODE BEGIN DMA2_Stream2_IRQn 0 */
 
-  /* USER CODE END DMA2_Stream2_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_uart9_tx);
-  /* USER CODE BEGIN DMA2_Stream2_IRQn 1 */
+	/* USER CODE END DMA2_Stream2_IRQn 0 */
+	HAL_DMA_IRQHandler(&hdma_uart9_tx);
+	/* USER CODE BEGIN DMA2_Stream2_IRQn 1 */
 
-  /* USER CODE END DMA2_Stream2_IRQn 1 */
+	/* USER CODE END DMA2_Stream2_IRQn 1 */
 }
 
 /**
@@ -425,13 +425,13 @@ void DMA2_Stream2_IRQHandler(void)
   */
 void DMA2_Stream5_IRQHandler(void)
 {
-  /* USER CODE BEGIN DMA2_Stream5_IRQn 0 */
+	/* USER CODE BEGIN DMA2_Stream5_IRQn 0 */
 
-  /* USER CODE END DMA2_Stream5_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_usart10_rx);
-  /* USER CODE BEGIN DMA2_Stream5_IRQn 1 */
+	/* USER CODE END DMA2_Stream5_IRQn 0 */
+	HAL_DMA_IRQHandler(&hdma_usart10_rx);
+	/* USER CODE BEGIN DMA2_Stream5_IRQn 1 */
 
-  /* USER CODE END DMA2_Stream5_IRQn 1 */
+	/* USER CODE END DMA2_Stream5_IRQn 1 */
 }
 
 /**
@@ -439,13 +439,13 @@ void DMA2_Stream5_IRQHandler(void)
   */
 void DMA2_Stream6_IRQHandler(void)
 {
-  /* USER CODE BEGIN DMA2_Stream6_IRQn 0 */
+	/* USER CODE BEGIN DMA2_Stream6_IRQn 0 */
 
-  /* USER CODE END DMA2_Stream6_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_usart10_tx);
-  /* USER CODE BEGIN DMA2_Stream6_IRQn 1 */
+	/* USER CODE END DMA2_Stream6_IRQn 0 */
+	HAL_DMA_IRQHandler(&hdma_usart10_tx);
+	/* USER CODE BEGIN DMA2_Stream6_IRQn 1 */
 
-  /* USER CODE END DMA2_Stream6_IRQn 1 */
+	/* USER CODE END DMA2_Stream6_IRQn 1 */
 }
 
 /**
@@ -453,13 +453,13 @@ void DMA2_Stream6_IRQHandler(void)
   */
 void OTG_HS_IRQHandler(void)
 {
-  /* USER CODE BEGIN OTG_HS_IRQn 0 */
+	/* USER CODE BEGIN OTG_HS_IRQn 0 */
 
-  /* USER CODE END OTG_HS_IRQn 0 */
-  HAL_PCD_IRQHandler(&hpcd_USB_OTG_HS);
-  /* USER CODE BEGIN OTG_HS_IRQn 1 */
+	/* USER CODE END OTG_HS_IRQn 0 */
+	HAL_PCD_IRQHandler(&hpcd_USB_OTG_HS);
+	/* USER CODE BEGIN OTG_HS_IRQn 1 */
 
-  /* USER CODE END OTG_HS_IRQn 1 */
+	/* USER CODE END OTG_HS_IRQn 1 */
 }
 
 /**
@@ -467,13 +467,13 @@ void OTG_HS_IRQHandler(void)
   */
 void UART7_IRQHandler(void)
 {
-  /* USER CODE BEGIN UART7_IRQn 0 */
+	/* USER CODE BEGIN UART7_IRQn 0 */
 
-  /* USER CODE END UART7_IRQn 0 */
-  HAL_UART_IRQHandler(&huart7);
-  /* USER CODE BEGIN UART7_IRQn 1 */
+	/* USER CODE END UART7_IRQn 0 */
+	HAL_UART_IRQHandler(&huart7);
+	/* USER CODE BEGIN UART7_IRQn 1 */
 
-  /* USER CODE END UART7_IRQn 1 */
+	/* USER CODE END UART7_IRQn 1 */
 }
 
 /**
@@ -481,13 +481,13 @@ void UART7_IRQHandler(void)
   */
 void UART8_IRQHandler(void)
 {
-  /* USER CODE BEGIN UART8_IRQn 0 */
+	/* USER CODE BEGIN UART8_IRQn 0 */
 
-  /* USER CODE END UART8_IRQn 0 */
-  HAL_UART_IRQHandler(&huart8);
-  /* USER CODE BEGIN UART8_IRQn 1 */
+	/* USER CODE END UART8_IRQn 0 */
+	HAL_UART_IRQHandler(&huart8);
+	/* USER CODE BEGIN UART8_IRQn 1 */
 
-  /* USER CODE END UART8_IRQn 1 */
+	/* USER CODE END UART8_IRQn 1 */
 }
 
 /**
@@ -495,13 +495,13 @@ void UART8_IRQHandler(void)
   */
 void UART9_IRQHandler(void)
 {
-  /* USER CODE BEGIN UART9_IRQn 0 */
+	/* USER CODE BEGIN UART9_IRQn 0 */
 
-  /* USER CODE END UART9_IRQn 0 */
-  HAL_UART_IRQHandler(&huart9);
-  /* USER CODE BEGIN UART9_IRQn 1 */
+	/* USER CODE END UART9_IRQn 0 */
+	HAL_UART_IRQHandler(&huart9);
+	/* USER CODE BEGIN UART9_IRQn 1 */
 
-  /* USER CODE END UART9_IRQn 1 */
+	/* USER CODE END UART9_IRQn 1 */
 }
 
 /**
@@ -509,13 +509,13 @@ void UART9_IRQHandler(void)
   */
 void USART10_IRQHandler(void)
 {
-  /* USER CODE BEGIN USART10_IRQn 0 */
+	/* USER CODE BEGIN USART10_IRQn 0 */
 
-  /* USER CODE END USART10_IRQn 0 */
-  HAL_UART_IRQHandler(&huart10);
-  /* USER CODE BEGIN USART10_IRQn 1 */
+	/* USER CODE END USART10_IRQn 0 */
+	HAL_UART_IRQHandler(&huart10);
+	/* USER CODE BEGIN USART10_IRQn 1 */
 
-  /* USER CODE END USART10_IRQn 1 */
+	/* USER CODE END USART10_IRQn 1 */
 }
 
 /**
@@ -523,13 +523,13 @@ void USART10_IRQHandler(void)
   */
 void FDCAN3_IT0_IRQHandler(void)
 {
-  /* USER CODE BEGIN FDCAN3_IT0_IRQn 0 */
+	/* USER CODE BEGIN FDCAN3_IT0_IRQn 0 */
 
-  /* USER CODE END FDCAN3_IT0_IRQn 0 */
-  HAL_FDCAN_IRQHandler(&hfdcan3);
-  /* USER CODE BEGIN FDCAN3_IT0_IRQn 1 */
+	/* USER CODE END FDCAN3_IT0_IRQn 0 */
+	HAL_FDCAN_IRQHandler(&hfdcan3);
+	/* USER CODE BEGIN FDCAN3_IT0_IRQn 1 */
 
-  /* USER CODE END FDCAN3_IT0_IRQn 1 */
+	/* USER CODE END FDCAN3_IT0_IRQn 1 */
 }
 
 /**
@@ -537,13 +537,13 @@ void FDCAN3_IT0_IRQHandler(void)
   */
 void FDCAN3_IT1_IRQHandler(void)
 {
-  /* USER CODE BEGIN FDCAN3_IT1_IRQn 0 */
+	/* USER CODE BEGIN FDCAN3_IT1_IRQn 0 */
 
-  /* USER CODE END FDCAN3_IT1_IRQn 0 */
-  HAL_FDCAN_IRQHandler(&hfdcan3);
-  /* USER CODE BEGIN FDCAN3_IT1_IRQn 1 */
+	/* USER CODE END FDCAN3_IT1_IRQn 0 */
+	HAL_FDCAN_IRQHandler(&hfdcan3);
+	/* USER CODE BEGIN FDCAN3_IT1_IRQn 1 */
 
-  /* USER CODE END FDCAN3_IT1_IRQn 1 */
+	/* USER CODE END FDCAN3_IT1_IRQn 1 */
 }
 
 extern DMA_HandleTypeDef hdma_spi2_rx;
@@ -551,17 +551,17 @@ extern DMA_HandleTypeDef hdma_spi2_tx;
 
 void DMA2_Stream3_IRQHandler(void)
 {
-  HAL_DMA_IRQHandler(&hdma_spi2_rx);
+	HAL_DMA_IRQHandler(&hdma_spi2_rx);
 }
 
 void DMA2_Stream4_IRQHandler(void)
 {
-  HAL_DMA_IRQHandler(&hdma_spi2_tx);
+	HAL_DMA_IRQHandler(&hdma_spi2_tx);
 }
 
 void SPI2_IRQHandler(void)
 {
-  HAL_SPI_IRQHandler(&hspi2);
+	HAL_SPI_IRQHandler(&hspi2);
 }
 
 /* USER CODE BEGIN 1 */

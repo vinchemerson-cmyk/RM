@@ -6,9 +6,10 @@
 #ifndef INFANTRY_H723_USB_SERIAL_TASK_H
 #define INFANTRY_H723_USB_SERIAL_TASK_H
 
-namespace serialTasks {
-/** @brief 创建 USB CDC 周期姿态发送任务。 */
-void CreateUsbSerialTask();
+namespace serialTasks
+{
+	/** @brief 创建 USB CDC 周期姿态发送任务。 */
+	void CreateUsbSerialTask();
 }
 
 #endif

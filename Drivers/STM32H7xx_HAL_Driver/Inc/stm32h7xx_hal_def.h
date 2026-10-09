@@ -22,38 +22,38 @@
 #define STM32H7xx_HAL_DEF
 
 #ifdef __cplusplus
- extern "C" {
+extern "C" {
 #endif
 
-/* Includes ------------------------------------------------------------------*/
+	/* Includes ------------------------------------------------------------------*/
 #include "stm32h7xx.h"
 #include "Legacy/stm32_hal_legacy.h"
 #include <stddef.h>
 #include <math.h>
 
-/* Exported types ------------------------------------------------------------*/
+	/* Exported types ------------------------------------------------------------*/
 
-/**
+	/**
   * @brief  HAL Status structures definition
   */
-typedef enum
-{
-  HAL_OK       = 0x00,
-  HAL_ERROR    = 0x01,
-  HAL_BUSY     = 0x02,
-  HAL_TIMEOUT  = 0x03
-} HAL_StatusTypeDef;
+	typedef enum
+	{
+		HAL_OK      = 0x00,
+		HAL_ERROR   = 0x01,
+		HAL_BUSY    = 0x02,
+		HAL_TIMEOUT = 0x03
+	} HAL_StatusTypeDef;
 
-/**
+	/**
   * @brief  HAL Lock structures definition
   */
-typedef enum
-{
-  HAL_UNLOCKED = 0x00,
-  HAL_LOCKED   = 0x01
-} HAL_LockTypeDef;
+	typedef enum
+	{
+		HAL_UNLOCKED = 0x00,
+		HAL_LOCKED   = 0x01
+	} HAL_LockTypeDef;
 
-/* Exported macro ------------------------------------------------------------*/
+	/* Exported macro ------------------------------------------------------------*/
 
 #define HAL_MAX_DELAY      0xFFFFFFFFU
 
@@ -70,13 +70,13 @@ typedef enum
 #define UNUSED(x) ((void)(x))    /* To avoid gcc/g++ warnings */
 #endif /* UNUSED */
 
-/** @brief Reset the Handle's State field.
+	/** @brief Reset the Handle's State field.
   * @param __HANDLE__: specifies the Peripheral Handle.
-  * @note  This macro can be used for the following purpose: 
+  * @note  This macro can be used for the following purpose:
   *          - When the Handle is declared as local variable; before passing it as parameter
-  *            to HAL_PPP_Init() for the first time, it is mandatory to use this macro 
+  *            to HAL_PPP_Init() for the first time, it is mandatory to use this macro
   *            to set to 0 the Handle's "State" field.
-  *            Otherwise, "State" field may have any random value and the first time the function 
+  *            Otherwise, "State" field may have any random value and the first time the function
   *            HAL_PPP_Init() is called, the low level hardware initialization will be missed
   *            (i.e. HAL_PPP_MspInit() will not be executed).
   *          - When there is a need to reconfigure the low level hardware: instead of calling
@@ -88,9 +88,9 @@ typedef enum
 #define __HAL_RESET_HANDLE_STATE(__HANDLE__) ((__HANDLE__)->State = 0)
 
 #if (USE_RTOS == 1)
-  #error " USE_RTOS should be 0 in the current HAL release "
+#error " USE_RTOS should be 0 in the current HAL release "
 #else
-  #define __HAL_LOCK(__HANDLE__)                                           \
+#define __HAL_LOCK(__HANDLE__)                                           \
                                 do{                                        \
                                     if((__HANDLE__)->Lock == HAL_LOCKED)   \
                                     {                                      \
@@ -102,7 +102,7 @@ typedef enum
                                     }                                      \
                                   }while (0)
 
-  #define __HAL_UNLOCK(__HANDLE__)                                          \
+#define __HAL_UNLOCK(__HANDLE__)                                          \
                                   do{                                       \
                                       (__HANDLE__)->Lock = HAL_UNLOCKED;    \
                                     }while (0)
@@ -110,64 +110,64 @@ typedef enum
 
 
 #if defined (__ARMCC_VERSION) && (__ARMCC_VERSION >= 6010050) /* ARM Compiler V6 */
-  #ifndef __weak
-    #define __weak  __attribute__((weak))
-  #endif
-  #ifndef __packed
-    #define __packed  __attribute__((packed))
-  #endif
+#ifndef __weak
+#define __weak  __attribute__((weak))
+#endif
+#ifndef __packed
+#define __packed  __attribute__((packed))
+#endif
 #elif defined ( __GNUC__ ) && !defined (__CC_ARM) /* GNU Compiler */
-  #ifndef __weak
-    #define __weak   __attribute__((weak))
-  #endif /* __weak */
-  #ifndef __packed
-    #define __packed __attribute__((__packed__))
-  #endif /* __packed */
+#ifndef __weak
+#define __weak   __attribute__((weak))
+#endif /* __weak */
+#ifndef __packed
+#define __packed __attribute__((__packed__))
+#endif /* __packed */
 #endif /* __GNUC__ */
 
 
-/* Macro to get variable aligned on 4-bytes, for __ICCARM__ the directive "#pragma data_alignment=4" must be used instead */
+	/* Macro to get variable aligned on 4-bytes, for __ICCARM__ the directive "#pragma data_alignment=4" must be used instead */
 #if defined (__ARMCC_VERSION) && (__ARMCC_VERSION >= 6010050) /* ARM Compiler V6 */
-  #ifndef __ALIGN_BEGIN
-    #define __ALIGN_BEGIN
-  #endif
-  #ifndef __ALIGN_END
-    #define __ALIGN_END      __attribute__ ((aligned (4)))
-  #endif
+#ifndef __ALIGN_BEGIN
+#define __ALIGN_BEGIN
+#endif
+#ifndef __ALIGN_END
+#define __ALIGN_END      __attribute__ ((aligned (4)))
+#endif
 #elif defined ( __GNUC__ ) && !defined (__CC_ARM) /* GNU Compiler */
-  #ifndef __ALIGN_END
-    #define __ALIGN_END    __attribute__ ((aligned (4)))
-  #endif /* __ALIGN_END */
-  #ifndef __ALIGN_BEGIN
-    #define __ALIGN_BEGIN
-  #endif /* __ALIGN_BEGIN */
+#ifndef __ALIGN_END
+#define __ALIGN_END    __attribute__ ((aligned (4)))
+#endif /* __ALIGN_END */
+#ifndef __ALIGN_BEGIN
+#define __ALIGN_BEGIN
+#endif /* __ALIGN_BEGIN */
 #else
-  #ifndef __ALIGN_END
-    #define __ALIGN_END
-  #endif /* __ALIGN_END */
-  #ifndef __ALIGN_BEGIN
-    #if defined   (__CC_ARM)      /* ARM Compiler V5 */
-      #define __ALIGN_BEGIN    __align(4)
-    #elif defined (__ICCARM__)    /* IAR Compiler */
-      #define __ALIGN_BEGIN
-    #endif /* __CC_ARM */
-  #endif /* __ALIGN_BEGIN */
+#ifndef __ALIGN_END
+#define __ALIGN_END
+#endif /* __ALIGN_END */
+#ifndef __ALIGN_BEGIN
+#if defined   (__CC_ARM)      /* ARM Compiler V5 */
+#define __ALIGN_BEGIN    __align(4)
+#elif defined (__ICCARM__)    /* IAR Compiler */
+#define __ALIGN_BEGIN
+#endif /* __CC_ARM */
+#endif /* __ALIGN_BEGIN */
 #endif /* __GNUC__ */
 
-/* Macro to get variable aligned on 32-bytes,needed for cache maintenance purpose */
+	/* Macro to get variable aligned on 32-bytes,needed for cache maintenance purpose */
 #if defined   (__GNUC__)        /* GNU Compiler */
-  #define ALIGN_32BYTES(buf)  buf __attribute__ ((aligned (32)))                                    
+#define ALIGN_32BYTES(buf)  buf __attribute__ ((aligned (32)))
 #elif defined (__ICCARM__)    /* IAR Compiler */
-  #define ALIGN_32BYTES(buf) _Pragma("data_alignment=32") buf  
+#define ALIGN_32BYTES(buf) _Pragma("data_alignment=32") buf
 #elif defined   (__CC_ARM)      /* ARM Compiler */
-  #define ALIGN_32BYTES(buf) __align(32) buf  
+#define ALIGN_32BYTES(buf) __align(32) buf
 #endif
 
-/**
+	/**
   * @brief  __RAM_FUNC definition
   */
 #if defined ( __CC_ARM   ) || (defined (__ARMCC_VERSION) && (__ARMCC_VERSION >= 6010050))
-/* ARM Compiler V4/V5 and V6
+	/* ARM Compiler V4/V5 and V6
    --------------------------
    RAM functions are defined using the toolchain options.
    Functions that are executed in RAM should reside in a separate source module.
@@ -179,14 +179,14 @@ typedef enum
 #define __RAM_FUNC
 
 #elif defined ( __ICCARM__ )
-/* ICCARM Compiler
+	/* ICCARM Compiler
    ---------------
    RAM functions are defined using a specific toolchain keyword "__ramfunc".
 */
 #define __RAM_FUNC __ramfunc
 
 #elif defined   (  __GNUC__  )
-/* GNU Compiler
+	/* GNU Compiler
    ------------
   RAM functions are defined using a specific toolchain attribute
    "__attribute__((section(".RamFunc")))".
@@ -195,17 +195,17 @@ typedef enum
 
 #endif
 
-/**
+	/**
   * @brief  __NOINLINE definition
   */
 #if defined ( __CC_ARM   ) || (defined (__ARMCC_VERSION) && (__ARMCC_VERSION >= 6010050)) || defined   (  __GNUC__  )
-/* ARM V4/V5 and V6 & GNU Compiler
+	/* ARM V4/V5 and V6 & GNU Compiler
    -------------------------------
 */
 #define __NOINLINE __attribute__ ( (noinline) )
 
 #elif defined ( __ICCARM__ )
-/* ICCARM Compiler
+	/* ICCARM Compiler
    ---------------
 */
 #define __NOINLINE _Pragma("optimize = no_inline")
