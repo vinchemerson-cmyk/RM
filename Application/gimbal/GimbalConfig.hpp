@@ -11,14 +11,16 @@
 
 #include "fdcan.h"
 #include "main.h"
-#include "algorithm/pid.h"
-#include "algorithm/lqi_config.h"
+#include "RemoteCommandTest.hpp"
 #include "algorithm/lqi.h"
+#include "algorithm/lqi_config.h"
+#include "algorithm/pid.h"
 #include "motor/angle_target.h"
 #include "motor/dji/dji_protocol.h"
-#include "RemoteCommandTest.hpp"
 
-// 重复遥控指令对照测试：默认关闭，不改变 DBUS 解析和安全状态。
+/**
+ *@brief 重复遥控指令对照测试：默认关闭，不改变 DBUS 解析和安全状态。
+*/
 inline constexpr bool                            kYawRemoteCommandTestEnabled = false;
 inline constexpr gimbal::RemoteCommandTestConfig kYawRemoteCommandTestConfig{};
 static_assert(kYawRemoteCommandTestConfig.yaw_stick > 0.0F &&
@@ -113,7 +115,7 @@ inline constexpr uint16_t kPitchTopRaw         = 120U;
 inline constexpr uint16_t kPitchBottomRaw      = 1490U;
 inline constexpr uint16_t kYawZeroRaw          = 3741U;
 /** @brief 上、下实测顶点各向行程内留 10° 保护区；保护区内仅允许向水平零位方向运动。 */
-inline constexpr float    kPitchLimitMarginDeg = 10.0F;
+inline constexpr float    kPitchLimitMarginDeg = 7.0F;
 
 inline constexpr float kPitchTopDeg =
 	(static_cast<int32_t>(kPitchTopRaw) - kPitchZeroRaw) * (360.0F / 8192.0F);
