@@ -1,6 +1,6 @@
 /**
  * @file gimbal_calibration_test.cpp
- * @brief 验证实测云台标定、软限位及启用范围；不替代实车 PID/方向验证。
+ * @brief 验证实测云台标定、软限位及启用范围；不替代实车 LQI/方向验证。
  */
 #include <cassert>
 #include <cmath>
@@ -21,25 +21,29 @@ int main()
     assert(kYawAngleLimits.zero_raw == 3741U);
     assert(kYawAngleLimits.IsConfigured() && kYawAngleLimits.continuous);
     assert(kPitchAngleLimits.IsConfigured() && !kPitchAngleLimits.continuous);
-    // PID 由实车独立整定；此测试只检查合法性，不改动或固定某次参数。
-    assert(std::isfinite(kPitchSpeedKp) && kPitchSpeedKp > 0.0F);
-    assert(std::isfinite(kPitchSpeedKi) && kPitchSpeedKi >= 0.0F);
-    assert(std::isfinite(kPitchSpeedKd) && kPitchSpeedKd >= 0.0F);
+    // LQI 由实车独立整定；此测试只检查合法性，不固定某次参数。
+    assert(std::isfinite(kPitchLqiConfig.k_angle) && kPitchLqiConfig.k_angle > 0.0F);
+    assert(std::isfinite(kPitchLqiConfig.k_speed) && kPitchLqiConfig.k_speed > 0.0F);
+    assert(std::isfinite(kPitchLqiConfig.k_integral) && kPitchLqiConfig.k_integral >= 0.0F);
 
     const float sign = kPitchMotorReverse ? -1.0F : 1.0F;
     const float physicalTop = MotorEncoderDelta(kPitchZeroRaw, kPitchTopRaw) *
                               (360.0F / 8192.0F) * sign;
     const float physicalBottom = MotorEncoderDelta(kPitchZeroRaw, kPitchBottomRaw) *
                                  (360.0F / 8192.0F) * sign;
-    assert(kPitchLimitMarginDeg == 10.0F);
+    assert(kPitchLimitMarginDeg > 0.0F);
     assert(std::fabs(kPitchAngleLimits.min_deg - physicalTop - kPitchLimitMarginDeg) < 0.001F);
     assert(std::fabs(kPitchAngleLimits.max_deg - physicalBottom + kPitchLimitMarginDeg) < 0.001F);
     assert(kPitchAngleLimits.min_deg < 0.0F && kPitchAngleLimits.max_deg > 0.0F);
 
-    // 10°约为228格：上顶点120附近从347开始只能向零位，下顶点1490附近从1263开始只能向零位。
+    // 按当前配置求保护区边界，不把旧10°参数写死在测试中。
     assert(!kPitchMotorReverse);
-    constexpr uint16_t topInside = 348U, topGuard = 347U;
-    constexpr uint16_t bottomInside = 1262U, bottomGuard = 1263U;
+    const uint16_t topGuard = static_cast<uint16_t>(std::floor(kPitchTopRaw +
+        kPitchLimitMarginDeg * 8192.0F / 360.0F));
+    const uint16_t topInside = topGuard + 1U;
+    const uint16_t bottomGuard = static_cast<uint16_t>(std::ceil(kPitchBottomRaw -
+        kPitchLimitMarginDeg * 8192.0F / 360.0F));
+    const uint16_t bottomInside = bottomGuard - 1U;
     for (const uint16_t raw : {topInside, bottomInside})
     {
         assert(kPitchAngleLimits.AllowsSpeed(raw, kPitchMotorReverse, 1.0F));

@@ -202,60 +202,32 @@ int main()
     sent.clear(); DJI_Motor_Control(benchMotors, 3U, 0.001F);
     assert(Slot(sent[0], 0U) == 1234 && Slot(sent[1], 0U) != 0 && Slot(sent[1], 1U) != 0);
 
-    // 实际云台速度环：按用户当前增益输出电流码，应用上限约0.5A。
-    assert(benchPitch->controller.speed_PID.Configure({kPitchSpeedKp, kPitchSpeedKi, kPitchSpeedKd,
-        -kGimbalOutputLimit, kGimbalOutputLimit, -kGimbalIntegralLimit, kGimbalIntegralLimit}));
-    benchPitch->motor_settings.close_loop_type = SPEED_AND_CURRENT_LOOP;
-    benchPitch->motor_settings.current = 0.0F;
-    benchPitch->motor_settings.speed = kPitchMaxSpeedDps;
-    sent.clear(); DJI_Motor_Control(benchMotors, 3U, 0.001F);
-    assert(sent[0].id == 0x1FEU && Slot(sent[0], 0U) > 0 &&
-           Slot(sent[0], 0U) <= static_cast<int16_t>(kGimbalOutputLimit));
-    assert(Slot(sent[0], 1U) == 0); // yaw保持零电流
-    benchPitch->motor_settings.speed = 10000.0F;
-    sent.clear(); DJI_Motor_Control(benchMotors, 3U, 0.001F);
-    assert(Slot(sent[0], 0U) == static_cast<int16_t>(kGimbalOutputLimit));
-    benchPitch->motor_settings.speed = -10000.0F;
-    sent.clear(); DJI_Motor_Control(benchMotors, 3U, 0.001F);
-    assert(Slot(sent[0], 0U) == -static_cast<int16_t>(kGimbalOutputLimit));
-    // 使用真实应用参数验证pitch速度模式、yaw位置模式共用0x1FE，不互相覆盖。
+    // 云台两轴仅透传 LQI 电流码，共用0x1FE，不再配置旧角度/速度 PID。
     auto* benchYaw = pitch; // 前面创建的GM6020 ID2。
-    assert(benchPitch->controller.angle_PID.Configure(kPitchAnglePid));
-    assert(benchYaw->controller.angle_PID.Configure(kYawAnglePid));
-    assert(benchYaw->controller.speed_PID.Configure({kYawSpeedKp, kYawSpeedKi, kYawSpeedKd,
-        -kGimbalOutputLimit, kGimbalOutputLimit, -kGimbalIntegralLimit, kGimbalIntegralLimit}));
     DJI_Motor_s* benchAll[]{benchPitch, benchYaw, benchRight, benchLeft};
     for (auto* axis : {benchPitch, benchYaw}) {
         DJI_Motor_Disable(axis);
         axis->feedback.angle_initialized = true;
         axis->feedback.total_angle = 100.0F;
         axis->feedback.speed = 0.0F;
-        axis->motor_settings.close_loop_type = axis == benchPitch ? SPEED_AND_CURRENT_LOOP : ANGLE_AND_SPEED_LOOP;
+        axis->motor_settings.close_loop_type = CURRENT_LOOP;
         axis->motor_settings.speed = 5.0F;
-        axis->motor_settings.angle = 120.5F; // 当前yaw速度Kp较小，确保量化后仍有非零指令。
+        axis->motor_settings.angle = 120.5F;
         axis->motor_settings.angle_epoch = axis->feedback.angle_epoch;
         DJI_Motor_Enable(axis);
+        axis->motor_settings.current = (axis == benchPitch ? 0.1F : 0.28F) *
+            kDjiGm6020CommandUnitsPerAmp;
     }
     sent.clear(); DJI_Motor_Control(benchAll, 4U, 0.001F);
     assert(sent.size() == 2U && sent[0].id == 0x1FEU && sent[0].bus == &hfdcan1);
-    const int16_t stationaryPitch = Slot(sent[0], 0U);
-    assert(stationaryPitch > 0 && Slot(sent[0], 1U) > 0);
-    assert(stationaryPitch < static_cast<int16_t>(kGimbalOutputLimit));
-    assert(Slot(sent[0], 1U) < static_cast<int16_t>(kGimbalOutputLimit));
-    // 一格RPM反馈变化不会把低速目标的电流推到正/负满限幅。
+    assert(Slot(sent[0], 0U) == static_cast<int16_t>(0.1F * kDjiGm6020CommandUnitsPerAmp));
+    assert(Slot(sent[0], 1U) == static_cast<int16_t>(0.28F * kDjiGm6020CommandUnitsPerAmp));
+    // 电流模式下驱动不从角度/速度反馈重新计算 PID 输出。
     benchPitch->feedback.speed = 6.0F;
-    sent.clear(); DJI_Motor_Control(benchAll, 4U, 0.001F);
-    assert(std::abs(Slot(sent[0], 0U)) < static_cast<int16_t>(kGimbalOutputLimit));
-    assert(std::abs(Slot(sent[0], 0U) - stationaryPitch) <
-           static_cast<int16_t>(kGimbalOutputLimit));
-    // 纯速度环不追逐旧角度：松杆且测得静止时输出零；转速匹配时比例输出也为零。
-    benchPitch->feedback.speed = 0.0F;
-    benchPitch->motor_settings.speed = 0.0F;
     benchPitch->motor_settings.angle = -10000.0F;
     sent.clear(); DJI_Motor_Control(benchAll, 4U, 0.001F);
-    assert(Slot(sent[0], 0U) == 0 && Slot(sent[0], 1U) > 0);
-    benchPitch->motor_settings.speed = kPitchMaxSpeedDps;
-    benchPitch->feedback.speed = kPitchMaxSpeedDps;
+    assert(Slot(sent[0], 0U) == static_cast<int16_t>(0.1F * kDjiGm6020CommandUnitsPerAmp));
+    benchPitch->motor_settings.current = 0.0F;
     sent.clear(); DJI_Motor_Control(benchAll, 4U, 0.001F);
     assert(Slot(sent[0], 0U) == 0 && Slot(sent[0], 1U) > 0);
     for (auto* motor : benchAll) DJI_Motor_Disable(motor);

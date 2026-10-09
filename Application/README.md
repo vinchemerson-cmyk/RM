@@ -76,7 +76,7 @@ DT7 遥控器 ──2.4G──> DR16 ──DBUS──> UART5 中断 (rc 模块�
 
 由`GimbalConfig.hpp`决定：两轴均使用 LQI 位置控制（`kYawPositionMode=true`），当前均为 Manual。`kYawLqiConfig` 和 `kPitchLqiConfig` 各自完整声明，不再复制配置；yaw位置增益0.28、速度反馈增益0.0035，pitch仍为0.1、0.01。目标变化率仍为120°/s，松杆保持角度；yaw连续旋转。BootSolve仍需分别辨识各轴模型。
 
-- **标定模式（已关闭）**: `kEncoderCalibrationOnly=true`时两轴始终发送零电流，可手动读取编码器。位置模式请求和PID配置保留但不执行运动。
+- **标定模式（已关闭）**: `kEncoderCalibrationOnly=true`时两轴始终发送零电流，可手动读取编码器。位置模式请求和 LQI 配置保留但不执行运动。
 - **位置模式（pitch当前）**: 安全区内右摇杆上下按`kPitchTargetRateDps`推动有界角度目标，LQI 计算电流，松杆保持目标；进入端点内侧10°保护区后临时使用 K_speed 速度反馈，只允许摇杆向水平零位退回，松杆或向外拨时Disable。退回安全区后重新同步当前位置并恢复位置保持。
 - **备用速度测试（默认关闭）**: `kYawPositionMode=false` 时才使用速度目标及 `kYawSpeedTestMaxDps`。实际输出限幅以 `kYawLqiConfig` 为准，切换测试前须单独检查参数。
 

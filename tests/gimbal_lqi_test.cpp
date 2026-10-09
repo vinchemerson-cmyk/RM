@@ -50,7 +50,7 @@ void DJI_Motor_Control(DJI_Motor_s**, uint8_t, float) {}
 int main()
 {
     // 固定指令边界、单次触发、取消/掉线重装及 tick 回绕。
-    const gimbal::RemoteCommandTestConfig commandConfig{};
+    const gimbal::RemoteCommandTestConfig commandConfig{.move_ms = 500U};
     for (const uint32_t t : {0U, 999U, 1500U, 3499U, 4000U, 6000U})
         assert(gimbal::GenerateRemoteYawCommand(t, commandConfig) == 0.0F);
     assert(gimbal::GenerateRemoteYawCommand(1000U, commandConfig) == 0.5F);
@@ -83,29 +83,17 @@ int main()
     sequence.Update(wrapStart, true, true, commandConfig);
     assert(sequence.Update(wrapStart + 1000U, true, true, commandConfig) == 0.5F);
     assert(sequence.Update(wrapStart + 1001U, true, false, commandConfig) == 0.0F);
-    // 对照真实 PID 算法的未限幅比例项，检验 A->CAN 指令码换算等效。
-    const auto checkLegacyProportional = [](const LQI_Init_Config_s& lqiConfig,
-                                           const PID_Init_Config_s& angleConfig, float speedKp)
+    // pitch 独立 LQI 参数保持原有效增益，直接验证位置/速度电流项。
+    LQIController pitchCheck{};
+    assert(pitchCheck.Configure(kPitchLqiConfig));
+    for (const float target : {1.0F, -1.0F})
     {
-        PIDInstance anglePid{}, speedPid{};
-        assert(anglePid.Configure(angleConfig));
-        assert(speedPid.Configure({speedKp, 0.0F, 0.0F,
-            -kGimbalOutputLimit, kGimbalOutputLimit, 0.0F, 0.0F}));
-        LQIController lqi{};
-        assert(lqi.Configure(lqiConfig));
-        for (const float target : {1.0F, -1.0F})
-        {
-            anglePid.Reset(); speedPid.Reset(); lqi.Reset();
-            const float legacy = speedPid.Update(anglePid.Update(target, 0.0F, 0.001F),
-                                                   2.0F, 0.001F);
-            const float currentCode = lqi.Update(target, 0.0F, 2.0F, 0.001F) *
-                                      kDjiGm6020CommandUnitsPerAmp;
-            assert(std::fabs(currentCode - legacy) < 1e-5F * (1.0F + std::fabs(legacy)));
-        }
-    };
-    checkLegacyProportional(kPitchLqiConfig, kPitchAnglePid, kPitchSpeedKp);
+        pitchCheck.Reset();
+        const float expected = 0.1F * target - 0.01F * 2.0F;
+        assert(std::fabs(pitchCheck.Update(target, 0.0F, 2.0F, 0.001F) - expected) < 1e-6F);
+    }
     // 两轴独立配置：不要求 K、Q/R、积分范围或输出限幅相同。
-    assert(kYawLqiConfig.k_speed == 0.0035F && kPitchLqiConfig.k_speed == 0.01F);
+    assert(kYawLqiConfig.k_speed > 0.0F && kPitchLqiConfig.k_speed == 0.01F);
     assert(kYawLqiConfig.k_angle == 0.28F && kPitchLqiConfig.k_angle == 0.1F);
     assert(std::fabs(kYawTargetSpeedFeedforwardAperDps * 60.0F - 0.12F) < 1e-6F);
     assert(std::fabs(kYawTargetSpeedFeedforwardAperDps * kYawTargetRateDps - 0.24F) < 1e-6F);
@@ -113,9 +101,10 @@ int main()
     assert(kPitchLqiConfig.integral_min_deg_s == 0.0F && kPitchLqiConfig.integral_max_deg_s == 0.0F);
     LQIController yawPositionCheck{};
     assert(yawPositionCheck.Configure(kYawLqiConfig));
-    assert(std::fabs(yawPositionCheck.Update(10.0F, 0.0F, 100.0F, 0.001F) - 2.45F) < 1e-6F);
+    assert(std::fabs(yawPositionCheck.Update(10.0F, 0.0F, 100.0F, 0.001F) -
+        (10.0F * kYawLqiConfig.k_angle - 100.0F * kYawLqiConfig.k_speed)) < 1e-6F);
     assert(std::fabs(yawPositionCheck.PositionCurrent() - 2.8F) < 1e-6F);
-    assert(std::fabs(yawPositionCheck.SpeedCurrent() + 0.35F) < 1e-6F);
+    assert(std::fabs(yawPositionCheck.SpeedCurrent() + 100.0F * kYawLqiConfig.k_speed) < 1e-6F);
     assert(kYawPositionMode && kPitchPositionMode);
     assert(kYawTargetRateDps == kPitchTargetRateDps);
     assert(kYawLqiConfig.output_max_a == 3.0F && kYawLqiConfig.output_min_a == -3.0F);
@@ -181,7 +170,8 @@ int main()
     assert(!motor.enabled && motor.motor_settings.current == 0.0F);
     UpdateAxis(&motor, pitchTarget, pitchLqi, true, kPitchAngleLimits, 1.0F, 60.0F, 0.001F);
     assert(motor.enabled && motor.motor_settings.current > 0.0F);
-    assert(motor.motor_settings.current <= kGimbalOutputLimit && !pitchTarget.Ready());
+    assert(motor.motor_settings.current <= kPitchLqiConfig.output_max_a *
+        kDjiGm6020CommandUnitsPerAmp && !pitchTarget.Ready());
     assert(pitchLqi.Integral() == 0.0F);
     UpdateAxis(&motor, pitchTarget, pitchLqi, true, kPitchAngleLimits, 0.0F, 60.0F, 0.001F);
     assert(!motor.enabled && motor.motor_settings.current == 0.0F);

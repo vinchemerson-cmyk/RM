@@ -14,7 +14,6 @@
 #include "RemoteCommandTest.hpp"
 #include "algorithm/lqi.h"
 #include "algorithm/lqi_config.h"
-#include "algorithm/pid.h"
 #include "motor/angle_target.h"
 #include "motor/dji/dji_protocol.h"
 
@@ -40,13 +39,13 @@ static_assert(static_cast<uint64_t>(kYawRemoteCommandTestConfig.initial_hold_ms)
  *   2. 每台 GM6020 的电调 ID 决定其反馈 ID: ID1->0x205, ID2->0x206, ID3->0x207, ID4->0x208。
  *      用户确认 yaw=ID2, pitch=ID1。反馈 ID 必须唯一, 且必须是 0x205..0x208 之一。
  *   3. 转向: 若某轴转动方向相反, 把对应电机的 kYawMotorReverse / kPitchMotorReverse 置 true。
- *   4. 两轴使用 LQI；必须填写实车离散模型与 Q/R，旧 PID 参数保留但不参与控制。
+ *   4. 两轴使用 LQI；Manual 直接填写 K，BootSolve 须填写实车离散模型与 Q/R。
  */
 
 /** @brief 云台使用的 FDCAN 控制器。 */
 inline FDCAN_HandleTypeDef* const kGimbalCanHandle = &hfdcan1;
 
-/** @brief pitch暂调速度环并保留行程方向保护；yaw连续位置控制不变。 */
+/** @brief 两轴 LQI 运动使能；pitch 保留行程方向保护。 */
 inline constexpr bool kEnableYaw   = true;
 inline constexpr bool kEnablePitch = true;
 
@@ -68,37 +67,6 @@ inline constexpr bool kPitchMotorReverse = false;
 
 /** @brief GM6020 电流帧 0x1FE 的第 0/1 个槽位为 pitch ID1 / yaw ID2。 */
 
-/** @brief 摇杆最大角速度指令, 单位度每秒; 对应摇杆打满。 */
-inline constexpr float kYawMaxSpeedDps   = 400.0F;
-inline constexpr float kPitchMaxSpeedDps = 120.0F; // 单调速度环：打满4RPM，先支撑云台短时试拨。每24.0F为1RPM
-
-/**
- * @brief 偏激进响应的试调起点，单位 A/(°/s)，转换为电流指令码。
- * @note 1RPM=6°/s；Kp=0.02 时速度跳变一格仅影响0.12A，旧0.5会影响3A。
- *       提高外环响应而非提高电流上限；两轴速度积分暂关，稳定性需实车确认。
- */
-inline constexpr float kYawSpeedKp = 0.02F;
-inline constexpr float kYawSpeedKi = 0.0F;
-inline constexpr float kYawSpeedKd = 0.0F;
-
-/** @brief pitch单调速度环：Kp=0.005A/(°/s)， */
-inline constexpr float kPitchSpeedKp = 0.01F * kDjiGm6020CommandUnitsPerAmp;
-inline constexpr float kPitchSpeedKi = 3.0F;
-inline constexpr float kPitchSpeedKd = 0.0F;
-
-/**
- * @brief 角度环参数预置；输入角度为度，输出为速度目标（度每秒）。
- * @note 摇杆默认控制角速度；位置模式须先完成下面的行程标定。
- */
-inline constexpr PID_Init_Config_s kYawAnglePid{
-	.kp         = 12.0F, .ki           = 0.0F, .kd             = 0.0F,
-	.output_min = -240.0F, .output_max = 240.0F, .integral_min = 0.0F, .integral_max = 0.0F
-};
-inline constexpr PID_Init_Config_s kPitchAnglePid{
-	.kp         = 10.0F, .ki          = 0.0F, .kd            = 0.0F,
-	.output_min = -90.0F, .output_max = 90.0F, .integral_min = 0.0F, .integral_max = 0.0F
-};
-
 /**
  * @brief 位置模式请求；标定模式保留该配置，但禁止两轴运动。
  * @note 开启前先记录物理零位的 13 位编码器值，并实测相对零位的可动角度。
@@ -114,6 +82,7 @@ inline constexpr uint16_t kPitchZeroRaw        = 893U;
 inline constexpr uint16_t kPitchTopRaw         = 120U;
 inline constexpr uint16_t kPitchBottomRaw      = 1490U;
 inline constexpr uint16_t kYawZeroRaw          = 3741U;
+
 /** @brief 上、下实测顶点各向行程内留 10° 保护区；保护区内仅允许向水平零位方向运动。 */
 inline constexpr float    kPitchLimitMarginDeg = 7.0F;
 
@@ -153,10 +122,10 @@ inline constexpr float kYawSpeedTestMaxDps        = 60.0F;
 inline constexpr float kYawSpeedTestCurrentLimitA = 2.0F;
 
 /** @brief 固定电流单次诊断；默认关闭，不自动执行。 */
-inline constexpr bool     kYawFixedCurrentTestEnabled        = false;
-inline constexpr float    kYawFixedCurrentTestA              = 1.3F;
-inline constexpr uint32_t kYawFixedCurrentTestDurationMs     = 200U;
-inline constexpr float    kYawFixedCurrentTestStickThreshold = 0.2F;
+inline constexpr bool     kYawFixedCurrentTestEnabled        = false; //是否开启固定电流单次诊断
+inline constexpr float    kYawFixedCurrentTestA              = 1.3F;  //测试电流幅值，单位A，方向由摇杆决定
+inline constexpr uint32_t kYawFixedCurrentTestDurationMs     = 200U;  // 单次测试最长持续时间，单位ms
+inline constexpr float    kYawFixedCurrentTestStickThreshold = 0.2F;  // 触发阈值：归一化摇杆绝对值达到0.2
 static_assert(kYawFixedCurrentTestA > 0.0F && kYawFixedCurrentTestA <= 3.0F,
 			  "Fixed current diagnostic must stay within the GM6020 protocol limit");
 static_assert(!kYawFixedCurrentTestEnabled || kYawFixedCurrentTestA <= kYawSpeedTestCurrentLimitA,
@@ -164,11 +133,9 @@ static_assert(!kYawFixedCurrentTestEnabled || kYawFixedCurrentTestA <= kYawSpeed
 static_assert(kYawFixedCurrentTestDurationMs > 0U && kYawFixedCurrentTestDurationMs <= 500U,
 			  "Fixed current diagnostic duration must stay within 500ms");
 
-/** @brief 云台控制周期及低速联调电流限幅；与协议最大 ±3A 分开配置。 */
+/** @brief 云台控制周期及 LQI 电流限幅；与协议最大 ±3A 分开配置。 */
 inline constexpr float kGimbalControlPeriodS = 0.001F;
 inline constexpr float kGimbalCurrentLimitA  = 3.0F;
-inline constexpr float kGimbalOutputLimit    = kGimbalCurrentLimitA * kDjiGm6020CommandUnitsPerAmp;
-inline constexpr float kGimbalIntegralLimit  = 0.25F * kDjiGm6020CommandUnitsPerAmp;
 static_assert(kGimbalCurrentLimitA > 0.0F && kGimbalCurrentLimitA <= 3.0F,
 			  "GM6020 test current limit must be within (0, 3] A");
 
@@ -190,15 +157,10 @@ enum class GimbalLqiGainSource
 inline constexpr GimbalLqiGainSource kPitchLqiGainSource = GimbalLqiGainSource::Manual;
 inline constexpr GimbalLqiGainSource kYawLqiGainSource   = GimbalLqiGainSource::Manual;
 
-/**
- * @brief pitch Manual K 按原串级 PID 的未限幅比例项换算为 A。
- * @note 旧指令码 = Kp_speed*(Kp_angle*(目标-实际)-速度)。
- *       因此 k_angle=Kp_angle*Kp_speed/码每安培，k_speed=Kp_speed/码每安培。
- *       不等价于还原旧角度环速度限幅或速度环积分；当前 LQI 积分范围仍为零。
- */
+/** @brief pitch 独立 LQI 增益：位置项 A/度，速度项 A/(度/秒)；保持原有效数值。 */
 inline constexpr LQI_Init_Config_s kPitchLqiConfig{
-	.k_angle            = kPitchAnglePid.kp * kPitchSpeedKp / kDjiGm6020CommandUnitsPerAmp,
-	.k_speed            = kPitchSpeedKp / kDjiGm6020CommandUnitsPerAmp, .k_integral = 0.01F,
+	.k_angle            = 0.1F,
+	.k_speed            = 0.01F, .k_integral = 0.01F,
 	.q_angle            = 0.04F, .q_speed = 0.000278F, .q_integral = 0.01F, .r_current = 1.0F,
 	.sample_period_s    = kGimbalControlPeriodS,
 	.output_min_a       = -kGimbalCurrentLimitA, .output_max_a = kGimbalCurrentLimitA,
