@@ -19,14 +19,14 @@
 #include "RemoteCommandTest.hpp"
 
 // 重复遥控指令对照测试：默认关闭，不改变 DBUS 解析和安全状态。
-inline constexpr bool kYawRemoteCommandTestEnabled = false;
+inline constexpr bool                            kYawRemoteCommandTestEnabled = false;
 inline constexpr gimbal::RemoteCommandTestConfig kYawRemoteCommandTestConfig{};
 static_assert(kYawRemoteCommandTestConfig.yaw_stick > 0.0F &&
-              kYawRemoteCommandTestConfig.yaw_stick <= 1.0F);
+			  kYawRemoteCommandTestConfig.yaw_stick <= 1.0F);
 static_assert(kYawRemoteCommandTestConfig.move_ms > 0U);
 static_assert(static_cast<uint64_t>(kYawRemoteCommandTestConfig.initial_hold_ms) +
-              2ULL * kYawRemoteCommandTestConfig.move_ms +
-              2ULL * kYawRemoteCommandTestConfig.hold_ms < 0x80000000ULL);
+			  2ULL * kYawRemoteCommandTestConfig.move_ms +
+			  2ULL * kYawRemoteCommandTestConfig.hold_ms < 0x80000000ULL);
 
 /**
  * @brief 云台电机全部使用 GM6020, 由右摇杆控制角速度。
@@ -45,7 +45,7 @@ static_assert(static_cast<uint64_t>(kYawRemoteCommandTestConfig.initial_hold_ms)
 inline FDCAN_HandleTypeDef* const kGimbalCanHandle = &hfdcan1;
 
 /** @brief pitch暂调速度环并保留行程方向保护；yaw连续位置控制不变。 */
-inline constexpr bool kEnableYaw = true;
+inline constexpr bool kEnableYaw   = true;
 inline constexpr bool kEnablePitch = true;
 
 /** @brief 独立于 yaw 运动使能保留编码器采集；禁用运动后仍可打印反馈。 */
@@ -89,12 +89,12 @@ inline constexpr float kPitchSpeedKd = 0.0F;
  * @note 摇杆默认控制角速度；位置模式须先完成下面的行程标定。
  */
 inline constexpr PID_Init_Config_s kYawAnglePid{
-    .kp = 12.0F, .ki = 0.0F, .kd = 0.0F,
-    .output_min = -240.0F, .output_max = 240.0F, .integral_min = 0.0F, .integral_max = 0.0F
+	.kp         = 12.0F, .ki           = 0.0F, .kd             = 0.0F,
+	.output_min = -240.0F, .output_max = 240.0F, .integral_min = 0.0F, .integral_max = 0.0F
 };
 inline constexpr PID_Init_Config_s kPitchAnglePid{
-    .kp = 10.0F, .ki = 0.0F, .kd = 0.0F,
-    .output_min = -90.0F, .output_max = 90.0F, .integral_min = 0.0F, .integral_max = 0.0F
+	.kp         = 10.0F, .ki          = 0.0F, .kd            = 0.0F,
+	.output_min = -90.0F, .output_max = 90.0F, .integral_min = 0.0F, .integral_max = 0.0F
 };
 
 /**
@@ -108,59 +108,59 @@ inline constexpr bool kPitchPositionMode = true; // 当前使用 LQI 位置目�
  * @brief 相对物理零位的行程。continuous 仅用于已确认可以连续旋转的 yaw 轴。
  * @note 非连续轴的行程必须落在零点 ±180 度内；跨越多圈需另配绝对位置传感器。
  */
-inline constexpr uint16_t kPitchZeroRaw = 893U;
-inline constexpr uint16_t kPitchTopRaw = 120U;
-inline constexpr uint16_t kPitchBottomRaw = 1490U;
-inline constexpr uint16_t kYawZeroRaw = 3741U;
+inline constexpr uint16_t kPitchZeroRaw        = 893U;
+inline constexpr uint16_t kPitchTopRaw         = 120U;
+inline constexpr uint16_t kPitchBottomRaw      = 1490U;
+inline constexpr uint16_t kYawZeroRaw          = 3741U;
 /** @brief 上、下实测顶点各向行程内留 10° 保护区；保护区内仅允许向水平零位方向运动。 */
-inline constexpr float kPitchLimitMarginDeg = 10.0F;
+inline constexpr float    kPitchLimitMarginDeg = 10.0F;
 
 inline constexpr float kPitchTopDeg =
-    (static_cast<int32_t>(kPitchTopRaw) - kPitchZeroRaw) * (360.0F / 8192.0F);
+	(static_cast<int32_t>(kPitchTopRaw) - kPitchZeroRaw) * (360.0F / 8192.0F);
 inline constexpr float kPitchBottomDeg =
-    (static_cast<int32_t>(kPitchBottomRaw) - kPitchZeroRaw) * (360.0F / 8192.0F);
+	(static_cast<int32_t>(kPitchBottomRaw) - kPitchZeroRaw) * (360.0F / 8192.0F);
 static_assert(kPitchTopDeg + kPitchLimitMarginDeg < 0.0F &&
-              kPitchBottomDeg - kPitchLimitMarginDeg > 0.0F,
-              "Pitch endpoint guard zones must leave the horizontal zero inside the travel");
+			  kPitchBottomDeg - kPitchLimitMarginDeg > 0.0F,
+			  "Pitch endpoint guard zones must leave the horizontal zero inside the travel");
 
 inline constexpr MotorAngleLimits kYawAngleLimits{
-    .calibrated = true, .continuous = true, .zero_raw = kYawZeroRaw
+	.calibrated = true, .continuous = true, .zero_raw = kYawZeroRaw
 };
 inline constexpr MotorAngleLimits kPitchAngleLimits{
-    .calibrated = true,
-    .continuous = false,
-    .zero_raw = kPitchZeroRaw,
-    .min_deg = (kPitchMotorReverse ? -kPitchBottomDeg : kPitchTopDeg) + kPitchLimitMarginDeg,
-    .max_deg = (kPitchMotorReverse ? -kPitchTopDeg : kPitchBottomDeg) - kPitchLimitMarginDeg
+	.calibrated = true,
+	.continuous = false,
+	.zero_raw   = kPitchZeroRaw,
+	.min_deg    = (kPitchMotorReverse ? -kPitchBottomDeg : kPitchTopDeg) + kPitchLimitMarginDeg,
+	.max_deg    = (kPitchMotorReverse ? -kPitchTopDeg : kPitchBottomDeg) - kPitchLimitMarginDeg
 };
 
 //如果开启偏航位置模式 (kYawPositionMode=true)，则必须配置好偏航角度限制
 static_assert(kEncoderCalibrationOnly || !kEnableYaw || !kYawPositionMode || kYawAngleLimits.IsConfigured(),
-              "Yaw position mode requires measured travel or confirmed continuous rotation");
+			  "Yaw position mode requires measured travel or confirmed continuous rotation");
 
 //开启俯仰位置控制模式，就必须配置非连续型的实测机械角度限位，编译期静态检查，不满足则编译失败。
 static_assert(kEncoderCalibrationOnly || !kEnablePitch || !kPitchPositionMode ||
-              (!kPitchAngleLimits.continuous && kPitchAngleLimits.IsConfigured()),
-              "Pitch position mode requires measured mechanical limits");
+			  (!kPitchAngleLimits.continuous && kPitchAngleLimits.IsConfigured()),
+			  "Pitch position mode requires measured mechanical limits");
 
 /** @brief 位置模式下摇杆打满时目标角度的最大变化率，单位度每秒。 */
-inline constexpr float kYawTargetRateDps   = 120.0F; // 与 pitch 一致。
-inline constexpr float kPitchTargetRateDps = 120.0F;
+inline constexpr float kYawTargetRateDps          = 120.0F; // 与 pitch 一致。
+inline constexpr float kPitchTargetRateDps        = 120.0F;
 /** @brief 备用 yaw 速度测试参数；当前位置模式不使用这两个参数。 */
-inline constexpr float kYawSpeedTestMaxDps = 60.0F;
+inline constexpr float kYawSpeedTestMaxDps        = 60.0F;
 inline constexpr float kYawSpeedTestCurrentLimitA = 2.0F;
 
 /** @brief 固定电流单次诊断；默认关闭，不自动执行。 */
-inline constexpr bool kYawFixedCurrentTestEnabled = false;
-inline constexpr float kYawFixedCurrentTestA = 1.3F;
-inline constexpr uint32_t kYawFixedCurrentTestDurationMs = 200U;
-inline constexpr float kYawFixedCurrentTestStickThreshold = 0.2F;
+inline constexpr bool     kYawFixedCurrentTestEnabled        = false;
+inline constexpr float    kYawFixedCurrentTestA              = 1.3F;
+inline constexpr uint32_t kYawFixedCurrentTestDurationMs     = 200U;
+inline constexpr float    kYawFixedCurrentTestStickThreshold = 0.2F;
 static_assert(kYawFixedCurrentTestA > 0.0F && kYawFixedCurrentTestA <= 3.0F,
-              "Fixed current diagnostic must stay within the GM6020 protocol limit");
+			  "Fixed current diagnostic must stay within the GM6020 protocol limit");
 static_assert(!kYawFixedCurrentTestEnabled || kYawFixedCurrentTestA <= kYawSpeedTestCurrentLimitA,
-              "Enabled fixed current diagnostic must stay within the yaw current limit");
+			  "Enabled fixed current diagnostic must stay within the yaw current limit");
 static_assert(kYawFixedCurrentTestDurationMs > 0U && kYawFixedCurrentTestDurationMs <= 500U,
-              "Fixed current diagnostic duration must stay within 500ms");
+			  "Fixed current diagnostic duration must stay within 500ms");
 
 /** @brief 云台控制周期及低速联调电流限幅；与协议最大 ±3A 分开配置。 */
 inline constexpr float kGimbalControlPeriodS = 0.001F;
@@ -168,7 +168,7 @@ inline constexpr float kGimbalCurrentLimitA  = 3.0F;
 inline constexpr float kGimbalOutputLimit    = kGimbalCurrentLimitA * kDjiGm6020CommandUnitsPerAmp;
 inline constexpr float kGimbalIntegralLimit  = 0.25F * kDjiGm6020CommandUnitsPerAmp;
 static_assert(kGimbalCurrentLimitA > 0.0F && kGimbalCurrentLimitA <= 3.0F,
-              "GM6020 test current limit must be within (0, 3] A");
+			  "GM6020 test current limit must be within (0, 3] A");
 
 /** @brief 单次控制周期允许的最大 dt, 超过则认为调度异常并跳过本次输出。 */
 inline constexpr float kGimbalMaxDtS = 0.05F;
@@ -181,12 +181,12 @@ inline constexpr float kGimbalMaxDtS = 0.05F;
  */
 enum class GimbalLqiGainSource
 {
-    Manual,
-    BootSolve
+	Manual,
+	BootSolve
 };
 
 inline constexpr GimbalLqiGainSource kPitchLqiGainSource = GimbalLqiGainSource::Manual;
-inline constexpr GimbalLqiGainSource kYawLqiGainSource = GimbalLqiGainSource::Manual;
+inline constexpr GimbalLqiGainSource kYawLqiGainSource   = GimbalLqiGainSource::Manual;
 
 /**
  * @brief pitch Manual K 按原串级 PID 的未限幅比例项换算为 A。
@@ -195,33 +195,33 @@ inline constexpr GimbalLqiGainSource kYawLqiGainSource = GimbalLqiGainSource::Ma
  *       不等价于还原旧角度环速度限幅或速度环积分；当前 LQI 积分范围仍为零。
  */
 inline constexpr LQI_Init_Config_s kPitchLqiConfig{
-    .k_angle = kPitchAnglePid.kp * kPitchSpeedKp / kDjiGm6020CommandUnitsPerAmp,
-    .k_speed = kPitchSpeedKp / kDjiGm6020CommandUnitsPerAmp, .k_integral = 0.01F,
-    .q_angle = 0.04F, .q_speed = 0.000278F, .q_integral = 0.01F, .r_current = 1.0F,
-    .sample_period_s = kGimbalControlPeriodS,
-    .output_min_a = -kGimbalCurrentLimitA, .output_max_a = kGimbalCurrentLimitA,
-    .integral_min_deg_s = 0.0F, .integral_max_deg_s = 0.0F
+	.k_angle            = kPitchAnglePid.kp * kPitchSpeedKp / kDjiGm6020CommandUnitsPerAmp,
+	.k_speed            = kPitchSpeedKp / kDjiGm6020CommandUnitsPerAmp, .k_integral = 0.01F,
+	.q_angle            = 0.04F, .q_speed = 0.000278F, .q_integral = 0.01F, .r_current = 1.0F,
+	.sample_period_s    = kGimbalControlPeriodS,
+	.output_min_a       = -kGimbalCurrentLimitA, .output_max_a = kGimbalCurrentLimitA,
+	.integral_min_deg_s = 0.0F, .integral_max_deg_s            = 0.0F
 };
 // yaw 独立配置；不复制 pitch，修改任一轴 K、Q/R 或积分范围不影响另一轴。
 inline constexpr LQI_Init_Config_s kYawLqiConfig{
-    .k_angle = 0.28F,
-    .k_speed = 0.003F,
-    .k_integral = 0.01F,
-    .q_angle = 0.04F,
-    .q_speed = 0.000278F,
-    .q_integral = 0.01F,
-    .r_current = 1.0F,
-    .sample_period_s = kGimbalControlPeriodS,
-    .output_min_a = -3.0F,
-    .output_max_a = 3.0F,
-    .integral_min_deg_s = 0.0F,
-    .integral_max_deg_s = 0.0F
+	.k_angle            = 0.28F,
+	.k_speed            = 0.003F,
+	.k_integral         = 0.01F,
+	.q_angle            = 0.04F,
+	.q_speed            = 0.000278F,
+	.q_integral         = 0.01F,
+	.r_current          = 1.0F,
+	.sample_period_s    = kGimbalControlPeriodS,
+	.output_min_a       = -3.0F,
+	.output_max_a       = 3.0F,
+	.integral_min_deg_s = 0.0F,
+	.integral_max_deg_s = 0.0F
 };
 
 // 仅 yaw 正常位置模式使用；目标变化率前馈，单位 A/(度/秒)。
 inline constexpr float kYawTargetSpeedFeedforwardAperDps = 0.002F;
 static_assert(kYawTargetSpeedFeedforwardAperDps >= 0.0F &&
-              kYawTargetSpeedFeedforwardAperDps <= kGimbalCurrentLimitA / kYawTargetRateDps);
+			  kYawTargetSpeedFeedforwardAperDps <= kGimbalCurrentLimitA / kYawTargetRateDps);
 
 /**
  * @brief LQI 的实车离散模型入口；A/B 全零表示尚未辨识，求解器会拒绝。
@@ -240,10 +240,10 @@ static_assert(kYawTargetSpeedFeedforwardAperDps >= 0.0F &&
  *		 B2：电流对下一时刻速度的影响。
  */
 inline constexpr LQI_Model_s kPitchLqiModel{
-    .a = {}, .b = {}, .sample_period_s = kGimbalControlPeriodS
+	.a = {}, .b = {}, .sample_period_s = kGimbalControlPeriodS
 };
 inline constexpr LQI_Model_s kYawLqiModel{
-    .a = {}, .b = {}, .sample_period_s = kGimbalControlPeriodS
+	.a = {}, .b = {}, .sample_period_s = kGimbalControlPeriodS
 };
 
 /** @brief 上电单次增益求解的迭代上限与收敛阈值。 */
@@ -251,8 +251,8 @@ inline constexpr LQI_Solver_Options_s kGimbalLqiSolverOptions{};
 
 static_assert(kPitchPositionMode, "Pitch LQI requires position targets");
 static_assert(kYawPositionMode || kYawLqiGainSource == GimbalLqiGainSource::Manual,
-              "Yaw speed-only test requires manual gains");
+			  "Yaw speed-only test requires manual gains");
 static_assert(kYawSpeedTestCurrentLimitA > 0.0F && kYawSpeedTestCurrentLimitA <= kGimbalCurrentLimitA,
-              "Yaw speed test current limit must remain within the gimbal current limit");
+			  "Yaw speed test current limit must remain within the gimbal current limit");
 
 #endif // INFANTRY_H723_GIMBAL_CONFIG_HPP
