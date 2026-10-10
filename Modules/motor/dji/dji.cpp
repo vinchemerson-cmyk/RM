@@ -75,6 +75,20 @@ namespace
 	/**
  * @brief 取出型号对应的帧与反馈分配.
  * @return 找到时返回对应表项; 型号非法时返回 nullptr.
+ * @note 1. 必须用引用遍历
+ *
+for (const MotorTypeSpec& spec : kMotorSpecs)  // ✅ 正确
+如果写成：
+
+for (const MotorTypeSpec spec : kMotorSpecs)   // ❌ 危险
+	return &spec;
+spec 是循环内的局部拷贝。
+
+&spec 是拷贝的地址，循环迭代结束或函数返回后立即悬空。
+
+返回悬空指针，使用会崩溃或读到垃圾。
+
+这是本函数最容易犯的错，引用是必须的。
  */
 	const MotorTypeSpec* FindSpec(const Motor_Type_e motor_type)
 	{
@@ -111,17 +125,17 @@ namespace
 			return;
 		auto* motor = static_cast<DJI_Motor_s*>(attribute_instance->module_handle);
 		// 首次注册启动 CAN 后可能立即进中断，此时返回句柄尚未写回 motor。
-		if (motor->can_instance == nullptr)
+		if (motor->can_instance == nullptr) //空指针检查
 			return;
-		auto& instance = *motor->can_instance;
+		auto& instance = *motor->can_instance; //解引用成引用
 
-		const uint8_t* data = instance.output.rx_buffer.data();
-		// ===== 修改开始：丢弃 DLC 不等于 8 的反馈帧 =====
+		const uint8_t* data = instance.output.rx_buffer.data(); //取接收缓冲区首地址
+
+		//丢弃DLC不等于8的反馈帧
 		if (instance.output.rx_len != kFeedbackLength)
 			return;
-		// ===== 修改结束：接收长度检查 =====
 
-		// 完整反馈帧为 8 字节；DATA[0..5] 为大端角度、转速及电流。
+		//把两个字节按大端序（Big-Endian）拼成一个 16 位有符号整数
 		const auto read_be16 = [](const uint8_t* bytes) -> int16_t
 		{
 			return static_cast<int16_t>((static_cast<uint16_t>(bytes[0]) << 8U) | bytes[1]);
@@ -165,19 +179,17 @@ namespace
 		feedback.angle       = reverse ? -angle_deg : angle_deg;
 		feedback.speed       = reverse ? -speed_dps : speed_dps;
 		feedback.current     = reverse ? -current_a : current_a;
-		// ===== 修改开始：C610 的 DATA[6..7] 为保留字节，不是温度 =====
 		// 当前反馈结构以 0 表示“未提供温度”，不能把它当作实测 0°C。
 		feedback.temperature = motor->motor_type == M2006
 								   ? 0.0F
 								   : static_cast<float>(data[6]);
 		// DATA[7] 不参与解析；C620/GM6020 的温度仍从 DATA[6] 读取。
-		// ===== 修改结束：M2006 温度字段 =====
 		feedback.last_update_tick = tick;
 
 		instance.feedback_tick = tick;
 	}
 
-	/**
+/**
  * @brief 按闭环设置计算单个电机的 16 位输出.
  * @return 已限幅并应用方向标志的输出值.
  * @note 闭环组合非法时返回 0；测试模式使用最近一次反馈，不判定掉线。
@@ -354,6 +366,7 @@ void DJI_Motor_Disable(DJI_Motor_s* motor)
 
 void DJI_Motor_Control(DJI_Motor_s** motor_list, const uint8_t count, const float dt_s)
 {
+
 	if (motor_list == nullptr || count == 0U || !(dt_s > 0.0F))
 		return;
 	struct CommandFrame
@@ -366,23 +379,29 @@ void DJI_Motor_Control(DJI_Motor_s** motor_list, const uint8_t count, const floa
 	// 同一物理总线 + 同一帧 ID 只发送一次，M3508/M2006 可共用 0x200。
 	std::array<CommandFrame, 16> frames{};
 	uint8_t                      frameCount = 0U;
+
 	for (uint8_t i = 0; i < count; ++i)
 	{
 		DJI_Motor_s* motor = motor_list[i];
+
 		if (motor == nullptr || motor->can_instance == nullptr)
 			continue;
 		const MotorTypeSpec* spec = FindSpec(motor->motor_type);
 		DjiCommandAddress    address{};
+
 		if (spec == nullptr || !DjiResolveCommand(motor->motor_type == GM6020,
 												  motor->can_instance->attribute.rx_id, address))
 			continue;
 		FDCAN_HandleTypeDef* bus        = motor->can_instance->dependency.hcan;
 		uint8_t              frameIndex = 0U;
+
 		while (frameIndex < frameCount &&
 			   (frames[frameIndex].bus != bus || frames[frameIndex].id != address.frame_id))
 			++frameIndex;
+
 		if (frameIndex == frameCount)
 		{
+
 			if (frameCount >= frames.size())
 				return;
 			frames[frameIndex].bus    = bus;
@@ -390,8 +409,9 @@ void DJI_Motor_Control(DJI_Motor_s** motor_list, const uint8_t count, const floa
 			frames[frameIndex].id     = address.frame_id;
 			++frameCount;
 		}
+
 		taskENTER_CRITICAL();
-		const Motor_Feedback_s feedback = motor->feedback;
+		const Motor_Feedback_s feedback = motor->feedback;//接收反馈
 		taskEXIT_CRITICAL();
 		float      output       = 0.0F;
 		const bool positionLoop = motor->motor_settings.close_loop_type == ANGLE_AND_SPEED_LOOP ||
@@ -400,7 +420,7 @@ void DJI_Motor_Control(DJI_Motor_s** motor_list, const uint8_t count, const floa
 		// 测试模式不等待首帧，也不因反馈超时置零；无反馈时按零初始化值闭环。
 		if (motor->enabled && targetFresh)
 			output = ComputeOutput(*motor, feedback, dt_s);
-		const uint16_t value = static_cast<uint16_t>(ClampOutput(output, spec->output_limit));
+		const auto value = static_cast<uint16_t>(ClampOutput(output, spec->output_limit));
 		frames[frameIndex].payload[address.slot * 2U] = static_cast<uint8_t>(value >> 8U);
 		frames[frameIndex].payload[address.slot * 2U + 1U] = static_cast<uint8_t>(value);
 	}
@@ -414,13 +434,13 @@ void DJI_Motor_Control(DJI_Motor_s** motor_list, const uint8_t count, const floa
 		const auto result = frames[i].sender->Transmit(input);
 		for (uint8_t j = 0; j < count; ++j)
 		{
-			auto*             motor = motor_list[j];
-			DjiCommandAddress address{};
+			auto*             motor = motor_list[j];//遍历电机
+			DjiCommandAddress address{};//准备地址结构
 			if (motor == nullptr || motor->can_instance == nullptr ||
 				motor->can_instance->dependency.hcan != frames[i].bus ||
 				!DjiResolveCommand(motor->motor_type == GM6020,
 								   motor->can_instance->attribute.rx_id, address) ||
-				address.frame_id != frames[i].id)
+				address.frame_id != frames[i].id)//电机空指针;CAN示例空指针；CAN总线不匹配；地址解析失败；帧ID不匹配
 				continue;
 			++motor->tx_enqueue_attempts;
 			if (result != HAL_OK) ++motor->tx_enqueue_failures;

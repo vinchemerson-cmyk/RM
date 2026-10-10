@@ -10,7 +10,7 @@ struct DjiCommandAddress
 
 /** @brief GM6020 电流模式指令码范围；±16384 对应转矩电流 ±3A，反馈电流按同一比例解析。 */
 inline constexpr float kDjiGm6020CurrentCommandLimit = 16384.0F;
-inline constexpr float kDjiGm6020CommandUnitsPerAmp  = kDjiGm6020CurrentCommandLimit / 3.0F;
+inline constexpr float kDjiGm6020CommandUnitsPerAmp  = kDjiGm6020CurrentCommandLimit / 3.0F;//5449.33
 
 /** @brief GM6020 使用电流指令，支持 ID1..7；C610/C620 支持 ID1..8，协议不变。 */
 inline bool DjiResolveCommand(bool gm6020, uint32_t feedback_id, DjiCommandAddress& address)
