@@ -4,11 +4,47 @@
  */
 
 #include "safety.h"
-#include "output_interlock.h"
 
 #include "cmsis_os2.h"
 #include "main.h"
 #include "rc/rc.h"
+
+namespace safety
+{
+	//输出联锁
+	class OutputInterlock
+	{
+		public:
+			/** @brief 急停立即生效；在线、摇杆居中且双 DOWN 连续三次后允许解除急停。 */
+			bool Update(bool online, bool both_down, bool sticks_neutral)
+			{
+				if (!online)
+				{
+					armed_       = false; //是否允许输出
+					down_cycles_ = 0U;    //连续满足解除条件的周期计数
+					return false;
+				}
+				if (both_down)
+				{
+					if (!sticks_neutral)
+						down_cycles_ = 0U;
+					else if (down_cycles_ < 3U)
+						++down_cycles_;
+					if (down_cycles_ >= 3U)
+						armed_ = true;
+					return false;
+				}
+				down_cycles_ = 0U;
+				return armed_;
+			}
+
+			[[nodiscard]] bool Armed() const { return armed_; }
+
+		private:
+			bool    armed_{};
+			uint8_t down_cycles_{};
+	};
+}
 
 namespace
 {
@@ -63,6 +99,7 @@ namespace
 		}
 	}
 } // namespace
+
 
 bool safety::ShouldOutput()
 {
