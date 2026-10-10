@@ -46,15 +46,15 @@ namespace
 	DJI_Motor_s* gimbalMotors[2] = {nullptr, nullptr};
 
 	/** @brief 角度目标在失联或重新使能时会同步到当前反馈。 */
-	MotorAngleTarget             yawTarget{};
-	MotorAngleTarget             pitchTarget{};
-	LQIController                yawLqi{};
-	LQIController                pitchLqi{};
-	Motor_Feedback_s             yawControlFeedback{};
-	uint32_t                     yawControlTick{};
-	float                        yawControlTargetSpeedDps{}; // 位置模式下为摇杆给定的目标角度变化率，仅诊断。
-	serialTasks::EncoderSnapshot yawControlSnapshot{};
-	bool                         yawPulseArmed     = false;
+	MotorAngleTarget             yawTarget{};                //yaw的目标
+	MotorAngleTarget             pitchTarget{};              //pitch的目标
+	LQIController                yawLqi{};                   //yaw的lqi
+	LQIController                pitchLqi{};                 //pitch的lqi
+	Motor_Feedback_s             yawControlFeedback{};       //yaw的控制反馈
+	uint32_t                     yawControlTick{};           //yaw的控制滴答
+	float                        yawControlTargetSpeedDps{}; //位置模式下为摇杆给定的目标角度变化率，仅诊断。
+	serialTasks::EncoderSnapshot yawControlSnapshot{};       //yaw编码器快照
+	bool                         yawPulseArmed     = false;//yaw测试脉冲就绪标志
 	bool                         yawPulseActive    = false;
 	uint32_t                     yawPulseStartTick = 0U;
 	float                        yawPulseDirection = 0.0F;
@@ -269,7 +269,12 @@ namespace
 			DJI_Motor_Enable(motor);
 	}
 
-	/** @brief 固定电流单次测试；松杆/急停/超时撤销指令，不运行 MCU 速度环。 */
+	/** @brief 固定电流单次测试；松杆/急停/超时撤销指令，不运行 MCU 速度环。
+	 *  @param outputAllowed
+	 *  @param stick 摇杆输入
+	 *  @param now
+	 *
+	 */
 	void UpdateYawFixedCurrentTest(bool outputAllowed, float stick, uint32_t now)
 	{
 		if (yawMotor == nullptr)
@@ -290,6 +295,7 @@ namespace
 		const float direction = std::fabs(stick) >= kYawFixedCurrentTestStickThreshold
 									? (stick > 0.0F ? 1.0F : -1.0F)
 									: 0.0F;
+
 		if (direction == 0.0F)
 		{
 			yawPulseActive = false;
@@ -297,6 +303,7 @@ namespace
 			StopAxis(*yawMotor, yawTarget, yawLqi);
 			return;
 		}
+
 		if (yawPulseArmed)
 		{
 			yawPulseArmed     = false;
@@ -304,20 +311,24 @@ namespace
 			yawPulseDirection = direction;
 			yawPulseStartTick = now;
 		}
-		if (!yawPulseActive || direction != yawPulseDirection ||
-			now - yawPulseStartTick >= kYawFixedCurrentTestDurationMs)
+
+		if (!yawPulseActive ||                                         //当前是否正在进行yaw脉冲测试
+			direction != yawPulseDirection ||                          //摇杆方向动了(意图改变)
+			now - yawPulseStartTick >= kYawFixedCurrentTestDurationMs) //持续时间到了
 		{
 			yawPulseActive = false;
 			StopAxis(*yawMotor, yawTarget, yawLqi);
 			return;
 		}
+
 		yawTarget.Reset();
 		yawLqi.Reset();
 		yawMotor->motor_settings.close_loop_type = CURRENT_LOOP;
 		yawMotor->motor_settings.speed           = 0.0F; // 无速度目标。
 		yawMotor->motor_settings.angle           = feedback.total_angle;
-		yawMotor->motor_settings.current         = yawPulseDirection * kYawFixedCurrentTestA *
+		yawMotor->motor_settings.current         = yawPulseDirection * kYawFixedCurrentTestA *//电流设置
 										   kDjiGm6020CommandUnitsPerAmp;
+
 		if (!yawMotor->enabled)
 			DJI_Motor_Enable(yawMotor);
 	}
@@ -373,8 +384,8 @@ namespace
 			const auto remote        = rc::Snapshot();
 			const bool outputAllowed = !kEncoderCalibrationOnly && timingValid &&
 									   rc::IsOnline() && safety::ShouldOutput();
-			float yawStick   = rc::Normalize(remote.channels[0]);
-			float pitchStick = rc::Normalize(remote.channels[1]);
+			float yawStick   = rc::Normalize(remote.channels[0]);//yaw摇杆值
+			float pitchStick = rc::Normalize(remote.channels[1]);//pitch摇杆值
 			if constexpr (kYawRemoteCommandTestEnabled)
 			{
 				const bool allowed = outputAllowed && kEnableYaw &&
