@@ -79,40 +79,6 @@ namespace serialTasks
 		return static_cast<size_t>(count);
 	}
 
-	/** @brief yaw FireWater 六通道；第六列为反馈电流，未收到反馈时 age=-1。 */
-	inline size_t FormatYawTelemetryLine(char*                  buffer, size_t     capacity,
-										 const EncoderSnapshot& snapshot, uint32_t now)
-	{
-		if (buffer == nullptr || capacity == 0U) return 0U;
-		const auto decimal = [](float value, char (&text)[24])
-		{
-			if (!std::isfinite(value) || std::fabs(value) > 1000000.0F) value = 0.0F;
-			const auto milli = static_cast<uint32_t>(std::fabs(static_cast<double>(value)) * 1000.0 + 0.5);
-			std::snprintf(text, sizeof(text), "%s%lu.%03lu",
-						  value < 0.0F && milli != 0U ? "-" : "",
-						  static_cast<unsigned long>(milli / 1000U), static_cast<unsigned long>(milli % 1000U));
-		};
-		char target[24]{}, actual[24]{}, speed[24]{}, current[24]{}, feedbackCurrent[24]{};
-		decimal(snapshot.yaw_target_speed_dps, target);
-		decimal(snapshot.yaw_position_actual_deg, actual);
-		decimal(snapshot.yaw_speed_dps, speed);
-		decimal(snapshot.yaw_command_current_a, current);
-		decimal(snapshot.yaw_feedback_current_a, feedbackCurrent);
-		char age[16]{};
-		if (snapshot.yaw.seen)
-			std::snprintf(age, sizeof(age), "%lu", static_cast<unsigned long>(now - snapshot.yaw.last_update_tick));
-		else
-			std::snprintf(age, sizeof(age), "-1");
-		const int count = std::snprintf(buffer, capacity, "%s,%s,%s,%s,%s,%s\n",
-										target, actual, speed, current, age, feedbackCurrent);
-		if (count <= 0 || static_cast<size_t>(count) >= capacity)
-		{
-			buffer[0] = '\0';
-			return 0U;
-		}
-		return static_cast<size_t>(count);
-	}
-
 	/**
 	 * @brief 格式化 FireWater 三通道：目标位置、实际位置、实际电流。
 	 * @param buffer 输出缓冲区。
