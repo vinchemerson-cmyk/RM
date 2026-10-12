@@ -52,7 +52,7 @@ extern "C" {
 	} Publisher_t;
 
 	/**
- * @brief 订阅name的话题消息
+ * @brief 订阅者订阅name
  *
  * @param name 话题名称
  * @param data_len 消息长度,通过sizeof()获取
@@ -64,6 +64,7 @@ extern "C" {
  * @brief 注册成为消息发布者
  *
  * @param name 发布者发布的话题名称(话题)
+ * @param data_len 消息长度,通过sizeof()获取
  * @return Publisher_t* 返回发布者实例
  */
 	Publisher_t* PubRegister(char* name, uint8_t data_len);
