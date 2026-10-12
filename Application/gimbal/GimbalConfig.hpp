@@ -11,7 +11,7 @@
 
 #include "fdcan.h"
 #include "main.h"
-#include "RemoteCommandTest.hpp"
+#include "yawonetest.hpp"
 #include "algorithm/lqi.h"
 #include "algorithm/lqi_config.h"
 #include "motor/angle_target.h"
@@ -53,7 +53,6 @@ inline constexpr bool kEnablePitch = true;
 inline constexpr bool kReadYawEncoder = true;
 
 /** @brief 读取零位时只注册两轴反馈并发送零电流，不执行云台运动；标定完成后才能关闭。 */
-inline constexpr bool kEncoderCalibrationOnly = false;
 
 /** @brief yaw 轴电机的反馈 ID (对应 GM6020 电调 ID2)。 */
 inline constexpr uint32_t kYawMotorFeedbackId = 0x206U;
@@ -106,11 +105,11 @@ inline constexpr MotorAngleLimits kPitchAngleLimits{
 };
 
 //如果开启偏航位置模式 (kYawPositionMode=true)，则必须配置好偏航角度限制
-static_assert(kEncoderCalibrationOnly || !kEnableYaw || !kYawPositionMode || kYawAngleLimits.IsConfigured(),
+static_assert(!kEnableYaw || !kYawPositionMode || kYawAngleLimits.IsConfigured(),
 			  "Yaw position mode requires measured travel or confirmed continuous rotation");
 
 //开启俯仰位置控制模式，就必须配置非连续型的实测机械角度限位，编译期静态检查，不满足则编译失败。
-static_assert(kEncoderCalibrationOnly || !kEnablePitch || !kPitchPositionMode ||
+static_assert(!kEnablePitch || !kPitchPositionMode ||
 			  (!kPitchAngleLimits.continuous && kPitchAngleLimits.IsConfigured()),
 			  "Pitch position mode requires measured mechanical limits");
 

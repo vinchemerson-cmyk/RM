@@ -12,13 +12,13 @@ namespace
 	constexpr osThreadAttr_t     taskAttrs{
 		.name = "EncoderSerialTask", .stack_size = 2048U, .priority = osPriorityNormal,
 	};
-	constexpr uint32_t kPrintPeriodMs = 10U;
+	constexpr uint32_t kPrintPeriodMs = 10U;//串口打印周期
 	static_assert(usartConfig::TX_BUF_SIZE >= 256U, "UART control telemetry requires a 256-byte buffer");
 
 	/** @brief 在任务中注册 UART7；BSP 将临时文本复制至 AXI SRAM 长期 DMA 缓冲。 */
 	void Task(void*)
 	{
-		const usartConfig::Config config{
+		constexpr usartConfig::Config config{
 			.usart_handle        = &huart7,
 			.tx_mode             = usartConfig::TRANSFER_DMA,
 			.rx_data_len         = 0U,
@@ -30,7 +30,7 @@ namespace
 		{
 			const auto         snapshot = feedbackProvider();
 			usartConfig::Input tx{};
-			tx.tx_len = static_cast<uint32_t>(serialTasks::FormatYawControlTelemetryLine(
+			tx.tx_len = static_cast<uint32_t>(serialTasks::FormatPitchControlTelemetryLine(
 																						 reinterpret_cast<char*>(tx.
 																												 tx_buffer
 																												.data()),

@@ -54,11 +54,12 @@ namespace
 	uint32_t                     yawControlTick{};           //yaw的控制滴答
 	float                        yawControlTargetSpeedDps{}; //位置模式下为摇杆给定的目标角度变化率，仅诊断。
 	serialTasks::EncoderSnapshot yawControlSnapshot{};       //yaw编码器快照
+	serialTasks::EncoderSnapshot pitchControlSnapshot{};	 //pitch编码器快照
 	bool                         yawPulseArmed     = false;//yaw测试脉冲就绪标志
 	bool                         yawPulseActive    = false;
 	uint32_t                     yawPulseStartTick = 0U;
 	float                        yawPulseDirection = 0.0F;
-	gimbal::RemoteCommandTest    remoteCommandTest{};
+	gimbal::yawonetest    remoteCommandTest{};
 	static_assert(!kYawRemoteCommandTestEnabled || !kYawFixedCurrentTestEnabled,
 				  "Remote command test and fixed current test are mutually exclusive");
 
@@ -342,8 +343,8 @@ namespace
 		snapshot.control_sequence = yawControlSnapshot.control_sequence + 1U;
 		snapshot.control_dt_s     = dt_s;
 		snapshot.yaw              = {
-			static_cast<uint16_t>(yawControlFeedback.raw_angle),
-			yawControlFeedback.angle_initialized, yawControlFeedback.last_update_tick
+			.raw  = static_cast<uint16_t>(yawControlFeedback.raw_angle),
+			.seen = yawControlFeedback.angle_initialized, .last_update_tick = yawControlFeedback.last_update_tick
 		};
 		snapshot.yaw_position_actual_deg = yawControlFeedback.total_angle;
 		snapshot.yaw_position_target_deg = yawTarget.Ready() ? yawTarget.Target() : yawControlFeedback.total_angle;
@@ -377,12 +378,13 @@ namespace
 			// 调度被长时间占用时不使用异常 dt, 避免积分项和微分项出现尖峰。
 			if (dt_s <= 0.0F)
 				dt_s = kGimbalControlPeriodS;
+			//time是否可信
 			const bool timingValid = dt_s <= kGimbalMaxDtS;
 			if (!timingValid)
 				dt_s = kGimbalMaxDtS;
 
 			const auto remote        = rc::Snapshot();
-			const bool outputAllowed = !kEncoderCalibrationOnly && timingValid &&
+			const bool outputAllowed =timingValid &&
 									   rc::IsOnline() && safety::ShouldOutput();
 			float yawStick   = rc::Normalize(remote.channels[0]);//yaw摇杆值
 			float pitchStick = rc::Normalize(remote.channels[1]);//pitch摇杆值
@@ -458,9 +460,9 @@ serialTasks::EncoderSnapshot gimbal::GetEncoderSnapshot()
 	if (yawMotor != nullptr)
 	{
 		snapshot.yaw = {
-			static_cast<uint16_t>(yawMotor->feedback.raw_angle),
-			yawMotor->feedback.angle_initialized,
-			yawMotor->feedback.last_update_tick
+			.raw              = static_cast<uint16_t>(yawMotor->feedback.raw_angle),
+			.seen             = yawMotor->feedback.angle_initialized,
+			.last_update_tick = yawMotor->feedback.last_update_tick
 		};
 		snapshot.yaw_position_actual_deg = yawMotor->feedback.total_angle;
 		snapshot.yaw_position_target_deg = yawTarget.Ready()
@@ -485,6 +487,14 @@ serialTasks::EncoderSnapshot gimbal::GetYawControlSnapshot()
 	return snapshot;
 }
 
+serialTasks::EncoderSnapshot gimbal::GetPitchControlSnapshot()
+{
+	taskENTER_CRITICAL();
+	const auto snapshot = pitchControlSnapshot;
+	taskEXIT_CRITICAL();
+	return snapshot;
+}
+
 void gimbal::Init()
 {
 	if (taskHandle != nullptr)
@@ -494,12 +504,12 @@ void gimbal::Init()
 	const Motor_Init_Config_s yawConfig   = MakeMotorConfig(GM6020, kYawMotorFeedbackId, kYawMotorReverse);
 	const Motor_Init_Config_s pitchConfig = MakeMotorConfig(GM6020, kPitchMotorFeedbackId, kPitchMotorReverse);
 
-	if constexpr (kEnableYaw || kEncoderCalibrationOnly || kReadYawEncoder)
+	if constexpr (kEnableYaw || kReadYawEncoder)
 		yawMotor = DJI_Motor_Init(yawConfig);
-	if constexpr (kEnablePitch || kEncoderCalibrationOnly)
+	if constexpr (kEnablePitch)
 		pitchMotor = DJI_Motor_Init(pitchConfig);
-	if (((kEnableYaw || kEncoderCalibrationOnly || kReadYawEncoder) && yawMotor == nullptr) ||
-		((kEnablePitch || kEncoderCalibrationOnly) && pitchMotor == nullptr))
+	if ((yawMotor == nullptr) ||
+		(kEnablePitch && pitchMotor == nullptr))
 		Error_Handler(); // 只校验当前启用的轴。
 
 	gimbalMotors[0] = yawMotor;
@@ -507,9 +517,9 @@ void gimbal::Init()
 	DJI_Motor_Disable(yawMotor);
 	DJI_Motor_Disable(pitchMotor);
 
-	if constexpr (!kEncoderCalibrationOnly && kEnableYaw)
+	if constexpr (kEnableYaw)
 		InitializeLqi("yaw", kYawLqiModel, kYawLqiConfig, yawLqi, kYawLqiGainSource);
-	if constexpr (!kEncoderCalibrationOnly && kEnablePitch)
+	if constexpr (kEnablePitch)
 		InitializeLqi("pitch", kPitchLqiModel, kPitchLqiConfig, pitchLqi, kPitchLqiGainSource);
 
 	taskHandle = osThreadNew(Task, nullptr, &taskAttrs);

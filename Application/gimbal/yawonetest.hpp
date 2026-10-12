@@ -28,7 +28,7 @@ namespace gimbal
 	}
 
 	/** @brief 一次触发一轮；取消/失联后须重新释放触发才可运行，不自动循环。 */
-	class RemoteCommandTest
+	class yawonetest
 	{
 		public:
 			float Update(uint32_t                       now_ms, bool allowed, bool requested,
