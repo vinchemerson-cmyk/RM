@@ -26,10 +26,10 @@ enum Other_Motor_Type_e
 /** @brief 达妙电机控制器初始化参数。 */
 struct DMMotor_Controller_Init_s
 {
-	float*            other_angle_feedback_ptr;
-	float*            other_speed_feedback_ptr;
-	float*            speed_feedforward_ptr;
-	float*            force_feedforward_ptr;
+	float*            other_angle_feedback_ptr{};
+	float*            other_speed_feedback_ptr{};
+	float*            speed_feedforward_ptr{};
+	float*            force_feedforward_ptr{};
 	PID_Init_Config_s speed_PID;
 	PID_Init_Config_s angle_PID;
 };
@@ -66,7 +66,7 @@ struct MIT_Controller_Init_s
 /** @brief MIT 模式的控制器、方向及经典 CAN 配置。 */
 struct MIT_Init_Config_s
 {
-	MIT_Controller_Init_s controller_param_init_config;
+	MIT_Controller_Init_s controller_param_init_config{};
 	Motor_Reverse_Flag_e  motor_reverse_flag;
 	classicCanConfigType  can_init_config{};
 };
