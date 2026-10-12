@@ -25,12 +25,16 @@
 
 #include <cstring>
 
-namespace Bmi088
-{
-	enum class BmiChip { Accel, Gyro };
-}
 
-static void Select(Bmi088::BmiChip chip, GPIO_PinState state);
+	namespace
+	{
+		enum class BmiChip { Accel, //加速度计
+			Gyro                    //陀螺仪
+		};
+	}
+
+
+static void Select(BmiChip chip, GPIO_PinState state);
 
 namespace
 {
@@ -61,7 +65,7 @@ namespace
 	 * @param dummy 地址字节后需要跳过的额外空字节数。
 	 * @return HAL 状态码；等待 DMA 超时返回 HAL_TIMEOUT，并终止传输。
 	 */
-	HAL_StatusTypeDef Transfer(Bmi088::BmiChip chip, uint8_t  reg, uint8_t      value,
+	HAL_StatusTypeDef Transfer(BmiChip chip, uint8_t  reg, uint8_t      value,
 							   uint16_t        size, uint8_t* readData, uint8_t readCount,
 							   uint8_t         dummy)
 	{
@@ -106,9 +110,9 @@ namespace
 
 
 /** @brief 控制加速度计或陀螺仪各自的片选引脚。 */
-static void Select(Bmi088::BmiChip chip, GPIO_PinState state)
+static void Select(::BmiChip chip, GPIO_PinState state)
 {
-	if (chip == Bmi088::BmiChip::Accel)
+	if (chip == ::BmiChip::Accel)
 		HAL_GPIO_WritePin(ACC_CS_GPIO_Port, ACC_CS_Pin, state);
 	else
 		HAL_GPIO_WritePin(GYRO_CS_GPIO_Port, GYRO_CS_Pin, state);
@@ -116,49 +120,55 @@ static void Select(Bmi088::BmiChip chip, GPIO_PinState state)
 
 /** @brief 读取最多 6 字节寄存器，并处理加速度计的空字节。 */
 static HAL_StatusTypeDef ReadRegs(
-	Bmi088::BmiChip chip, uint8_t reg, uint8_t* data, uint8_t count)
+	::BmiChip chip, uint8_t reg, uint8_t* data, uint8_t count)
 {
 	if (data == nullptr || count == 0 || count > 6)
 		return HAL_ERROR;
 
-	const uint8_t  dummy = (chip == Bmi088::BmiChip::Accel) ? 1 : 0;
+	const uint8_t  dummy = (chip == ::BmiChip::Accel) ? 1 : 0;
 	const uint16_t size  = 1 + dummy + count;
 	return Transfer(chip, reg, 0, size, data, count, dummy);
 }
 
 /** @brief 写入单个寄存器。 */
 static HAL_StatusTypeDef WriteReg(
-	Bmi088::BmiChip chip, uint8_t reg, uint8_t value)
+	::BmiChip chip, uint8_t reg, uint8_t value)
 {
 	return Transfer(chip, reg, value, 2, nullptr, 0, 0);
 }
 
 HAL_StatusTypeDef BMI088_ConfigureMotion()
 {
+	//如果已经配置就跳过防止重复配置浪费资源
 	if (motionConfigured)
 		return HAL_OK;
+
+	//初始化+使能加热器
 	if (BMI088_Init() != HAL_OK ||
 		BMI088_EnableTemperature() != HAL_OK)
 		return HAL_ERROR;
 
-	if (WriteReg(Bmi088::BmiChip::Gyro, BMI088_GYRO_LPM1,
+	//陀螺仪切到正常工作模式
+	if (WriteReg(::BmiChip::Gyro, BMI088_GYRO_LPM1,
 				 BMI088_GYRO_NORMAL_MODE) != HAL_OK)
 		return HAL_ERROR;
 	osDelay(30); // 陀螺仪切换工作模式后等待稳定
 
-	if (WriteReg(Bmi088::BmiChip::Accel, BMI088_ACCEL_RANGE,
+	//配置加速度计和陀螺仪
+	if (WriteReg(::BmiChip::Accel, BMI088_ACCEL_RANGE,
 				 BMI088_ACCEL_RANGE_3G) != HAL_OK ||
-		WriteReg(Bmi088::BmiChip::Accel, BMI088_ACCEL_CONF,
+		WriteReg(::BmiChip::Accel, BMI088_ACCEL_CONF,
 				 BMI088_ACCEL_CONF_MUST_Set |
 				 BMI088_ACCEL_NORMAL |
 				 BMI088_ACCEL_800_HZ) != HAL_OK ||
-		WriteReg(Bmi088::BmiChip::Gyro, BMI088_GYRO_RANGE,
+		WriteReg(::BmiChip::Gyro, BMI088_GYRO_RANGE,
 				 BMI088_GYRO_2000) != HAL_OK ||
-		WriteReg(Bmi088::BmiChip::Gyro, BMI088_GYRO_BANDWIDTH,
+		WriteReg(::BmiChip::Gyro, BMI088_GYRO_BANDWIDTH,
 				 BMI088_GYRO_BANDWIDTH_MUST_Set |
 				 BMI088_GYRO_1000_116_HZ) != HAL_OK)
 		return HAL_ERROR;
 
+	//标记已配置
 	motionConfigured = true;
 	return HAL_OK;
 }
@@ -170,9 +180,9 @@ HAL_StatusTypeDef BMI088_ReadMotion(Bmi088MotionSample* sample)
 
 	uint8_t acceleration[6]{};
 	uint8_t angularVelocity[6]{};
-	if (ReadRegs(Bmi088::BmiChip::Accel, BMI088_ACCEL_XOUT_L,
+	if (ReadRegs(::BmiChip::Accel, BMI088_ACCEL_XOUT_L,
 				 acceleration, 6) != HAL_OK ||
-		ReadRegs(Bmi088::BmiChip::Gyro, BMI088_GYRO_X_L,
+		ReadRegs(::BmiChip::Gyro, BMI088_GYRO_X_L,
 				 angularVelocity, 6) != HAL_OK)
 		return HAL_ERROR;
 
@@ -213,13 +223,13 @@ HAL_StatusTypeDef BMI088_Init()
 	uint8_t gyroId = 0;
 
 	// 第一次加速度计读取用于切换 SPI 模式，结果丢弃
-	if (ReadRegs(Bmi088::BmiChip::Accel, BMI088_ACCEL_CHIP_ID, &accId, 1) != HAL_OK)
+	if (ReadRegs(::BmiChip::Accel, BMI088_ACCEL_CHIP_ID, &accId, 1) != HAL_OK)
 		return HAL_ERROR;
 
 	osDelay(1);
 
-	if (ReadRegs(Bmi088::BmiChip::Accel, BMI088_ACCEL_CHIP_ID, &accId, 1) != HAL_OK ||
-		ReadRegs(Bmi088::BmiChip::Gyro, BMI088_GYRO_CHIP_ID, &gyroId, 1) != HAL_OK)
+	if (ReadRegs(::BmiChip::Accel, BMI088_ACCEL_CHIP_ID, &accId, 1) != HAL_OK ||
+		ReadRegs(::BmiChip::Gyro, BMI088_GYRO_CHIP_ID, &gyroId, 1) != HAL_OK)
 		return HAL_ERROR;
 
 	if (accId != BMI088_ACCEL_CHIP_ID_VALUE ||
@@ -238,10 +248,10 @@ HAL_StatusTypeDef BMI088_EnableTemperature()
 		return HAL_OK;
 
 	// Bosch 的正常模式切换顺序：先配置电源模式，再使能加速度计和温度传感器。
-	if (WriteReg(Bmi088::BmiChip::Accel, BMI088_ACCEL_PWR_CONF, BMI088_ACCEL_PWR_ACTIVE_MODE) != HAL_OK)
+	if (WriteReg(::BmiChip::Accel, BMI088_ACCEL_PWR_CONF, BMI088_ACCEL_PWR_ACTIVE_MODE) != HAL_OK)
 		return HAL_ERROR;
 	osDelay(5);
-	if (WriteReg(Bmi088::BmiChip::Accel, BMI088_ACCEL_PWR_CTRL, BMI088_ACCEL_ENABLE_ACCEL_ON) != HAL_OK)
+	if (WriteReg(::BmiChip::Accel, BMI088_ACCEL_PWR_CTRL, BMI088_ACCEL_ENABLE_ACCEL_ON) != HAL_OK)
 		return HAL_ERROR;
 	osDelay(5);
 	temperatureEnabled = true;
@@ -254,7 +264,7 @@ HAL_StatusTypeDef BMI088_ReadTemperature(float* temperatureCelsius)
 		return HAL_ERROR;
 
 	uint8_t data[2]{};
-	if (ReadRegs(Bmi088::BmiChip::Accel, BMI088_TEMP_M, data, 2) != HAL_OK || data[0] == 0x80U)
+	if (ReadRegs(::BmiChip::Accel, BMI088_TEMP_M, data, 2) != HAL_OK || data[0] == 0x80U)
 		return HAL_ERROR;
 
 	auto raw = static_cast<int16_t>((static_cast<uint16_t>(data[0]) << 3U) |
