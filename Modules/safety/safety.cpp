@@ -9,7 +9,7 @@
 #include "main.h"
 #include "rc/rc.h"
 
-namespace safety
+namespace
 {
 	//输出联锁
 	class OutputInterlock
@@ -63,7 +63,7 @@ namespace
 	/** @brief 最近一次判定结果是否为遥控掉线。 */
 	volatile bool offline = true;
 
-	safety::OutputInterlock interlock{};
+	OutputInterlock interlock{};
 	volatile bool           armed = false;
 
 	/**
