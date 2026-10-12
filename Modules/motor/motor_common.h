@@ -22,7 +22,7 @@ enum Closeloop_Type_e
 {
 	OPEN_LOOP              = 0b0000,
 	CURRENT_LOOP           = 0b0001,
-	STOP_LOOP              = 0b0010,
+	SPEED_LOOP             = 0b0010,
 	ANGLE_LOOP             = 0b0100,
 	SPEED_AND_CURRENT_LOOP = 0b0011,
 	ANGLE_AND_SPEED_LOOP   = 0b0110,
@@ -50,7 +50,8 @@ enum Motor_Reverse_Flag_e
 enum Feedback_Source_e
 {
 	MOTOR_FEED = 0,
-	OTHER_FEED = 1,
+	IMU_FEED   = 1,
+	OTHER_FEED = 2,
 };
 
 /** @brief 反馈方向是否反转。 */

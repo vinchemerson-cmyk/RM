@@ -64,8 +64,10 @@ struct DJI_Motor_s
 	Motor_Feedback_s                       feedback{};
 	CAN_<canConfig::classicCan>::Instance* can_instance{};
 	bool                                   enabled{};
+
 	//尝试入队成功次数
 	uint32_t                               tx_enqueue_attempts{};
+	
 	//尝试入队失败次数
 	uint32_t                               tx_enqueue_failures{};
 };

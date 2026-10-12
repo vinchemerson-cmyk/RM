@@ -199,9 +199,11 @@ spec 是循环内的局部拷贝。
 		const Motor_Control_Setting_s& setting    = motor.motor_settings;
 		Motor_Controller_s&            controller = motor.controller;
 
+		//速度反馈
 		const float speed_feedback = setting.speed_feedback_source == OTHER_FEED
 										 ? *controller.other_speed_feedback_ptr
 										 : feedback.speed;
+		//角度反馈
 		const float angle_feedback = setting.angle_feedback_source == OTHER_FEED
 										 ? *controller.other_angle_feedback_ptr
 										 : feedback.total_angle;
@@ -240,7 +242,7 @@ spec 是循环内的局部拷贝。
 					break;
 				}
 
-			case STOP_LOOP:
+			case SPEED_LOOP:
 			case ANGLE_LOOP:
 			default:
 				// 仅角度环无法直接映射到电流指令, 视为配置错误, 输出保持为零.
