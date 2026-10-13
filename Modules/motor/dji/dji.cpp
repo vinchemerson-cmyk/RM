@@ -25,7 +25,6 @@
 //
 
 #include "dji.h"
-#include "algorithm/clamp.h"
 
 #include <cstring>
 
@@ -99,6 +98,19 @@ spec 是循环内的局部拷贝。
 				return &spec;
 		}
 		return nullptr;
+	}
+
+	/**
+ * @brief 把 16 位输出限制在型号允许范围内.
+ * @note 超出范围按边界截断, 不调用 Error_Handler, 避免控制量异常导致整机停机.
+ */
+	int16_t ClampOutput(const float output, const float limit)
+	{
+		if (output > limit)
+			return static_cast<int16_t>(limit);
+		if (output < -limit)
+			return static_cast<int16_t>(-limit);
+		return static_cast<int16_t>(output);
 	}
 
 	/**
@@ -410,9 +422,7 @@ void DJI_Motor_Control(DJI_Motor_s** motor_list, const uint8_t count, const floa
 		// 测试模式不等待首帧，也不因反馈超时置零；无反馈时按零初始化值闭环。
 		if (motor->enabled && targetFresh)
 			output = ComputeOutput(*motor, feedback, dt_s);
-		// 先按型号限幅，再保持原有 int16_t 截断及无符号报文编码。
-		const auto value = static_cast<uint16_t>(static_cast<int16_t>(
-			controlMath::Clamp(output, -spec->output_limit, spec->output_limit)));
+		const auto value = static_cast<uint16_t>(ClampOutput(output, spec->output_limit));
 		frames[frameIndex].payload[address.slot * 2U] = static_cast<uint8_t>(value >> 8U);
 		frames[frameIndex].payload[address.slot * 2U + 1U] = static_cast<uint8_t>(value);
 	}
