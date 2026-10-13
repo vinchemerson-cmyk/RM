@@ -4,16 +4,9 @@
  */
 
 #include "pid.h"
+#include "clamp.h"
 
 #include <cmath>
-
-namespace
-{
-	float Clamp(float value, float minimum, float maximum)
-	{
-		return value < minimum ? minimum : (value > maximum ? maximum : value);
-	}
-}
 
 bool PIDInstance::Configure(const PID_Init_Config_s& config)
 {
@@ -61,7 +54,7 @@ float PIDInstance::Update(float target, float measurement, float dt_s)
 	const float derivative   = has_measurement_
 								 ? -config_.kd * (measurement - last_measurement_) / dt_s
 								 : 0.0F;
-	const float candidate_integral = Clamp(integral_ + config_.ki * error * dt_s,
+	const float candidate_integral = controlMath::Clamp(integral_ + config_.ki * error * dt_s,
 										   config_.integral_min, config_.integral_max);
 	if (!std::isfinite(proportional) || !std::isfinite(derivative) ||
 		!std::isfinite(candidate_integral))
@@ -82,7 +75,7 @@ float PIDInstance::Update(float target, float measurement, float dt_s)
 		  (candidate_output < config_.output_min && error < 0.0F)))
 		integral_ = candidate_integral;
 
-	output_ = Clamp(proportional + integral_ + derivative,
+	output_ = controlMath::Clamp(proportional + integral_ + derivative,
 					config_.output_min, config_.output_max);
 	last_measurement_ = measurement;
 	has_measurement_  = true;

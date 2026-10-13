@@ -1,14 +1,7 @@
 /** @file lqi_controller.cpp @brief LQI 状态反馈、积分限幅与抗饱和。 */
 #include "lqi_controller.h"
+#include "clamp.h"
 #include <cmath>
-
-namespace
-{
-	float Clamp(float value, float minimum, float maximum)
-	{
-		return value < minimum ? minimum : (value > maximum ? maximum : value);
-	}
-}
 
 bool LQIController::Configure(const LQI_Init_Config_s& config)
 {
@@ -64,7 +57,7 @@ float LQIController::Update(float target_deg, float actual_deg, float actual_spe
 		Reset();
 		return 0.0F;
 	}
-	const float candidate       = Clamp(nextIntegral, config_.integral_min_deg_s, config_.integral_max_deg_s);
+	const float candidate       = controlMath::Clamp(nextIntegral, config_.integral_min_deg_s, config_.integral_max_deg_s);
 	// DARE 使用 z[k+1]=z[k]+Ts*e[k]：本周期电流须使用更新前的 z[k]。
 	const float output          = feedback - config_.k_integral * integral_deg_s_;
 	const float candidateOutput = feedback - config_.k_integral * candidate;
@@ -77,7 +70,7 @@ float LQIController::Update(float target_deg, float actual_deg, float actual_spe
 	if (!((candidateOutput > config_.output_max_a && change > 0.0F) ||
 		  (candidateOutput < config_.output_min_a && change < 0.0F)))
 		integral_deg_s_ = candidate;
-	output_a_           = Clamp(output, config_.output_min_a, config_.output_max_a);
+	output_a_           = controlMath::Clamp(output, config_.output_min_a, config_.output_max_a);
 	position_current_a_ = -config_.k_angle * error;
 	speed_current_a_    = -config_.k_speed * actual_speed_dps;
 	return output_a_;

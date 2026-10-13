@@ -13,6 +13,7 @@ function(add_logic_test name)
     add_test(NAME ${name} COMMAND ${name})
 endfunction()
 
+add_logic_test(clamp_test clamp_test.cpp)
 add_logic_test(pid_test pid_test.cpp ../Modules/algorithm/pid.cpp)
 add_logic_test(lqi_test lqi_test.cpp ../Modules/algorithm/lqi.cpp)
 add_logic_test(lqi_controller_test lqi_controller_test.cpp
