@@ -8,8 +8,8 @@ namespace gimbal
 	{
 		float    yaw_stick       = 0.5F;
 		uint32_t initial_hold_ms = 1000U;
-		uint32_t move_ms         = 200U;
-		uint32_t hold_ms         = 2000U;
+		uint32_t move_ms         = 200U;//移动时长
+		uint32_t hold_ms         = 2000U;//驻留时长
 	};
 
 	/** @brief 模拟解析后的归一化 yaw 摇杆，不伪造 DBUS 帧或在线状态。 */
@@ -18,11 +18,11 @@ namespace gimbal
 	{
 		uint64_t t = elapsed_ms;
 		if (t < config.initial_hold_ms) return 0.0F;
-		t -= config.initial_hold_ms;
+		t = t - config.initial_hold_ms;
 		if (t < config.move_ms) return config.yaw_stick;
-		t -= config.move_ms;
+		t = t - config.move_ms;
 		if (t < config.hold_ms) return 0.0F;
-		t -= config.hold_ms;
+		t = t - config.hold_ms;
 		if (t < config.move_ms) return -config.yaw_stick;
 		return 0.0F;
 	}
@@ -66,6 +66,6 @@ namespace gimbal
 		private:
 			bool     armed_    = false;
 			bool     active_   = false;
-			uint32_t start_ms_ = 0U;
+			uint32_t start_ms_ = 0U;//yaw脉冲的时间戳
 	};
 }

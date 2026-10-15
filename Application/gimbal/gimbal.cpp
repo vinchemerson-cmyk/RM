@@ -25,13 +25,13 @@
 
 #include "cmsis_os2.h"
 #include "FreeRTOS.h"
-#include "task.h"
 #include "main.h"
+#include "task.h"
+#include "algorithm/lqi_controller.h"
+#include "log/bsp_log.h"
 #include "motor/dji/dji.h"
 #include "rc/rc.h"
 #include "safety/safety.h"
-#include "log/bsp_log.h"
-#include "algorithm/lqi_controller.h"
 
 #include "GimbalConfig.hpp"
 

@@ -120,7 +120,7 @@ inline constexpr float kPitchTargetRateDps        = 120.0F;
 inline constexpr float kYawSpeedTestMaxDps        = 60.0F;
 inline constexpr float kYawSpeedTestCurrentLimitA = 2.0F;
 
-/** @brief 固定电流单次诊断；默认关闭，不自动执行。 */
+// 固定电流单次诊断；默认关闭，不自动执行。
 inline constexpr bool     kYawFixedCurrentTestEnabled        = false; //是否开启固定电流单次诊断
 inline constexpr float    kYawFixedCurrentTestA              = 1.3F;  //测试电流幅值，单位A，方向由摇杆决定
 inline constexpr uint32_t kYawFixedCurrentTestDurationMs     = 200U;  // 单次测试最长持续时间，单位ms
