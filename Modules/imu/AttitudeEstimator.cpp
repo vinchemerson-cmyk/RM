@@ -9,11 +9,11 @@
 
 namespace
 {
-	constexpr float kGravity             = 9.79140F;
-	constexpr float kRadToDeg            = 57.29577951308232F;
-	constexpr float kAccelCorrectionGain = 2.0F;
-	constexpr float kMinimumGravity      = 0.7F * kGravity;
-	constexpr float kMaximumGravity      = 1.3F * kGravity;
+	constexpr float kGravity             = 9.79140F;//todo标准重力,不知道需不需要随着比赛场地的改变而改变(应该不用这么精准
+	constexpr float kRadToDeg            = 57.29577951308232F;//弧度转角度
+	constexpr float kAccelCorrectionGain = 2.0F;//加速度计补偿增益
+	constexpr float kMinimumGravity      = 0.7F * kGravity;//最小重力,小于此值可视为失重
+	constexpr float kMaximumGravity      = 1.3F * kGravity;//最大重力,
 
 	bool FiniteAxes(const std::array<float, 3>& axes)
 	{

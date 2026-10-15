@@ -46,12 +46,12 @@ namespace
 	};
 
 	__attribute__((section(".axi_bss"), aligned(32))) SpiDmaBuffers spiDmaBuffers{};
-	osSemaphoreId_t                                                 transferDone          = nullptr;
-	osMutexId_t                                                     spiMutex              = nullptr;
+	osSemaphoreId_t                                                 transferDone          = nullptr;//信号量
+	osMutexId_t                                                     spiMutex              = nullptr;//互斥量
 	volatile HAL_StatusTypeDef                                      transferResult        = HAL_ERROR;
 	constexpr uint32_t                                              kTransferTimeoutTicks = 100;
-	bool                                                            identified            = false;
-	bool                                                            temperatureEnabled    = false;
+	bool                                                            identified            = false;//传感器id是否识别
+	bool                                                            temperatureEnabled    = false;//温度计传感器是否使能
 	bool                                                            motionConfigured      = false;
 
 	/**
@@ -69,26 +69,38 @@ namespace
 							   uint16_t        size, uint8_t* readData, uint8_t readCount,
 							   uint8_t         dummy)
 	{
+		//互斥量保护
 		if (transferDone == nullptr || spiMutex == nullptr ||
 			osMutexAcquire(spiMutex, kTransferTimeoutTicks) != osOK)
 			return HAL_ERROR;
 
 		// 清理上次超时留下的完成信号。
-		while (osSemaphoreAcquire(transferDone, 0) == osOK)
+		while (osSemaphoreAcquire(transferDone, 0) == osOK) //<-尝试获取信号量
 		{
 		}
-		transferResult = HAL_ERROR;
-		std::memset(spiDmaBuffers.tx, 0, size);
+
+
+		transferResult = HAL_ERROR;             //<-保守初始化
+		std::memset(spiDmaBuffers.tx, 0, size); //<-清空发送缓冲区
+
+		//设置首字节
 		spiDmaBuffers.tx[0] = readData != nullptr
 								  ? static_cast<uint8_t>(reg | 0x80)
 								  : static_cast<uint8_t>(reg & 0x7F);
+
+		//写操作赋值
 		if (readData == nullptr)
 			spiDmaBuffers.tx[1] = value;
+
+		//片选拉低
 		Select(chip, GPIO_PIN_RESET);
 
+		//启动DMA传输
 		HAL_StatusTypeDef status = readData != nullptr
 									   ? HAL_SPI_TransmitReceive_DMA(&hspi2, spiDmaBuffers.tx, spiDmaBuffers.rx, size)
 									   : HAL_SPI_Transmit_DMA(&hspi2, spiDmaBuffers.tx, size);
+
+		//等待传输完成
 		if (status == HAL_OK)
 		{
 			if (osSemaphoreAcquire(transferDone, kTransferTimeoutTicks) == osOK)
@@ -100,9 +112,14 @@ namespace
 			}
 		}
 
+		//拉高片选
 		Select(chip, GPIO_PIN_SET);
+
+		//拷贝读数据
 		if (status == HAL_OK && readData != nullptr)
 			std::memcpy(readData, spiDmaBuffers.rx + 1 + dummy, readCount);
+
+		//释放互斥量
 		(void)osMutexRelease(spiMutex);
 		return status;
 	}
@@ -110,29 +127,36 @@ namespace
 
 
 /** @brief 控制加速度计或陀螺仪各自的片选引脚。 */
-static void Select(::BmiChip chip, GPIO_PinState state)
+static void Select(BmiChip chip, GPIO_PinState state)
 {
-	if (chip == ::BmiChip::Accel)
+	if (chip == BmiChip::Accel)
 		HAL_GPIO_WritePin(ACC_CS_GPIO_Port, ACC_CS_Pin, state);
 	else
 		HAL_GPIO_WritePin(GYRO_CS_GPIO_Port, GYRO_CS_Pin, state);
 }
 
-/** @brief 读取最多 6 字节寄存器，并处理加速度计的空字节。 */
+/** @brief 读取最多 6 字节寄存器，并处理加速度计的空字节。
+ *  @param chip 目标芯片
+ *  @param reg 起始寄存器地址
+ *  @param data 读数据的输出缓冲
+ *  @param count 要读的字节数
+ */
 static HAL_StatusTypeDef ReadRegs(
-	::BmiChip chip, uint8_t reg, uint8_t* data, uint8_t count)
+	BmiChip chip, uint8_t reg, uint8_t* data, uint8_t count)
 {
-	if (data == nullptr || count == 0 || count > 6)
+	if (data == nullptr || count == 0 || count > 6)//<-输出缓冲为空;读零字节;超过六字节
 		return HAL_ERROR;
 
-	const uint8_t  dummy = (chip == ::BmiChip::Accel) ? 1 : 0;
-	const uint16_t size  = 1 + dummy + count;
+	const uint8_t  dummy = (chip == BmiChip::Accel) ? 1 : 0;//<-计算dummy字节,当chip为Accel时值为1,否则为0
+
+	const uint16_t size  = 1 + dummy + count;//<-计算传输长度(地址+dummy+有效数据字节
+
 	return Transfer(chip, reg, 0, size, data, count, dummy);
 }
 
 /** @brief 写入单个寄存器。 */
 static HAL_StatusTypeDef WriteReg(
-	::BmiChip chip, uint8_t reg, uint8_t value)
+	BmiChip chip, uint8_t reg, uint8_t value)
 {
 	return Transfer(chip, reg, value, 2, nullptr, 0, 0);
 }
@@ -149,21 +173,21 @@ HAL_StatusTypeDef BMI088_ConfigureMotion()
 		return HAL_ERROR;
 
 	//陀螺仪切到正常工作模式
-	if (WriteReg(::BmiChip::Gyro, BMI088_GYRO_LPM1,
+	if (WriteReg(BmiChip::Gyro, BMI088_GYRO_LPM1,
 				 BMI088_GYRO_NORMAL_MODE) != HAL_OK)
 		return HAL_ERROR;
 	osDelay(30); // 陀螺仪切换工作模式后等待稳定
 
 	//配置加速度计和陀螺仪
-	if (WriteReg(::BmiChip::Accel, BMI088_ACCEL_RANGE,
+	if (WriteReg(BmiChip::Accel, BMI088_ACCEL_RANGE,
 				 BMI088_ACCEL_RANGE_3G) != HAL_OK ||
-		WriteReg(::BmiChip::Accel, BMI088_ACCEL_CONF,
+		WriteReg(BmiChip::Accel, BMI088_ACCEL_CONF,
 				 BMI088_ACCEL_CONF_MUST_Set |
 				 BMI088_ACCEL_NORMAL |
 				 BMI088_ACCEL_800_HZ) != HAL_OK ||
-		WriteReg(::BmiChip::Gyro, BMI088_GYRO_RANGE,
+		WriteReg(BmiChip::Gyro, BMI088_GYRO_RANGE,
 				 BMI088_GYRO_2000) != HAL_OK ||
-		WriteReg(::BmiChip::Gyro, BMI088_GYRO_BANDWIDTH,
+		WriteReg(BmiChip::Gyro, BMI088_GYRO_BANDWIDTH,
 				 BMI088_GYRO_BANDWIDTH_MUST_Set |
 				 BMI088_GYRO_1000_116_HZ) != HAL_OK)
 		return HAL_ERROR;
@@ -175,25 +199,44 @@ HAL_StatusTypeDef BMI088_ConfigureMotion()
 
 HAL_StatusTypeDef BMI088_ReadMotion(Bmi088MotionSample* sample)
 {
+	//前置校验
 	if (!motionConfigured || sample == nullptr)
 		return HAL_ERROR;
 
-	uint8_t acceleration[6]{};
-	uint8_t angularVelocity[6]{};
-	if (ReadRegs(::BmiChip::Accel, BMI088_ACCEL_XOUT_L,
+	uint8_t acceleration[6]{};//加速度计6字节原始数据
+	uint8_t angularVelocity[6]{};//陀螺仪6字节原始数据
+
+	//todo读取寄存器后的处理
+	// region 六轴读取策略与后续解耦建议（尚未实现）
+	// 当前：|| 短路；加速度读取失败后跳过陀螺仪，任一失败则整次采样返回错误。
+	// 优点：完整六轴数据才交给上层；公共 SPI/DMA 故障时避免连续等待超时。
+	// 缺点：加速度计单独失败时，可能正常的陀螺仪数据也无法被利用。
+	// 后续建议：分别记录两种传感器的读取状态、有效标志和采样时间。
+	// 加速度无效而陀螺仪有效时，估计层可限时预测并停止加速度校正；
+	// 陀螺仪失效时，由控制层执行明确的降级或停机，禁止无限沿用旧反馈。
+	// 公共链路超时须先确认 Abort/恢复结果，再决定是否继续访问另一传感器。
+	// 不能只移除短路：须同步修改采样接口、姿态估计和反馈有效性判断。
+	// endregion
+
+	if (ReadRegs(BmiChip::Accel, BMI088_ACCEL_XOUT_L,
 				 acceleration, 6) != HAL_OK ||
-		ReadRegs(::BmiChip::Gyro, BMI088_GYRO_X_L,
+		ReadRegs(BmiChip::Gyro, BMI088_GYRO_X_L,
 				 angularVelocity, 6) != HAL_OK)
 		return HAL_ERROR;
 
+	//拼字节
 	const auto DecodeAxis = [](const uint8_t* bytes) -> int16_t
 	{
 		return static_cast<int16_t>(static_cast<uint16_t>(bytes[0]) |
 									(static_cast<uint16_t>(bytes[1]) << 8U));
 	};
+
+	//量程换算
 	constexpr float kAccelerationScale    = 3.0F * 9.80665F / 32768.0F;
 	constexpr float kAngularVelocityScale =
 		(2000.0F / 32768.0F) * 0.017453292519943295F;
+
+	//三轴数据依次换算
 	for (uint8_t axis = 0; axis < 3; ++axis)
 	{
 		sample->acceleration_mps2[axis] =
@@ -223,13 +266,14 @@ HAL_StatusTypeDef BMI088_Init()
 	uint8_t gyroId = 0;
 
 	// 第一次加速度计读取用于切换 SPI 模式，结果丢弃
-	if (ReadRegs(::BmiChip::Accel, BMI088_ACCEL_CHIP_ID, &accId, 1) != HAL_OK)
+	if (ReadRegs(BmiChip::Accel, BMI088_ACCEL_CHIP_ID, &accId, 1) != HAL_OK)
 		return HAL_ERROR;
 
 	osDelay(1);
 
-	if (ReadRegs(::BmiChip::Accel, BMI088_ACCEL_CHIP_ID, &accId, 1) != HAL_OK ||
-		ReadRegs(::BmiChip::Gyro, BMI088_GYRO_CHIP_ID, &gyroId, 1) != HAL_OK)
+	//读取芯片ID
+	if (ReadRegs(BmiChip::Accel, BMI088_ACCEL_CHIP_ID, &accId, 1) != HAL_OK ||
+		ReadRegs(BmiChip::Gyro, BMI088_GYRO_CHIP_ID, &gyroId, 1) != HAL_OK)
 		return HAL_ERROR;
 
 	if (accId != BMI088_ACCEL_CHIP_ID_VALUE ||
@@ -248,10 +292,10 @@ HAL_StatusTypeDef BMI088_EnableTemperature()
 		return HAL_OK;
 
 	// Bosch 的正常模式切换顺序：先配置电源模式，再使能加速度计和温度传感器。
-	if (WriteReg(::BmiChip::Accel, BMI088_ACCEL_PWR_CONF, BMI088_ACCEL_PWR_ACTIVE_MODE) != HAL_OK)
+	if (WriteReg(BmiChip::Accel, BMI088_ACCEL_PWR_CONF, BMI088_ACCEL_PWR_ACTIVE_MODE) != HAL_OK)
 		return HAL_ERROR;
 	osDelay(5);
-	if (WriteReg(::BmiChip::Accel, BMI088_ACCEL_PWR_CTRL, BMI088_ACCEL_ENABLE_ACCEL_ON) != HAL_OK)
+	if (WriteReg(BmiChip::Accel, BMI088_ACCEL_PWR_CTRL, BMI088_ACCEL_ENABLE_ACCEL_ON) != HAL_OK)
 		return HAL_ERROR;
 	osDelay(5);
 	temperatureEnabled = true;
@@ -264,7 +308,7 @@ HAL_StatusTypeDef BMI088_ReadTemperature(float* temperatureCelsius)
 		return HAL_ERROR;
 
 	uint8_t data[2]{};
-	if (ReadRegs(::BmiChip::Accel, BMI088_TEMP_M, data, 2) != HAL_OK || data[0] == 0x80U)
+	if (ReadRegs(BmiChip::Accel, BMI088_TEMP_M, data, 2) != HAL_OK || data[0] == 0x80U)
 		return HAL_ERROR;
 
 	auto raw = static_cast<int16_t>((static_cast<uint16_t>(data[0]) << 3U) |
