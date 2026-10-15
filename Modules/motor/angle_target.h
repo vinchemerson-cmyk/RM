@@ -17,7 +17,7 @@
 struct MotorAngleLimits
 {
 	bool     calibrated{}; //是否初始化
-	bool     continuous{};
+	bool     continuous{};//连续
 	uint16_t zero_raw{}; //todo
 	float    min_deg{};  //todo
 	float    max_deg{};  //todo
@@ -73,6 +73,8 @@ class MotorAngleTarget
 				  uint32_t                epoch, bool   feedback_reverse)
 		{
 			Reset();
+
+			//是否限位没配置好或角度不是有限值
 			if (!limits.IsConfigured() || !std::isfinite(total_deg))
 				return false;
 

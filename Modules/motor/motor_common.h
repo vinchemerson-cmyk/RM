@@ -75,7 +75,7 @@ enum Motor_Wokking_Type_e
  */
 struct Motor_Control_Setting_s
 {
-	Closeloop_Type_e        outer_loop_type{};  //
+	Closeloop_Type_e        outer_loop_type{};  //外环
 	Closeloop_Type_e        close_loop_type{};  //闭环
 	Motor_Reverse_Flag_e    motor_reverse_flag{};  //电机反转标志
 	Feedback_Reverse_Flag_e feedback_reverse_flag{};//反馈反转标志

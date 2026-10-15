@@ -37,10 +37,8 @@
 
 namespace
 {
-	// ===== 修改开始：按 DJI 协议校验完整的 8 字节反馈帧 =====
 	/** @brief GM6020、C620 和 C610 的反馈帧 DLC 均为 8 字节。 */
 	constexpr uint8_t kFeedbackLength = 8U;
-	// ===== 修改结束：反馈帧长度 =====
 
 	/** @brief M3508 与 M2006 (C620/C610 电调) 的电流指令范围. */
 	constexpr float kC620CurrentLimit = 16384.0F;
@@ -76,20 +74,23 @@ namespace
  * @brief 取出型号对应的帧与反馈分配.
  * @return 找到时返回对应表项; 型号非法时返回 nullptr.
  * @note 1. 必须用引用遍历
- *
-for (const MotorTypeSpec& spec : kMotorSpecs)  // ✅ 正确
-如果写成：
-
-for (const MotorTypeSpec spec : kMotorSpecs)   // ❌ 危险
-	return &spec;
-spec 是循环内的局部拷贝。
-
-&spec 是拷贝的地址，循环迭代结束或函数返回后立即悬空。
-
-返回悬空指针，使用会崩溃或读到垃圾。
-
-这是本函数最容易犯的错，引用是必须的。
  */
+
+// region 函数
+// for (const MotorTypeSpec& spec : kMotorSpecs)  // ✅ 正确
+// 如果写成：
+//
+// for (const MotorTypeSpec spec : kMotorSpecs)   // ❌ 危险
+// 	return &spec;
+// spec 是循环内的局部拷贝。
+//
+// &spec 是拷贝的地址，循环迭代结束或函数返回后立即悬空。
+//
+// 返回悬空指针，使用会崩溃或读到垃圾。
+//
+// 这是本函数最容易犯的错，引用是必须的。
+// endregion
+
 	const MotorTypeSpec* FindSpec(const Motor_Type_e motor_type)
 	{
 		for (const MotorTypeSpec& spec : kMotorSpecs)
@@ -158,8 +159,7 @@ spec 是循环内的局部拷贝。
 		const uint32_t    tick     = osKernelGetTickCount();
 		Motor_Feedback_s& feedback = motor->feedback;
 		//收到反馈,长度校验通过
-		const bool        reanchor = !feedback.angle_initialized;
-		if (reanchor)
+		if (!feedback.angle_initialized)
 		{
 			// 首帧建立角度基准；反馈中断后不自动停机或重锚。
 			feedback.total_angle       = reverse ? -angle_deg : angle_deg;
