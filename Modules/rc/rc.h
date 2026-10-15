@@ -68,28 +68,28 @@ namespace rc
 		uint16_t keyboard_mouse_raw{};
 
 		// 键盘按键状态, 与遥控器上的丝印一致。
-		struct
-		{
-			bool w     : 1;
-			bool s     : 1;
-			bool a     : 1;
-			bool d     : 1;
-			bool shift : 1;
-			bool ctrl  : 1;
-			bool q     : 1;
-			bool e     : 1;
-		} keyboard{};
+		// struct
+		// {
+		// 	bool w     : 1;
+		// 	bool s     : 1;
+		// 	bool a     : 1;
+		// 	bool d     : 1;
+		// 	bool shift : 1;
+		// 	bool ctrl  : 1;
+		// 	bool q     : 1;
+		// 	bool e     : 1;
+		// } keyboard{};
 
 		// 鼠标按键与相对位移。
-		struct
-		{
-			bool    left   : 1;
-			bool    right  : 1;
-			bool    middle : 1;
-			int16_t x;
-			int16_t y;
-			int16_t z;
-		} mouse{};
+		// struct
+		// {
+		// 	bool    left   : 1;
+		// 	bool    right  : 1;
+		// 	bool    middle : 1;
+		// 	int16_t x;
+		// 	int16_t y;
+		// 	int16_t z;
+		// } mouse{};
 
 		uint16_t wheel_raw{};        // 最后两字节；旧固件可能保留为 0。
 		bool     received{};         // 区分从未收帧与在 tick=0 收到首帧。
