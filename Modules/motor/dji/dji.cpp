@@ -47,7 +47,7 @@ namespace
 	/** @brief 每个型号的指令帧 ID 起点、反馈 ID 起点和输出上限. */
 	struct MotorTypeSpec
 	{
-		Motor_Type_e type;
+		DJI::Motor_Type_e type;
 		float        output_limit; // 16 位输出的绝对值上限.
 	};
 
@@ -58,15 +58,15 @@ namespace
 	constexpr MotorTypeSpec kMotorSpecs[] = {
 
 		{
-			.type = GM6020, .output_limit = kDjiGm6020CurrentCommandLimit
+			.type = DJI::GM6020, .output_limit = kDjiGm6020CurrentCommandLimit
 		},
 
 		{
-			.type = M3508, .output_limit = kC620CurrentLimit
+			.type = DJI::M3508, .output_limit = kC620CurrentLimit
 		},
 
 		{
-			.type = M2006, .output_limit = kC610CurrentLimit
+			.type = DJI::M2006, .output_limit = kC610CurrentLimit
 		},
 	};
 
@@ -91,7 +91,7 @@ namespace
 // 这是本函数最容易犯的错，引用是必须的。
 // endregion
 
-	const MotorTypeSpec* FindSpec(const Motor_Type_e motor_type)
+	const MotorTypeSpec* FindSpec(const DJI::Motor_Type_e motor_type)
 	{
 		for (const MotorTypeSpec& spec : kMotorSpecs)
 		{
@@ -154,7 +154,7 @@ namespace
 		const float speed_dps = static_cast<float>(raw_speed) * 6.0F;
 		// GM6020 按电流模式 ±16384 对应 ±3A；C610/C620 保留原有换算。
 		const float current_a = static_cast<float>(raw_current) *
-								(motor->motor_type == GM6020 ? 3.0F / kDjiGm6020CurrentCommandLimit : 20.0F / 32768.0F);
+								(motor->motor_type == DJI::GM6020 ? 3.0F / kDjiGm6020CurrentCommandLimit : 20.0F / 32768.0F);
 
 		const uint32_t    tick     = osKernelGetTickCount();
 		Motor_Feedback_s& feedback = motor->feedback;
@@ -180,7 +180,7 @@ namespace
 		feedback.speed       = reverse ? -speed_dps : speed_dps;
 		feedback.current     = reverse ? -current_a : current_a;
 		// 当前反馈结构以 0 表示“未提供温度”，不能把它当作实测 0°C。
-		feedback.temperature = motor->motor_type == M2006
+		feedback.temperature = motor->motor_type == DJI::M2006
 								   ? 0.0F
 								   : static_cast<float>(data[6]);
 		// DATA[7] 不参与解析；C620/GM6020 的温度仍从 DATA[6] 读取。
@@ -256,14 +256,14 @@ namespace
 	}
 } // namespace
 
-DJI_Motor_s* DJI_Motor_Init(const Motor_Init_Config_s& config_instance)
+DJI_Motor_s* DJI_Motor_Init(const DJI::Motor_Init_Config_s& config_instance)
 {
 	const MotorTypeSpec* spec = FindSpec(config_instance.motor_type);
 	if (spec == nullptr || config_instance.can_init_config.can_handle == nullptr)
 		return nullptr;
 
 	DjiCommandAddress address{};
-	if (!DjiResolveCommand(config_instance.motor_type == GM6020,
+	if (!DjiResolveCommand(config_instance.motor_type == DJI::GM6020,
 						   config_instance.can_init_config.rx_id, address) ||
 		config_instance.can_init_config.can_handle->Init.FrameFormat != FDCAN_FRAME_CLASSIC)
 		return nullptr;
@@ -391,7 +391,7 @@ void DJI_Motor_Control(DJI_Motor_s** motor_list, const uint8_t count, const floa
 		const MotorTypeSpec* spec = FindSpec(motor->motor_type);
 		DjiCommandAddress    address{};
 
-		if (spec == nullptr || !DjiResolveCommand(motor->motor_type == GM6020,
+		if (spec == nullptr || !DjiResolveCommand(motor->motor_type == DJI::GM6020,
 												  motor->can_instance->attribute.rx_id, address))
 			continue;
 		FDCAN_HandleTypeDef* bus        = motor->can_instance->dependency.hcan;
@@ -440,7 +440,7 @@ void DJI_Motor_Control(DJI_Motor_s** motor_list, const uint8_t count, const floa
 			DjiCommandAddress address{};//准备地址结构
 			if (motor == nullptr || motor->can_instance == nullptr ||
 				motor->can_instance->dependency.hcan != frames[i].bus ||
-				!DjiResolveCommand(motor->motor_type == GM6020,
+				!DjiResolveCommand(motor->motor_type == DJI::GM6020,
 								   motor->can_instance->attribute.rx_id, address) ||
 				address.frame_id != frames[i].id)//电机空指针;CAN示例空指针；CAN总线不匹配；地址解析失败；帧ID不匹配
 				continue;

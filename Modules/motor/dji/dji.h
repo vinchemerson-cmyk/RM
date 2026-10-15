@@ -29,28 +29,31 @@
 #ifndef INFANTRY_H723_DJI_H
 #define INFANTRY_H723_DJI_H
 
-#include "motor/motor_common.h"
 #include "can/can.h"
 #include "can/canConfig.h"
+#include "motor/motor_common.h"
 
-/** @brief 当前 DJI 电机驱动所支持的型号。 */
-enum Motor_Type_e
+namespace DJI
 {
-	MOTOR_TYPE_NONE = 0,
-	GM6020,
-	M3508,
-	M2006,
-};
+	/** @brief 当前 DJI 电机驱动所支持的型号。 */
+	enum Motor_Type_e
+	{
+		MOTOR_TYPE_NONE = 0,
+		GM6020,
+		M3508,
+		M2006,
+	};
 
-/** @brief DJI 电机的控制器、型号和经典 CAN 注册配置。 */
-struct Motor_Init_Config_s
-{
-	Motor_Controller_Init_s controller_param_init_config{};
-	Motor_Control_Setting_s controller_setting_init_config{};
-	Motor_Type_e            motor_type{};
-	classicCanConfigType    can_init_config{};
-};
+	/** @brief DJI 电机的控制器、型号和经典 CAN 注册配置。 */
+	struct Motor_Init_Config_s
+	{
+		Motor_Controller_Init_s controller_param_init_config{};
+		Motor_Control_Setting_s controller_setting_init_config{};
+		Motor_Type_e            motor_type{};
+		classicCanConfigType    can_init_config{};
+	};
 
+}
 /**
  * @brief 单个 DJI 电机的完整运行实例。
  * @note 本结构由 DJI_Motor_Init() 填充, 上层只读取 feedback 并写入 motor_settings。
@@ -60,7 +63,7 @@ struct DJI_Motor_s
 {
 	Motor_Controller_s                     controller{};
 	Motor_Control_Setting_s                motor_settings{};
-	Motor_Type_e                           motor_type{MOTOR_TYPE_NONE};
+	DJI::Motor_Type_e                      motor_type{DJI::MOTOR_TYPE_NONE};
 	Motor_Feedback_s                       feedback{};
 	CAN_<canConfig::classicCan>::Instance* can_instance{};
 	bool                                   enabled{};
@@ -79,7 +82,7 @@ struct DJI_Motor_s
  * @note 调用方填写 Classic CAN 的 can_handle 和合法 rx_id，回调由驱动填写。
  * @note 同一总线反馈 ID 不得重复；非法型号、ID、总线模式或重复 ID 返回 nullptr。
  */
-DJI_Motor_s* DJI_Motor_Init(const Motor_Init_Config_s& config_instance);
+DJI_Motor_s* DJI_Motor_Init(const DJI::Motor_Init_Config_s& config_instance);
 
 /**
  * @brief 启用一个已初始化的 DJI 电机。
