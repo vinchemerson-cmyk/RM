@@ -64,7 +64,7 @@ namespace
 	volatile bool offline = true;
 
 	OutputInterlock interlock{};
-	volatile bool           armed = false;
+	volatile bool           armed = false;//是否武装
 
 	/**
  * @brief 原始急停手势: 左右拨杆是否同时处于 DOWN。
