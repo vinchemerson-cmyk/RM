@@ -90,7 +90,10 @@ add_executable(${CMAKE_PROJECT_NAME}
         Modules/motor/encoder_angle.h
         Modules/motor/angle_target.h
         Modules/motor/other_motors.cpp
-        Modules/motor/other_motors.h)
+        Modules/motor/other_motors.h
+        Application/chassis/chassis.cpp
+        Application/chassis/chassis.h
+)
 
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)

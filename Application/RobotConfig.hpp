@@ -24,6 +24,7 @@
 
 // 烧录云台板设为 1，烧录底盘板设为 0；两块板必须使用相反的值。
 #define INFANTRY_BOARD_GIMBAL 1
+
 // 双板链路独占的 FDCAN 控制器。当前默认 PB5/PB6 (FDCAN2)。
 #define INFANTRY_INTERBOARD_FDCAN 2
 
@@ -44,6 +45,7 @@ namespace InfantryInitialization
 	inline constexpr bool ENABLE_GIMBAL = true;  // pitch速度环调试、yaw连续位置控制及编码器采集。
 	inline constexpr bool ENABLE_SHOOT  = true;  // 当前只启用双摩擦轮，见 ShootConfig.hpp
 	inline constexpr bool ENABLE_BUZZER = false; // TIM12 CH2 蜂鸣器任务
+	inline constexpr bool ENABLE_CHASSIS = true; //底盘任务
 
 	static_assert(!ENABLE_GIMBAL || (ENABLE_RC && ENABLE_SAFETY),
 				  "Gimbal requires remote control and output safety");
