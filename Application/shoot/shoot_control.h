@@ -37,23 +37,23 @@ namespace shoot
 
 	struct ControlInput
 	{
-		bool     allowed{};//是否允许输入
-		bool     wheels_requested{};  //是否开启摩擦轮
-		Trigger  trigger{Trigger::Stop};	//扳机状态
+		bool     allowed{};                                                                   //是否允许输入
+		bool     wheels_requested{};                                                          //是否开启摩擦轮
+		Trigger  trigger{Trigger::Stop};                                                      //扳机状态
 		float    left_speed_dps{}, right_speed_dps{}, feeder_speed_dps{}, feeder_angle_deg{}; //发射机构电机转速
-		int16_t  feeder_current_raw{};//拨弹盘当前电流原始值
-		uint32_t feeder_epoch{};//拨弹盘基准版本
+		int16_t  feeder_current_raw{};                                                        //拨弹盘当前电流原始值
+		uint32_t feeder_epoch{};                                                              //拨弹盘基准版本
 	};
 
 	struct ControlOutput
 	{
-		bool        wheels_enabled{};	//是否使能摩擦轮
-		float       wheel_speed_dps{};//摩擦轮转速
-		bool        wheels_ready{};//是否准备好摩擦轮
-		bool        feeder_enabled{};//是否使能拨弹盘
-		bool        feeder_position_mode{};//是否拨弹盘为位置模式
-		float       feeder_speed_dps{}, feeder_angle_deg{};//摩擦轮速度位置
-		FeederState feeder_state{FeederState::Idle};//摩擦轮状态
+		bool        wheels_enabled{};                       //是否使能摩擦轮
+		float       wheel_speed_dps{};                      //摩擦轮转速
+		bool        wheels_ready{};                         //是否准备好摩擦轮
+		bool        feeder_enabled{};                       //是否使能拨弹盘
+		bool        feeder_position_mode{};                 //是否拨弹盘为位置模式
+		float       feeder_speed_dps{}, feeder_angle_deg{}; //摩擦轮速度位置
+		FeederState feeder_state{FeederState::Idle};        //摩擦轮状态
 	};
 
 	class Controller
@@ -86,9 +86,14 @@ namespace shoot
 					return output;
 				}
 				output.wheels_enabled = true;
+
+				//wheel_speed_限幅
 				wheel_speed_          = std::fmin(config_.wheel_speed_dps,
 												  wheel_speed_ + config_.wheel_acceleration_dps2 * dt_s);
+
 				output.wheel_speed_dps  = wheel_speed_;
+
+				//速度是否达标
 				const bool speedReached = wheel_speed_ >= config_.wheel_speed_dps &&
 										  std::fabs(input.left_speed_dps - config_.wheel_speed_dps) <= config_.
 										  wheel_ready_tolerance_dps &&
