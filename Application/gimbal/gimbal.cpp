@@ -92,8 +92,6 @@ namespace
 		config.controller_setting_init_config.outer_loop_type    = CURRENT_LOOP;
 		config.controller_setting_init_config.motor_reverse_flag =
 			reverse ? MOTOR_DIRECTION_REVERSE : MOTOR_DIRECTION_NORMAL;
-		config.controller_setting_init_config.feedback_reverse_flag =
-			reverse ? FEEDBACK_DIRECTION_REVERSE : FEEDBACK_DIRECTION_NORMAL;
 		config.controller_setting_init_config.angle_feedback_source = MOTOR_FEED;
 		config.controller_setting_init_config.speed_feedback_source = MOTOR_FEED;
 		config.controller_setting_init_config.feedforward_flag      = FEEDFORWARD_NONE;
@@ -187,8 +185,8 @@ namespace
 
 		if (!limits.continuous)
 		{
-			const bool reverse = motor->motor_settings.feedback_reverse_flag ==
-								 FEEDBACK_DIRECTION_REVERSE;
+			const bool reverse = motor->motor_settings.motor_reverse_flag ==
+								 MOTOR_DIRECTION_REVERSE;
 			const auto raw           = static_cast<uint16_t>(feedback.raw_angle);
 			const bool allowPositive = limits.AllowsSpeed(raw, reverse, 1.0F);
 			const bool allowNegative = limits.AllowsSpeed(raw, reverse, -1.0F);
@@ -236,8 +234,8 @@ namespace
 
 		if (!target.Ready() || target.Epoch() != feedback.angle_epoch)
 		{
-			const bool reverse = motor->motor_settings.feedback_reverse_flag ==
-								 FEEDBACK_DIRECTION_REVERSE;
+			const bool reverse = motor->motor_settings.motor_reverse_flag ==
+								 MOTOR_DIRECTION_REVERSE;
 			if (!target.Sync(limits, feedback.total_angle,
 							 static_cast<uint16_t>(feedback.raw_angle), feedback.angle_epoch, reverse))
 			{
@@ -441,8 +439,8 @@ serialTasks::EncoderSnapshot gimbal::GetEncoderSnapshot()
 		snapshot.pitch_current_a = pitchMotor->feedback.current;
 		if (pitchMotor->feedback.angle_initialized)
 		{
-			const bool reverse = pitchMotor->motor_settings.feedback_reverse_flag ==
-								 FEEDBACK_DIRECTION_REVERSE;
+			const bool reverse = pitchMotor->motor_settings.motor_reverse_flag ==
+								 MOTOR_DIRECTION_REVERSE;
 			const float position_deg = static_cast<float>(MotorEncoderDelta(
 																			kPitchZeroRaw,
 																			static_cast<uint16_t>(pitchMotor->feedback.

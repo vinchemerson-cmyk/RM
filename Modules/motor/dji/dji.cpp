@@ -166,7 +166,7 @@ namespace
 		const int16_t raw_speed   = read_be16(data + 2);
 		const int16_t raw_current = read_be16(data + 4);
 
-		const bool reverse = motor->motor_settings.feedback_reverse_flag == FEEDBACK_DIRECTION_REVERSE;
+		const bool reverse = motor->motor_settings.motor_reverse_flag == MOTOR_DIRECTION_REVERSE;
 
 		// 单圈机械角: 取 13 位计数值换算到 [0, 360) 度; GM6020 的完整 16 位原值保留在 raw 字段.
 		const float angle_deg = static_cast<float>(static_cast<uint16_t>(raw_angle) & 0x1FFFU) / 8192.0F * 360.0F;

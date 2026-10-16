@@ -29,8 +29,6 @@ namespace
 		config.controller_setting_init_config.outer_loop_type    = SPEED_AND_CURRENT_LOOP;
 		config.controller_setting_init_config.motor_reverse_flag =
 			reverse ? MOTOR_DIRECTION_REVERSE : MOTOR_DIRECTION_NORMAL;
-		config.controller_setting_init_config.feedback_reverse_flag =
-			reverse ? FEEDBACK_DIRECTION_REVERSE : FEEDBACK_DIRECTION_NORMAL;
 		config.controller_param_init_config.speed_PID = type == DJI::M2006 ? shoot::kFeederSpeedPid : shoot::kWheelSpeedPid;
 		if (type == DJI::M2006)
 			config.controller_param_init_config.angle_PID = shoot::kFeederAnglePid;

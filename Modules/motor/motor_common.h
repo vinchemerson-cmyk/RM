@@ -78,7 +78,15 @@ struct Motor_Control_Setting_s
 	Closeloop_Type_e        outer_loop_type{};  //外环
 	Closeloop_Type_e        close_loop_type{};  //使用的(串级)闭环
 	Motor_Reverse_Flag_e    motor_reverse_flag{};  //电机反转标志
-	Feedback_Reverse_Flag_e feedback_reverse_flag{};//反馈反转标志
+
+	/**
+	 *region 反馈反转标志与电机输出反转标志的合并
+	 *
+	 *Feedback_Reverse_Flag_e feedback_reverse_flag{};//反馈反转标志
+	 *
+	 *endregion
+	 */
+
 	Feedback_Source_e       angle_feedback_source{};//角度反馈
 	Feedback_Source_e       speed_feedback_source{};//速度反馈
 	Feedfoward_Type_e       feedforward_flag{};  //前馈标志
