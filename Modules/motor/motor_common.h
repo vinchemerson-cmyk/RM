@@ -32,11 +32,11 @@ enum Closeloop_Type_e
 /** @brief 组合控制器的前馈来源。 */
 enum Feedfoward_Type_e
 {
-	FEEDFORWARD_NONE              = 0b000,
-	CURRENT_FEEDFORWARD           = 0b001,
-	SPEED_FEEDFORWARD             = 0b010,
-	FORCE_FEEDFORWARD             = 0b100,
-	CURRENT_AND_SPEED_FEEDFORWARD = CURRENT_FEEDFORWARD | SPEED_FEEDFORWARD,
+	FEEDFORWARD_NONE              = 0b000,//不启用任何前馈
+	CURRENT_FEEDFORWARD           = 0b001,//启动电流前馈
+	SPEED_FEEDFORWARD             = 0b010,//启动速度前馈
+	FORCE_FEEDFORWARD             = 0b100,//启动力前馈
+	CURRENT_AND_SPEED_FEEDFORWARD = CURRENT_FEEDFORWARD | SPEED_FEEDFORWARD,//启动电流速度双环
 };
 
 /** @brief 电机输出方向。 */
@@ -76,7 +76,7 @@ enum Motor_Wokking_Type_e
 struct Motor_Control_Setting_s
 {
 	Closeloop_Type_e        outer_loop_type{};  //外环
-	Closeloop_Type_e        close_loop_type{};  //闭环
+	Closeloop_Type_e        close_loop_type{};  //使用的(串级)闭环
 	Motor_Reverse_Flag_e    motor_reverse_flag{};  //电机反转标志
 	Feedback_Reverse_Flag_e feedback_reverse_flag{};//反馈反转标志
 	Feedback_Source_e       angle_feedback_source{};//角度反馈

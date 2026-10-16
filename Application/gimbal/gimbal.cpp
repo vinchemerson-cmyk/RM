@@ -76,10 +76,10 @@ namespace
  * @param reverse 输出方向是否取反。
  * @note LQI 直接写入电流指令，MCU 上的三层 PID 均不参与，电机内部电流环保持开启。
  */
-	Motor_Init_Config_s MakeMotorConfig(const Motor_Type_e motor_type, const uint32_t feedback_id,
-										const bool         reverse)
+	DJI::Motor_Init_Config_s MakeMotorConfig(const DJI::Motor_Type_e motor_type, const uint32_t feedback_id,
+											 const bool              reverse)
 	{
-		Motor_Init_Config_s config{};
+		DJI::Motor_Init_Config_s config{};
 		config.motor_type = motor_type;
 
 		// 使用电机自身反馈，不使用外部反馈与前馈通道。
@@ -209,7 +209,7 @@ namespace
 				target.Reset();
 				const float currentA                  = lqi.UpdateRecoverySpeed(recoverySpeed, feedback.speed, dt_s);
 				motor->motor_settings.close_loop_type = CURRENT_LOOP;
-				motor->motor_settings.current         = currentA * kDjiGm6020CommandUnitsPerAmp;
+				motor->motor_settings.current         = currentA * k6020CommandUnitsPerAmp;
 				if (!motor->enabled)
 					DJI_Motor_Enable(motor);
 				return;
@@ -228,7 +228,7 @@ namespace
 			motor->motor_settings.speed           = speedTarget;
 			motor->motor_settings.angle           = feedback.total_angle;
 			motor->motor_settings.current         = lqi.UpdateRecoverySpeed(speedTarget, feedback.speed, dt_s) *
-											kDjiGm6020CommandUnitsPerAmp;
+											k6020CommandUnitsPerAmp;
 			if (!motor->enabled)
 				DJI_Motor_Enable(motor);
 			return;
@@ -265,7 +265,7 @@ namespace
 									   : 0.0F;
 		const float currentA = lqi.Update(motor->motor_settings.angle, feedback.total_angle,
 										  feedback.speed, dt_s, feedforwardA);
-		motor->motor_settings.current = currentA * kDjiGm6020CommandUnitsPerAmp;
+		motor->motor_settings.current = currentA * k6020CommandUnitsPerAmp;
 		if (!motor->enabled)
 			DJI_Motor_Enable(motor);
 	}
@@ -328,7 +328,7 @@ namespace
 		yawMotor->motor_settings.speed           = 0.0F; // 无速度目标。
 		yawMotor->motor_settings.angle           = feedback.total_angle;
 		yawMotor->motor_settings.current         = yawPulseDirection * kYawFixedCurrentTestA *//电流设置
-										   kDjiGm6020CommandUnitsPerAmp;
+										   k6020CommandUnitsPerAmp;
 
 		if (!yawMotor->enabled)
 			DJI_Motor_Enable(yawMotor);
@@ -353,7 +353,7 @@ namespace
 		snapshot.yaw_feedback_current_a  = yawControlFeedback.current;
 		snapshot.yaw_output_enabled      = yawMotor->enabled;
 		snapshot.yaw_command_current_a   = yawMotor->enabled
-											 ? yawMotor->motor_settings.current / kDjiGm6020CommandUnitsPerAmp
+											 ? yawMotor->motor_settings.current / k6020CommandUnitsPerAmp
 											 : 0.0F;
 		snapshot.yaw_position_current_a = yawMotor->enabled ? yawLqi.PositionCurrent() : 0.0F;
 		snapshot.yaw_speed_current_a    = yawMotor->enabled ? yawLqi.SpeedCurrent() : 0.0F;
@@ -472,7 +472,7 @@ serialTasks::EncoderSnapshot gimbal::GetEncoderSnapshot()
 		snapshot.yaw_feedback_current_a = yawMotor->feedback.current;
 		snapshot.yaw_target_speed_dps   = yawMotor->enabled ? yawMotor->motor_settings.speed : 0.0F;
 		snapshot.yaw_command_current_a  = yawMotor->enabled
-											 ? yawMotor->motor_settings.current / kDjiGm6020CommandUnitsPerAmp
+											 ? yawMotor->motor_settings.current / k6020CommandUnitsPerAmp
 											 : 0.0F;
 	}
 	taskEXIT_CRITICAL();
@@ -501,8 +501,8 @@ void gimbal::Init()
 		return;
 
 	// 反馈 ID 必须在 0x205..0x208 范围内, 对应 GM6020 的指令帧槽位。
-	const Motor_Init_Config_s yawConfig   = MakeMotorConfig(GM6020, kYawMotorFeedbackId, kYawMotorReverse);
-	const Motor_Init_Config_s pitchConfig = MakeMotorConfig(GM6020, kPitchMotorFeedbackId, kPitchMotorReverse);
+	const DJI::Motor_Init_Config_s yawConfig   = MakeMotorConfig(DJI::GM6020, kYawMotorFeedbackId, kYawMotorReverse);
+	const DJI::Motor_Init_Config_s pitchConfig = MakeMotorConfig(DJI::GM6020, kPitchMotorFeedbackId, kPitchMotorReverse);
 
 	if constexpr (kEnableYaw || kReadYawEncoder)
 		yawMotor = DJI_Motor_Init(yawConfig);

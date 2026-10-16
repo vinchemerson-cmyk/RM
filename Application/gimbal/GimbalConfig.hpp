@@ -15,7 +15,6 @@
 #include "algorithm/lqi.h"
 #include "algorithm/lqi_config.h"
 #include "motor/angle_target.h"
-#include "motor/dji/dji_protocol.h"
 
 /**
  *@brief 重复遥控指令对照测试：默认关闭，不改变 DBUS 解析和安全状态。

@@ -29,11 +29,11 @@
 #include <cstring>
 
 #include "cmsis_os2.h"
-#include "main.h"
-#include "motor/encoder_angle.h"
-#include "dji_protocol.h"
 #include "FreeRTOS.h"
+#include "main.h"
 #include "task.h"
+#include "motor/angle_target.h"
+
 
 namespace
 {
@@ -41,24 +41,32 @@ namespace
 	constexpr uint8_t kFeedbackLength = 8U;
 
 	/** @brief M3508 与 M2006 (C620/C610 电调) 的电流指令范围. */
-	constexpr float kC620CurrentLimit = 16384.0F;
-	constexpr float kC610CurrentLimit = 10000.0F;
+	constexpr float kC620CurrentLimit        = 16384.0F;
+	constexpr float kC610CurrentLimit        = 10000.0F;
+	constexpr float k6020CurrentCommandLimit = 16384.0F;
 
 	/** @brief 每个型号的指令帧 ID 起点、反馈 ID 起点和输出上限. */
 	struct MotorTypeSpec
 	{
 		DJI::Motor_Type_e type;
-		float        output_limit; // 16 位输出的绝对值上限.
+		float             output_limit; // 16 位输出的绝对值上限.
+	};
+
+	/**大疆电机命令地址*/
+	struct DjiCommandAddress
+	{
+		uint32_t frame_id{}; //指令帧
+		uint8_t  slot{};     //CAN指令帧槽位
 	};
 
 	/**
- * @brief DJI 两类电调的指令帧与反馈 ID 分配.
- * @note GM6020 使用 0x1FE/0x2FE 电流指令与反馈 0x205 起，其余型号的电流协议不变。
- */
+	* @brief DJI 两类电调的指令帧与反馈 ID 分配.
+	* @note GM6020 使用 0x1FE/0x2FE 电流指令与反馈 0x205 起，其余型号的电流协议不变。
+	*/
 	constexpr MotorTypeSpec kMotorSpecs[] = {
 
 		{
-			.type = DJI::GM6020, .output_limit = kDjiGm6020CurrentCommandLimit
+			.type = DJI::GM6020, .output_limit = k6020CurrentCommandLimit
 		},
 
 		{
@@ -70,26 +78,38 @@ namespace
 		},
 	};
 
-	/**
- * @brief 取出型号对应的帧与反馈分配.
- * @return 找到时返回对应表项; 型号非法时返回 nullptr.
- * @note 1. 必须用引用遍历
- */
+	bool DjiResolveCommand(bool gm6020, uint32_t feedback_id, DjiCommandAddress& address)
+	{
+		const uint32_t first = gm6020 ? 0x205U : 0x201U;
+		const uint32_t count = gm6020 ? 7U : 8U;
+		if (feedback_id < first || feedback_id >= first + count)
+			return false;
+		const uint32_t offset = feedback_id - first;
+		address.frame_id      = offset < 4U ? (gm6020 ? 0x1FEU : 0x200U) : (gm6020 ? 0x2FEU : 0x1FFU);
+		address.slot          = static_cast<uint8_t>(offset % 4U);
+		return true;
+	}
 
-// region 函数
-// for (const MotorTypeSpec& spec : kMotorSpecs)  // ✅ 正确
-// 如果写成：
-//
-// for (const MotorTypeSpec spec : kMotorSpecs)   // ❌ 危险
-// 	return &spec;
-// spec 是循环内的局部拷贝。
-//
-// &spec 是拷贝的地址，循环迭代结束或函数返回后立即悬空。
-//
-// 返回悬空指针，使用会崩溃或读到垃圾。
-//
-// 这是本函数最容易犯的错，引用是必须的。
-// endregion
+	/**
+	* @brief 取出型号对应的帧与反馈分配.
+	* @return 找到时返回对应表项; 型号非法时返回 nullptr.
+	* @note 1. 必须用引用遍历
+	*/
+
+	// region 函数
+	// for (const MotorTypeSpec& spec : kMotorSpecs)  // ✅ 正确
+	// 如果写成：
+	//
+	// for (const MotorTypeSpec spec : kMotorSpecs)   // ❌ 危险
+	// 	return &spec;
+	// spec 是循环内的局部拷贝。
+	//
+	// &spec 是拷贝的地址，循环迭代结束或函数返回后立即悬空。
+	//
+	// 返回悬空指针，使用会崩溃或读到垃圾。
+	//
+	// 这是本函数最容易犯的错，引用是必须的。
+	// endregion
 
 	const MotorTypeSpec* FindSpec(const DJI::Motor_Type_e motor_type)
 	{
@@ -102,9 +122,9 @@ namespace
 	}
 
 	/**
- * @brief 把 16 位输出限制在型号允许范围内.
- * @note 超出范围按边界截断, 不调用 Error_Handler, 避免控制量异常导致整机停机.
- */
+	 * @brief 把 16 位输出限制在型号允许范围内.
+	* @note 超出范围按边界截断, 不调用 Error_Handler, 避免控制量异常导致整机停机.
+	*/
 	int16_t ClampOutput(const float output, const float limit)
 	{
 		if (output > limit)
@@ -115,11 +135,11 @@ namespace
 	}
 
 	/**
- * @brief 接收回调: 把反馈帧解析进引用该过滤器的电机实例.
- * @param attribute_instance BSP 注册表内的本实例属性.
-     * @note 注册属性通过 module_handle 指向电机实例。
- * @note 本函数在 FDCAN 中断内执行, 只做解析和标量赋值, 不做任何阻塞操作.
- */
+	* @brief 接收回调: 把反馈帧解析进引用该过滤器的电机实例.
+	* @param attribute_instance BSP 注册表内的本实例属性.
+	* @note 注册属性通过 module_handle 指向电机实例。
+	* @note 本函数在 FDCAN 中断内执行, 只做解析和标量赋值, 不做任何阻塞操作.
+	 */
 	void MotorFeedbackCallback(classicCanType* attribute_instance)
 	{
 		if (attribute_instance == nullptr || attribute_instance->module_handle == nullptr)
@@ -154,7 +174,7 @@ namespace
 		const float speed_dps = static_cast<float>(raw_speed) * 6.0F;
 		// GM6020 按电流模式 ±16384 对应 ±3A；C610/C620 保留原有换算。
 		const float current_a = static_cast<float>(raw_current) *
-								(motor->motor_type == DJI::GM6020 ? 3.0F / kDjiGm6020CurrentCommandLimit : 20.0F / 32768.0F);
+								(motor->motor_type == DJI::GM6020 ? 3.0F / k6020CurrentCommandLimit : 20.0F / 32768.0F);
 
 		const uint32_t    tick     = osKernelGetTickCount();
 		Motor_Feedback_s& feedback = motor->feedback;
@@ -189,11 +209,11 @@ namespace
 		instance.feedback_tick = tick;
 	}
 
-/**
- * @brief 按闭环设置计算单个电机的 16 位输出.
- * @return 已限幅并应用方向标志的输出值.
- * @note 闭环组合非法时返回 0；测试模式使用最近一次反馈，不判定掉线。
- */
+	/**
+	 * @brief 按闭环设置计算单个电机的 16 位输出.
+	 * @return 已限幅并应用方向标志的输出值.
+	 * @note 闭环组合非法时返回 0；测试模式使用最近一次反馈，不判定掉线。
+	 */
 	float ComputeOutput(DJI_Motor_s& motor, const Motor_Feedback_s& feedback, const float dt_s)
 	{
 		const Motor_Control_Setting_s& setting    = motor.motor_settings;
@@ -368,7 +388,6 @@ void DJI_Motor_Disable(DJI_Motor_s* motor)
 
 void DJI_Motor_Control(DJI_Motor_s** motor_list, const uint8_t count, const float dt_s)
 {
-
 	if (motor_list == nullptr || count == 0U || !(dt_s > 0.0F))
 		return;
 	struct CommandFrame
@@ -403,7 +422,6 @@ void DJI_Motor_Control(DJI_Motor_s** motor_list, const uint8_t count, const floa
 
 		if (frameIndex == frameCount)
 		{
-
 			if (frameCount >= frames.size())
 				return;
 			frames[frameIndex].bus    = bus;
@@ -413,7 +431,7 @@ void DJI_Motor_Control(DJI_Motor_s** motor_list, const uint8_t count, const floa
 		}
 
 		taskENTER_CRITICAL();
-		const Motor_Feedback_s feedback = motor->feedback;//接收反馈
+		const Motor_Feedback_s feedback = motor->feedback; //接收反馈
 		taskEXIT_CRITICAL();
 		float      output       = 0.0F;
 		const bool positionLoop = motor->motor_settings.close_loop_type == ANGLE_AND_SPEED_LOOP ||
@@ -436,13 +454,13 @@ void DJI_Motor_Control(DJI_Motor_s** motor_list, const uint8_t count, const floa
 		const auto result = frames[i].sender->Transmit(input);
 		for (uint8_t j = 0; j < count; ++j)
 		{
-			auto*             motor = motor_list[j];//遍历电机
-			DjiCommandAddress address{};//准备地址结构
+			auto*             motor = motor_list[j]; //遍历电机
+			DjiCommandAddress address{};             //准备地址结构
 			if (motor == nullptr || motor->can_instance == nullptr ||
 				motor->can_instance->dependency.hcan != frames[i].bus ||
 				!DjiResolveCommand(motor->motor_type == DJI::GM6020,
 								   motor->can_instance->attribute.rx_id, address) ||
-				address.frame_id != frames[i].id)//电机空指针;CAN示例空指针；CAN总线不匹配；地址解析失败；帧ID不匹配
+				address.frame_id != frames[i].id) //电机空指针;CAN示例空指针；CAN总线不匹配；地址解析失败；帧ID不匹配
 				continue;
 			++motor->tx_enqueue_attempts;
 			if (result != HAL_OK) ++motor->tx_enqueue_failures;

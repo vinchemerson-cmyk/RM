@@ -87,14 +87,11 @@ add_executable(${CMAKE_PROJECT_NAME}
         Modules/motor/dji/dji.h
         Modules/motor/motor_common.cpp
         Modules/motor/motor_common.h
-        Modules/motor/encoder_angle.h
         Modules/motor/angle_target.h
-        Modules/motor/other_motors.cpp
-        Modules/motor/other_motors.h
         Application/chassis/chassis.cpp
         Application/chassis/chassis.h
-        Modules/motor/dm/dm.cpp
         Modules/motor/dm/dm.h
+        Modules/motor/dm/dmmotor.h
 )
 
 # Add STM32CubeMX generated sources

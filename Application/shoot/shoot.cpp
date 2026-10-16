@@ -19,9 +19,9 @@ namespace
 	};
 
 	/** @brief 将方向变换同时应用到输出和反馈，保持速度闭环负反馈。 */
-	Motor_Init_Config_s MakeConfig(Motor_Type_e type, uint32_t id, bool reverse)
+	DJI::Motor_Init_Config_s MakeConfig(DJI::Motor_Type_e type, uint32_t id, bool reverse)
 	{
-		Motor_Init_Config_s config{};
+		DJI::Motor_Init_Config_s config{};
 		config.motor_type                                        = type;
 		config.can_init_config.can_handle                        = shoot::kCanHandle;
 		config.can_init_config.rx_id                             = id;
@@ -31,8 +31,8 @@ namespace
 			reverse ? MOTOR_DIRECTION_REVERSE : MOTOR_DIRECTION_NORMAL;
 		config.controller_setting_init_config.feedback_reverse_flag =
 			reverse ? FEEDBACK_DIRECTION_REVERSE : FEEDBACK_DIRECTION_NORMAL;
-		config.controller_param_init_config.speed_PID = type == M2006 ? shoot::kFeederSpeedPid : shoot::kWheelSpeedPid;
-		if (type == M2006)
+		config.controller_param_init_config.speed_PID = type == DJI::M2006 ? shoot::kFeederSpeedPid : shoot::kWheelSpeedPid;
+		if (type == DJI::M2006)
 			config.controller_param_init_config.angle_PID = shoot::kFeederAnglePid;
 		return config;
 	}
@@ -104,10 +104,10 @@ namespace
 void shoot::Init()
 {
 	if (taskHandle != nullptr) return;
-	motors[0] = DJI_Motor_Init(MakeConfig(M3508, kLeftFeedbackId, kLeftReverse));
-	motors[1] = DJI_Motor_Init(MakeConfig(M3508, kRightFeedbackId, kRightReverse));
+	motors[0] = DJI_Motor_Init(MakeConfig(DJI::M3508, kLeftFeedbackId, kLeftReverse));
+	motors[1] = DJI_Motor_Init(MakeConfig(DJI::M3508, kRightFeedbackId, kRightReverse));
 	if constexpr (kEnableFeeder)
-		motors[2] = DJI_Motor_Init(MakeConfig(M2006, kFeederFeedbackId, kFeederReverse));
+		motors[2] = DJI_Motor_Init(MakeConfig(DJI::M2006, kFeederFeedbackId, kFeederReverse));
 	if (motors[0] == nullptr || motors[1] == nullptr || (kEnableFeeder && motors[2] == nullptr))
 		Error_Handler();
 	taskHandle = osThreadNew(Task, nullptr, &taskAttrs);

@@ -33,6 +33,8 @@
 #include "can/canConfig.h"
 #include "motor/motor_common.h"
 
+inline constexpr float k6020CommandUnitsPerAmp = 5461.333 ;
+
 namespace DJI
 {
 	/** @brief 当前 DJI 电机驱动所支持的型号。 */

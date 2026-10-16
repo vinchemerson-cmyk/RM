@@ -16,7 +16,7 @@
 namespace safety
 {
 	/** @brief 解锁手势需连续成立的最少周期数。 */
-	static constexpr uint8_t DEBOUNCE_COUNT = 1U;
+	static constexpr uint8_t DEBOUNCE_COUNT = 3U;
 
 	/** @brief 安全任务轮询周期, 单位毫秒。 */
 	static constexpr uint32_t TASK_PERIOD_MS = 1U;
