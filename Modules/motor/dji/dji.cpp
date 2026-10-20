@@ -284,7 +284,7 @@ DJI_Motor_s* DJI_Motor_Init(const DJI::Motor_Init_Config_s& config_instance)
 
 	DjiCommandAddress address{};
 	if (!DjiResolveCommand(config_instance.motor_type == DJI::GM6020,
-						   config_instance.can_init_config.rx_id, address) ||
+						   config_instance.can_init_config.can_id, address) ||
 		config_instance.can_init_config.can_handle->Init.FrameFormat != FDCAN_FRAME_CLASSIC)
 		return nullptr;
 
@@ -296,7 +296,7 @@ DJI_Motor_s* DJI_Motor_Init(const DJI::Motor_Init_Config_s& config_instance)
 
 	for (uint8_t i = 0; i < motor_pool_used; ++i)
 		if (motor_pool[i].can_instance->dependency.hcan == config_instance.can_init_config.can_handle &&
-			motor_pool[i].can_instance->attribute.rx_id == config_instance.can_init_config.rx_id)
+			motor_pool[i].can_instance->attribute.can_id == config_instance.can_init_config.can_id)
 			return nullptr;
 
 	DJI_Motor_s& motor = motor_pool[motor_pool_used];
@@ -349,7 +349,7 @@ DJI_Motor_s* DJI_Motor_Init(const DJI::Motor_Init_Config_s& config_instance)
 	// 反馈 ID 决定 CAN 过滤器, 因此由上层在 can_init_config.rx_id 中给出.
 	// tx_id 仅作为兜底初值, 实际发送时由 DJI_Motor_Control() 按指令帧覆盖.
 	classicCanConfigType can_config = config_instance.can_init_config;
-	can_config.tx_id                = address.frame_id;
+	can_config.master_id                = address.frame_id;
 	can_config.can_callback_func    = MotorFeedbackCallback;
 	// module_handle 回指本电机, 使回调无需额外全局映射即可找到实例.
 	can_config.module_handle        = &motor;
@@ -411,7 +411,7 @@ void DJI_Motor_Control(DJI_Motor_s** motor_list, const uint8_t count, const floa
 		DjiCommandAddress    address{};
 
 		if (spec == nullptr || !DjiResolveCommand(motor->motor_type == DJI::GM6020,
-												  motor->can_instance->attribute.rx_id, address))
+												  motor->can_instance->attribute.can_id, address))
 			continue;
 		FDCAN_HandleTypeDef* bus        = motor->can_instance->dependency.hcan;
 		uint8_t              frameIndex = 0U;
@@ -446,11 +446,11 @@ void DJI_Motor_Control(DJI_Motor_s** motor_list, const uint8_t count, const floa
 	}
 	for (uint8_t i = 0; i < frameCount; ++i)
 	{
-		frames[i].sender->attribute.tx_id = frames[i].id;
+		frames[i].sender->attribute.master_id = frames[i].id;
 		classicCan::Input input{};
 		input.tx_len      = classicCan::DATA_SIZE;
 		input.tx_buffer   = frames[i].payload;
-		// FIFO 满时本周期不阻塞，下个控制周期重新发送最新值。
+		// FIFO 满时本周期不阻塞，下个控制周期重新发送最新值。canConfig::classicCan::Attribute
 		const auto result = frames[i].sender->Transmit(input);
 		for (uint8_t j = 0; j < count; ++j)
 		{
@@ -459,7 +459,7 @@ void DJI_Motor_Control(DJI_Motor_s** motor_list, const uint8_t count, const floa
 			if (motor == nullptr || motor->can_instance == nullptr ||
 				motor->can_instance->dependency.hcan != frames[i].bus ||
 				!DjiResolveCommand(motor->motor_type == DJI::GM6020,
-								   motor->can_instance->attribute.rx_id, address) ||
+								   motor->can_instance->attribute.can_id, address) ||
 				address.frame_id != frames[i].id) //电机空指针;CAN示例空指针；CAN总线不匹配；地址解析失败；帧ID不匹配
 				continue;
 			++motor->tx_enqueue_attempts;

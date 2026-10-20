@@ -97,7 +97,7 @@ namespace
 		config.controller_setting_init_config.feedforward_flag      = FEEDFORWARD_NONE;
 
 		config.can_init_config.can_handle = kGimbalCanHandle;
-		config.can_init_config.rx_id      = feedback_id;
+		config.can_init_config.can_id      = feedback_id;
 		return config;
 	}
 

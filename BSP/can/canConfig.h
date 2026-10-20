@@ -30,8 +30,8 @@ namespace canConfig
 	//FIFO通道选择
 	enum class fifo : uint8_t
 	{
-		CAN_RX_FIFO = FDCAN_RX_FIFO0,
-		CAN_RX_FIF1 = FDCAN_RX_FIFO1,
+		CAN_RX_FIFO = FDCAN_RX_FIFO0,//MCU
+		CAN_RX_FIF1 = FDCAN_RX_FIFO1,//MCU
 	};
 
 	//接收中断类型
@@ -66,8 +66,8 @@ namespace canConfig
 		//CAN注册的持久属性
 		struct Attribute
 		{
-			uint32_t tx_id{};
-			uint32_t rx_id{};
+			uint32_t master_id{};
+			uint32_t can_id{};
 			fifo     use_fifo{};
 
 			void (*can_callback_func)(Attribute*){};
@@ -86,8 +86,8 @@ namespace canConfig
 		{
 			bspCanHandleTypeDef* can_handle{};
 
-			uint32_t tx_id{};
-			uint32_t rx_id{};
+			uint32_t master_id{};
+			uint32_t can_id{};
 
 			void (*can_callback_func)(Attribute*){};
 			void*  module_handle{};
@@ -122,8 +122,8 @@ namespace canConfig
 		//FDCAN注册的持久属性
 		struct Attribute
 		{
-			uint32_t tx_id{};
-			uint32_t rx_id{};
+			uint32_t master_id{};
+			uint32_t can_id{};
 			fifo     use_fifo{};
 
 			void (*can_callback_func)(Attribute*){};
@@ -142,8 +142,8 @@ namespace canConfig
 		{
 			bspCanHandleTypeDef* can_handle{};
 
-			uint32_t tx_id{};
-			uint32_t rx_id{};
+			uint32_t master_id{};
+			uint32_t can_id{};
 
 			void (*can_callback_func)(Attribute*){};
 			void*  module_handle{};
@@ -159,6 +159,8 @@ using classicCanConfigType = canConfig::classicCan::Config;
 
 using Fdcan           = canConfig::Fdcan;
 using FdcanType       = canConfig::Fdcan::Attribute;
+
+//FDCAN注册配置
 using FdcanConfigType = canConfig::Fdcan::Config;
 
 #endif //INFANTRY_H723_CANCONFIG_H

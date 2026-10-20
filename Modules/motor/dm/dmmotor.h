@@ -83,19 +83,15 @@ typedef struct
 	float Kd;
 } MIT_Controller_s;
 
-typedef struct
-{
-
-};
 
 typedef struct
 {
     DM_Motor_Measure_s measure{};
 
     //普通模式配置的PID相关设置
-    Motor_Control_Setting_s motor_settings;
-    PIDInstance speed_PID;
-    PIDInstance angle_PID;
+    Motor_Control_Setting_s motor_settings{};
+    PIDInstance speed_PID{};
+    PIDInstance angle_PID{};
 
     //普通模式配置的反馈与前馈指针
     float *other_angle_feedback_ptr{};
@@ -111,9 +107,9 @@ typedef struct
     //如果观察该变量大于等于2，则说明通信质量低，请检查布线是否规范，总线负载是否过高
     int rx_init_flag{};//第一次收到反馈标志位，用于防止多圈角度计数错误
 
-    Motor_Working_Type_e stop_flag;//软件关闭电机标志位
+    Motor_Working_Type_e stop_flag{};//软件关闭电机标志位
     DmCanInstance *motor_can_instance{};//达妙电机对应的FDCAN通信实例
-    Motor_Control_Type_e working_type;//工作模式
+    Motor_Control_Type_e working_type{};//工作模式
 } DMMotorInstance;//DM电机实例
 
 typedef enum

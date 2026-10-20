@@ -66,7 +66,7 @@ class CAN_
 			uint32_t feedback_tick{};
 
 			/**
-             * @brief 用本实例的 tx_id 发送一帧, 转发到所属 CAN_ 模板的 Transmit().
+             * @brief 用本实例的 master_id 发送一帧, 转发到所属 CAN_ 模板的 Transmit().
              * @param input_instance 本次发送的数据.
              * @return HAL_OK 表示已放入发送 FIFO.
              */
@@ -251,8 +251,8 @@ class CAN_
 			// 先占用槽位, 使中断在此之后的任意时刻都能查到本实例.
 			Instance& instance = (*instance_table)[(*instance_amount)++];
 
-			instance.attribute.tx_id             = config_instance.tx_id;
-			instance.attribute.rx_id             = config_instance.rx_id;
+			instance.attribute.tx_id             = config_instance.tx_id; // FIXME: [编译错误] 字段已改名，这里两处 tx_id 都应为 master_id（GCC: no member named 'tx_id'）
+			instance.attribute.rx_id             = config_instance.rx_id; // FIXME: [编译错误] 字段已改名，这里两处 rx_id 都应为 can_id（GCC: no member named 'rx_id'）
 			instance.attribute.use_fifo          = config_instance.use_fifo;
 			instance.attribute.can_callback_func = config_instance.can_callback_func;
 			instance.attribute.module_handle     = config_instance.module_handle;
@@ -281,7 +281,7 @@ class CAN_
 			filter.FilterIndex  = static_cast<uint32_t>(*filter_amount);
 			filter.FilterType   = FDCAN_FILTER_MASK;
 			filter.FilterConfig = filter_fifo;
-			filter.FilterID1    = config_instance.rx_id;
+			filter.FilterID1    = config_instance.rx_id; // FIXME: [编译错误] 过滤器 ID 应为 config_instance.can_id（rx_id 已改名）
 			filter.FilterID2    = 0x7FFU; // 标准帧 11 位掩码全 1, 表示精确匹配 rx_id.
 			if (HAL_FDCAN_ConfigFilter(can_handle_instance, &filter) != HAL_OK)
 				Error_Handler();
@@ -327,7 +327,7 @@ class CAN_
 				instance.dependency.hcan == nullptr)
 				return HAL_ERROR;
 
-			instance.tx_header.Identifier          = instance.attribute.tx_id;
+			instance.tx_header.Identifier          = instance.attribute.tx_id; // FIXME: [编译错误] 发送标识符应为 instance.attribute.master_id（tx_id 已改名）
 			instance.tx_header.IdType              = FDCAN_STANDARD_ID;
 			instance.tx_header.TxFrameType         = FDCAN_DATA_FRAME;
 			instance.tx_header.DataLength          = _dlcDataLengthToCode(input_instance.tx_len);

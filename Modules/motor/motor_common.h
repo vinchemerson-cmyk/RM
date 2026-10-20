@@ -32,18 +32,18 @@ enum Closeloop_Type_e
 /** @brief 组合控制器的前馈来源。 */
 enum Feedfoward_Type_e
 {
-	FEEDFORWARD_NONE              = 0b000,//不启用任何前馈
-	CURRENT_FEEDFORWARD           = 0b001,//启动电流前馈
-	SPEED_FEEDFORWARD             = 0b010,//启动速度前馈
-	FORCE_FEEDFORWARD             = 0b100,//启动力前馈
-	CURRENT_AND_SPEED_FEEDFORWARD = CURRENT_FEEDFORWARD | SPEED_FEEDFORWARD,//启动电流速度双环
+	FEEDFORWARD_NONE              = 0b000,                                   //不启用任何前馈
+	CURRENT_FEEDFORWARD           = 0b001,                                   //启动电流前馈
+	SPEED_FEEDFORWARD             = 0b010,                                   //启动速度前馈
+	FORCE_FEEDFORWARD             = 0b100,                                   //启动力前馈
+	CURRENT_AND_SPEED_FEEDFORWARD = CURRENT_FEEDFORWARD | SPEED_FEEDFORWARD, //启动电流速度双环
 };
 
 /** @brief 电机输出方向。 */
 enum Motor_Reverse_Flag_e
 {
-	MOTOR_DIRECTION_NORMAL  = 0,
-	MOTOR_DIRECTION_REVERSE = 1,
+	MOTOR_DIRECTION_NORMAL  = 0,//正转
+	MOTOR_DIRECTION_REVERSE = 1,//反转
 };
 
 /** @brief 反馈来自电机自身或外部传感器。 */
@@ -55,10 +55,10 @@ enum Feedback_Source_e
 };
 
 /** @brief 反馈方向是否反转。 */
-enum Feedback_Reverse_Flag_e
+enum Feedback_Reverse_Flag_e//fixme:与电机输出方向合并一下
 {
-	FEEDBACK_DIRECTION_NORMAL  = 0,
-	FEEDBACK_DIRECTION_REVERSE = 1,
+	FEEDBACK_DIRECTION_NORMAL  = 0,//正转
+	FEEDBACK_DIRECTION_REVERSE = 1,//反转
 };
 
 /** @brief 电机停止或使能状态。 */
@@ -75,9 +75,9 @@ enum Motor_Working_Type_e
  */
 struct Motor_Control_Setting_s
 {
-	Closeloop_Type_e        outer_loop_type{};  //外环
-	Closeloop_Type_e        close_loop_type{};  //使用的(串级)闭环
-	Motor_Reverse_Flag_e    motor_reverse_flag{};  //电机反转标志
+	Closeloop_Type_e     outer_loop_type{};    //外环
+	Closeloop_Type_e     close_loop_type{};    //使用的(串级)闭环
+	Motor_Reverse_Flag_e motor_reverse_flag{}; //电机反转标志
 
 	/**
 	 *region 反馈反转标志与电机输出反转标志的合并
@@ -87,9 +87,9 @@ struct Motor_Control_Setting_s
 	 *endregion
 	 */
 
-	Feedback_Source_e       angle_feedback_source{};//角度反馈
-	Feedback_Source_e       speed_feedback_source{};//速度反馈
-	Feedfoward_Type_e       feedforward_flag{};  //前馈标志
+	Feedback_Source_e angle_feedback_source{}; //角度反馈
+	Feedback_Source_e speed_feedback_source{}; //速度反馈
+	Feedfoward_Type_e feedforward_flag{};      //前馈标志
 
 	float    angle{};
 	float    speed{};

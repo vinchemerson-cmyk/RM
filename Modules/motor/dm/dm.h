@@ -12,15 +12,19 @@
 
 namespace DM
 {
+
+	//电机类型
 	enum Motor_Type_e
 	{
 		MOTOR_TYPE_UNKNOWN = 0,
 		DM4310,
+		DM4340
 	};
 
+	//电机初始化参数
 	struct Motor_Init_Config_s
 	{
-		Motor_Controller_Init_s controller_param_init_config{};
+		DM_Motor_Controller_Init_s controller_param_init_config{};
 		Motor_Control_Setting_s controller_setting_init_config{};
 		Motor_Type_e            motor_type{};
 		FdcanConfigType    can_init_config{};
@@ -45,7 +49,7 @@ struct DM_Motor_s
 
 struct MIT_Init_Config_s
 {
-	MIT_Controller_Init_s controller_param_init_config{};
+	MIT_Controller_Init_s controller_param_init_config{}; // FIXME: [编译错误] MIT_Controller_Init_s 未定义；motor_common.h 中只有 DM_Motor_Controller_Init_s，且它没有 Kp/Kd 字段
 	Motor_Reverse_Flag_e motor_reverse_flag{};
 	canConfig::Fdcan::Config can_init_config{};
 

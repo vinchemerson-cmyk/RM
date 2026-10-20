@@ -24,7 +24,7 @@ namespace
 		DJI::Motor_Init_Config_s config{};
 		config.motor_type                                        = type;
 		config.can_init_config.can_handle                        = shoot::kCanHandle;
-		config.can_init_config.rx_id                             = id;
+		config.can_init_config.can_id                             = id;
 		config.controller_setting_init_config.close_loop_type    = SPEED_AND_CURRENT_LOOP;
 		config.controller_setting_init_config.outer_loop_type    = SPEED_AND_CURRENT_LOOP;
 		config.controller_setting_init_config.motor_reverse_flag =
