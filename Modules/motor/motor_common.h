@@ -20,13 +20,13 @@
 /** @brief 选择控制器参与的电流、速度和角度闭环。 */
 enum Closeloop_Type_e
 {
-	OPEN_LOOP              = 0b0000,
-	CURRENT_LOOP           = 0b0001,
-	SPEED_LOOP             = 0b0010,
-	ANGLE_LOOP             = 0b0100,
-	SPEED_AND_CURRENT_LOOP = 0b0011,
-	ANGLE_AND_SPEED_LOOP   = 0b0110,
-	ALL_THERE_LOOP         = 0b0111,
+	OPEN_LOOP              = 0b0000,//开环
+	CURRENT_LOOP           = 0b0001,//电流环
+	SPEED_LOOP             = 0b0010,//速度环
+	ANGLE_LOOP             = 0b0100,//角度环
+	SPEED_AND_CURRENT_LOOP = 0b0011,//速度电流串环
+	ANGLE_AND_SPEED_LOOP   = 0b0110,//角度速度串环
+	ALL_THERE_LOOP         = 0b0111,//三环
 };
 
 /** @brief 组合控制器的前馈来源。 */
@@ -62,10 +62,10 @@ enum Feedback_Reverse_Flag_e
 };
 
 /** @brief 电机停止或使能状态。 */
-enum Motor_Wokking_Type_e
+enum Motor_Working_Type_e
 {
-	MOTOR_STOP   = 0,
-	MOTOR_ENABLE = 1,
+	MOTOR_STOP   = 0,//软件禁止输出
+	MOTOR_ENABLE = 1,//软件允许输出
 };
 
 /**
@@ -100,13 +100,15 @@ struct Motor_Control_Setting_s
 /** @brief 控制器运行时所引用的反馈、前馈和三个 PID 环。 */
 struct Motor_Controller_s
 {
-	float*      other_angle_feedback_ptr{}; //
-	float*      other_speed_feedback_ptr{};
+	float*      other_angle_feedback_ptr{}; //其他来源的反馈数据指针
+	float*      other_speed_feedback_ptr{};//
 	float*      speed_feedforward_ptr{};
 	float*      current_feedforward_ptr{};
+
 	PIDInstance current_PID{};	//电流环
 	PIDInstance speed_PID{};	//速度环
 	PIDInstance angle_PID{};	//角度环
+
 	float       pid_ref{};	//pid反馈
 };
 
@@ -120,6 +122,29 @@ struct Motor_Controller_Init_s
 	PID_Init_Config_s current_PID{};
 	PID_Init_Config_s speed_PID{};
 	PID_Init_Config_s angle_PID{};
+};
+
+/** @brief DM电机控制器初始化参数*/
+struct DM_Motor_Controller_Init_s
+{
+	float*            other_angle_feedback_ptr{};
+	float*            other_speed_feedback_ptr{};
+	float*            speed_feedforward_ptr{};
+	float*            current_feedforward_ptr{};
+	float*            force_feedforward_ptr{};
+	PID_Init_Config_s current_PID{};
+	PID_Init_Config_s speed_PID{};
+	PID_Init_Config_s angle_PID{};
+
+	Feedback_Source_e angle_feedback_source{};
+	Feedback_Source_e speed_feedback_source{};
+
+	float min_angle{};
+	float max_angle{};
+	float max_speed{};
+	float max_torque{};
+
+	bool reverse{};
 };
 
 /**

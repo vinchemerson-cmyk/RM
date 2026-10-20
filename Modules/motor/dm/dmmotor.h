@@ -2,8 +2,18 @@
 #define DMMOTOR_H
 #include <cstdint>
 #include "algorithm/pid.h"
+#include "can/can.h"
 #include "motor/motor_common.h"
 
+struct MIT_Init_Config_s;
+
+namespace DM
+{
+	struct Motor_Init_Config_s;
+}
+
+using DmCan = CAN_<Fdcan>;
+using DmCanInstance = DmCan::Instance;
 //以下宏定义在第一次使用DM框架时请务必根据实际情况更改
 
 #define DM_MOTOR_CNT 6 //达妙电机注册数量最大值
@@ -66,33 +76,43 @@ typedef enum
 
 typedef struct
 {
-    DM_Motor_Measure_s measure;
+	float ref_angle;//角度参考值
+	float ref_speed;//速度参考值
+	float ref_torque;//力矩参考值
+	float Kp;
+	float Kd;
+} MIT_Controller_s;
+
+typedef struct
+{
+
+};
+
+typedef struct
+{
+    DM_Motor_Measure_s measure{};
 
     //普通模式配置的PID相关设置
-    DMMotor_Control_Setting_s motor_settings;
+    Motor_Control_Setting_s motor_settings;
     PIDInstance speed_PID;
     PIDInstance angle_PID;
 
     //普通模式配置的反馈与前馈指针
-    float *other_angle_feedback_ptr;
-    float *other_speed_feedback_ptr;
-    float *speed_feedforward_ptr;
-    float *force_feedforward_ptr;
-    float pid_ref;
+    float *other_angle_feedback_ptr{};
+    float *other_speed_feedback_ptr{};
+    float *speed_feedforward_ptr{};
+    float *force_feedforward_ptr{};
+    float pid_ref{};
 
     //MIT模式配置的参数
-    float MIT_ref_angle;
-    float MIT_ref_speed;
-    float MIT_ref_torque;
-    float MIT_Kp;
-    float MIT_Kd;
+	MIT_Controller_s MIT_controller{};
 
-    int rx_refresh_dt;//用于通过实时观测变量来监测总线通信质量不参与通信超时的判断（看门狗依赖DM内置的timeout）
+    int rx_refresh_dt{};//用于通过实时观测变量来监测总线通信质量不参与通信超时的判断（看门狗依赖DM内置的timeout）
     //如果观察该变量大于等于2，则说明通信质量低，请检查布线是否规范，总线负载是否过高
-    int rx_init_flag;//第一次收到反馈标志位，用于防止多圈角度计数错误
+    int rx_init_flag{};//第一次收到反馈标志位，用于防止多圈角度计数错误
 
     Motor_Working_Type_e stop_flag;//软件关闭电机标志位
-    CANInstance *motor_can_instance;//电机对应的CAN通信实例
+    DmCanInstance *motor_can_instance{};//达妙电机对应的FDCAN通信实例
     Motor_Control_Type_e working_type;//工作模式
 } DMMotorInstance;//DM电机实例
 
@@ -109,7 +129,7 @@ typedef enum
  * @param config 电机初始化结构体，包含了电机控制设置，电机PID参数设置，电机类型以及电机挂载的CAN设置
  * @return 返回一个DM电机实例
  */
-DMMotorInstance *DMMotorInit(DMMotor_Init_Config_s *config);
+inline DMMotorInstance *DMMotorInit(DM::Motor_Init_Config_s *config);
 
 /**
  * @brief DM普通模式下设置最外环参考值，内环参考值请通过前馈指针设置
@@ -138,7 +158,7 @@ void DMMotorChangeFeed(DMMotorInstance *motor, Closeloop_Type_e loop, Feedback_S
  * @param config 电机初始化结构体，包含了MIT参数设置，电机反转标志位设置，电机挂载的CAN设置
  * @return 返回一个DM电机实例
  */
-DMMotorInstance *MITMotorInit(MIT_Init_Config_s *config);
+inline DMMotorInstance *MITMotorInit(MIT_Init_Config_s *config);
 
 /**
  * @brief MIT模式下设置位置参考值
