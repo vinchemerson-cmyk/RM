@@ -28,7 +28,7 @@ namespace imu
 			/** @brief 清除四元数和时间基准。 */
 			void Reset();
 
-			/**
+		/**
          * @brief 用一次六轴采样更新姿态。
          * @param acceleration_mps2 三轴加速度，单位 m/s²。
          * @param angular_velocity_rad_s 三轴角速度，单位 rad/s。
