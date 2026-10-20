@@ -31,10 +31,10 @@ struct PID_Init_Config_s
 	float kp{};
 	float ki{};
 	float kd{};
-	float output_min{};
-	float output_max{};
-	float integral_min{};
-	float integral_max{};
+	float output_min{};//输出最小值
+	float output_max{};//输出最大值
+	float integral_min{};//积分最小值
+	float integral_max{};//积分最大值
 };
 
 /**
