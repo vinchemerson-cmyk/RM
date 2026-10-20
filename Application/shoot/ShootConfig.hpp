@@ -15,8 +15,8 @@ namespace shoot
 	inline constexpr bool             kFeederReverse     = false;
 	inline constexpr bool             kRightReverse      = false;
 	inline constexpr bool             kLeftReverse       = true;
-	inline constexpr float            kFeederGearRatio   = 36.0F;
-	inline constexpr uint32_t         kFeederPocketCount = 8U;
+	inline constexpr float            kFeederGearRatio   = 36.0F;//齿轮比
+	inline constexpr uint32_t         kFeederPocketCount = 8U;//拨弹盘槽数
 	inline constexpr ControlConfig    kControlConfig{
 		.enable_feeder             = kEnableFeeder,
 		.wheel_speed_dps           = 6000.0F, // 三电机联调：转子 1000 RPM，不使用发射用 6000 RPM。
