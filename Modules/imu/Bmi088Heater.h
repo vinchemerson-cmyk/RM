@@ -15,7 +15,7 @@ namespace bmi088Heater
 	{
 		PID_Init_Config_s pid{};
 		float             target_temper{}; //目标温度
-		float             cutoff_temper{};
+		float             cutoff_temper{}; //截止温度(最高温不应大于此值
 	};
 
 	/**

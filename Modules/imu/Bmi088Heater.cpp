@@ -16,13 +16,13 @@ namespace bmi088Heater
 {
 	namespace
 	{
-		PIDInstance  controller{};
-		pwmType*     heaterPwm = nullptr;
-		float        targetCelsius{};
-		float        cutoffCelsius{};
-		bool         running{};
-		Config       taskConfig{};
-		osThreadId_t taskHandle = nullptr;
+		PIDInstance  controller{};         //BMI088的加热器PID实例
+		pwmType*     heaterPwm = nullptr;  //加热器pwm类型
+		float        targetCelsius{};      //目标摄氏度
+		float        cutoffCelsius{};      //过温阈值
+		bool         running{};            //是否运行
+		Config       taskConfig{};         //加热器配置
+		osThreadId_t taskHandle = nullptr; //任务句柄
 
 		constexpr osThreadAttr_t taskAttributes = {
 			.name       = "Bmi088Heater",
@@ -30,15 +30,16 @@ namespace bmi088Heater
 			.priority   = osPriorityBelowNormal,
 		};
 
+		//配置是否合法
 		bool ValidConfig(const Config& config)
 		{
 			//非法判定
 			if (!std::isfinite(config.target_temper) || !std::isfinite(config.cutoff_temper) ||
-				config.target_temper <= -40.0F || config.target_temper >= config.cutoff_temper ||
-				config.cutoff_temper > 85.0F || config.pid.output_min != 0.0F ||
+				config.target_temper <= 40.0F || config.target_temper >= config.cutoff_temper ||
+				config.cutoff_temper > 60.0F || config.pid.output_min != 0.0F ||
 				config.pid.output_max > 1.0F)
 				return false;
-			PIDInstance candidate;
+			PIDInstance candidate;//候选
 			return candidate.Configure(config.pid);
 		}
 
@@ -88,9 +89,9 @@ namespace bmi088Heater
 		// 温度数据的更新周期约为 1.28 秒；期间保持 PWM 为零。
 		ZeroOutput();
 		osDelay((1300U * osKernelGetTickFreq() + 999U) / 1000U);
-		float initialTemperature{};
+		float initialTemperature{};//温度下限
 		if (BMI088_ReadTemperature(&initialTemperature) != HAL_OK ||
-			!std::isfinite(initialTemperature) || initialTemperature < -40.0F ||
+			!std::isfinite(initialTemperature) || initialTemperature < 30.0F ||//todo: 加热器初始温度应该略小于环境温度
 			initialTemperature >= config.cutoff_temper)
 		{
 			controller.Disable();
@@ -99,7 +100,7 @@ namespace bmi088Heater
 
 		if (heaterPwm == nullptr)
 		{
-			const pwmConfig::Config pwmConfig{&htim3, pwmConfig::channel::CHANNEL_4};
+			constexpr pwmConfig::Config pwmConfig{.tim_handle = &htim3, .use_channel = pwmConfig::channel::CHANNEL_4};
 			heaterPwm = pwm::Register(pwmConfig);
 		}
 		ZeroOutput();
@@ -125,14 +126,14 @@ namespace bmi088Heater
 
 		float temperature{};
 		if (BMI088_ReadTemperature(&temperature) != HAL_OK ||
-			!std::isfinite(temperature) || temperature < -40.0F ||
+			!std::isfinite(temperature) || temperature < -10.0F ||
 			temperature >= cutoffCelsius)
 		{
 			Stop();
 			return false;
 		}
 
-		pwm::setDutyCycle(heaterPwm, controller.Update(targetCelsius, temperature, dt_s));
+		pwm::setDutyCycle( heaterPwm, controller.Update(targetCelsius, temperature, dt_s));
 		return true;
 	}
 
