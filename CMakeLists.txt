@@ -50,8 +50,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         Application/gimbal/gimbal.cpp
         Application/gimbal/gimbal.h
         Application/gimbal/GimbalConfig.hpp
-        Modules/imu/Bmi088.cpp
-        Modules/imu/Bmi088.h
+        BSP/imu/Bmi088.cpp
+        BSP/imu/Bmi088.h
         Modules/imu/AttitudeEstimator.cpp
         Modules/imu/AttitudeEstimator.h
         Modules/imu/ImuTask.cpp

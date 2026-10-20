@@ -5,11 +5,11 @@
 
 #include "ImuTask.h"
 
-#include "Bmi088.h"
-#include "FreeRTOS.h"
 #include "cmsis_os2.h"
+#include "FreeRTOS.h"
 #include "main.h"
 #include "task.h"
+#include "../../BSP/imu/Bmi088.h"
 
 namespace imu
 {

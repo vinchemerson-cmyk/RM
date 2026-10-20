@@ -5,10 +5,10 @@
 
 #include "Bmi088Heater.h"
 
-#include "Bmi088.h"
 #include "cmsis_os2.h"
-#include "pwm/pwm.hpp"
 #include "tim.h"
+#include "../../BSP/imu/Bmi088.h"
+#include "pwm/pwm.hpp"
 
 #include <cmath>
 
