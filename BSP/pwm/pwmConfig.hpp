@@ -6,8 +6,6 @@
 #ifndef PWM_CONFIG_HPP
 #define PWM_CONFIG_HPP
 
-#include <cstdint>
-
 extern "C" {
 #include "main.h"
 }
@@ -25,7 +23,7 @@ namespace pwmConfig
 		CHANNEL_1 = TIM_CHANNEL_1,
 		CHANNEL_2 = TIM_CHANNEL_2, //buzzer
 		CHANNEL_3 = TIM_CHANNEL_3,
-		CHANNEL_4 = TIM_CHANNEL_4,
+		CHANNEL_4 = TIM_CHANNEL_4,//heaterPWM
 	};
 
 	// PWM 逻辑实例的持久属性.

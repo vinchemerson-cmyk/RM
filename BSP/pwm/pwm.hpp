@@ -8,7 +8,6 @@
 
 #include <array>
 #include <cstdint>
-
 #include "pwmConfig.hpp"
 
 class pwm
