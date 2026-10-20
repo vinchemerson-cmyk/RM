@@ -100,7 +100,7 @@ namespace canConfig
 	//-------------FDCAN配置-------------
 	struct Fdcan
 	{
-		static constexpr uint8_t  DATA_SIZE         = 64;
+		static constexpr uint8_t  DATA_SIZE         = 8;//不能用64字节模式一次性控制多个达妙电机
 		static constexpr uint8_t  MAX_FILTER_AMOUNT = 12;
 		static constexpr bool     IS_CLASSIC        = false;
 		static constexpr uint32_t FD_FORMAT         = FDCAN_CLASSIC_CAN;

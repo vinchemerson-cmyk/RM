@@ -273,7 +273,7 @@ class CAN_
 			// 上限取 CubeMX 配置的实际过滤器数量, 而非模板的 MAX_FILTER_AMOUNT:
 			// HAL_FDCAN_ConfigFilter() 对 FilterIndex >= StdFiltersNbr 只做 assert_param,
 			// Release 构建下会静默写入 Message RAM 之外, 因此这里必须显式拦住.
-			const uint8_t       filter_limit =
+			const auto       filter_limit =
 				static_cast<uint8_t>(config_instance.can_handle->Init.StdFiltersNbr);
 			if (*filter_amount >= filter_limit || *filter_amount >= canType::MAX_FILTER_AMOUNT)
 				Error_Handler();
@@ -332,7 +332,7 @@ class CAN_
 			instance.tx_header.TxFrameType         = FDCAN_DATA_FRAME;
 			instance.tx_header.DataLength          = _dlcDataLengthToCode(input_instance.tx_len);
 			instance.tx_header.ErrorStateIndicator = FDCAN_ESI_ACTIVE;
-			instance.tx_header.BitRateSwitch       = FDCAN_BRS_OFF;
+			instance.tx_header.BitRateSwitch       = FDCAN_BRS_ON;
 			instance.tx_header.FDFormat            = canType::FD_FORMAT;
 			instance.tx_header.TxEventFifoControl  = FDCAN_NO_TX_EVENTS;
 			instance.tx_header.MessageMarker       = 0;
