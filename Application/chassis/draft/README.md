@@ -12,7 +12,6 @@
 - ChassisDraft.hpp：配置、命令、反馈、模式和四轮目标/速度估计。
 - ChassisDraftBus.hpp：调用当前SubRegister/PubRegister等接口的板内适配草稿。
 - ChassisDraftCheck.cpp：独立电脑端数学自检，不是固件源码，不加入正式CMake。
-- ChassisScenarioCheck.cpp：新增的独立场景检查，含消息接口替身；不恢复被清空的旧自检文件。
 
 保留现有chassis.cpp/chassis_control.h及其未提交修改；不修改Robot.cpp或根CMake，
 不创建RTOS任务、不注册CAN、电机，不调用DJI_Motor_Control。
@@ -76,15 +75,8 @@ Gimbal坐标速度通过云台相对底盘yaw转换；Follow模式使用带连�
 消息只含值，不包含指针、HAL句柄或PID对象。板内可memcpy，跨板不得直接假定
 结构体字节布局、时钟或浮点编码一致；当前Result也未承诺符合interboard的48字节上限。
 
-## 独立验证
+## 验证边界
 
-在仓库根目录执行（输出目录需已存在）：
-
-```powershell
-g++ -std=c++20 -Wall -Wextra -Werror -I Modules Application/chassis/draft/ChassisScenarioCheck.cpp -o build/chassis-scenario-check.exe
-./build/chassis-scenario-check.exe
-```
-
-检查矩阵正反解、坐标变换、斜坡/反向、跟随死区、轮速饱和、急停、超时、反馈失效、
-非法dt、时间回绕及端点消息恢复。使用简单消息替身，不证明真实message_center并发、
-电机方向、CAN发送、安全动作或功率限制正确。
+按要求移除含main()的独立场景检查文件及其消息接口替身；草稿不提供可执行入口。
+历史版本的离线场景检查通过不代表真实message_center并发、电机方向、CAN发送、
+安全动作或功率限制已验证。接入前仍需完成独立验证及实机测试。
