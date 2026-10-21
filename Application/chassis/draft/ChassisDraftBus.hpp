@@ -1,8 +1,8 @@
 /** @file ChassisDraftBus.hpp @brief 板内发布订阅草稿，不创建任务或调用电机。 */
 #pragma once
+#include <type_traits>
 #include "ChassisDraft.hpp"
 #include "message_center/message_center.h"
-#include <type_traits>
 
 namespace chassis::draft
 {
@@ -25,13 +25,14 @@ public:
 
     // 周期任务提供实时安全许可、统一输出轴反馈及实际dt。
     // 调用方必须将每次返回的停止结果落实到电机，不能仅在有新消息时发指令。
-    Result Tick(bool safety_allowed, const WheelFeedback& feedback, uint32_t now_ms, float dt_s)
+    Result Tick(bool safety_allowed, const WheelFeedback& feedback, uint32_t now_ms, float dt_s,
+                float speed_scale = 1.0F)
     {
         if (subscriber_ == nullptr || publisher_ == nullptr) return {};
         if (SubGetMessage(subscriber_, &latest_) != 0U) have_command_ = true;
-        Result result = controller_.Update(latest_, have_command_, safety_allowed, feedback, now_ms, dt_s);
-        // 安全撤销后废弃旧指令；恢复时必须有新命令，且仍须外部安全模块解锁。
-        if (!safety_allowed) have_command_ = false;
+        Result result = controller_.Update(latest_, have_command_, safety_allowed, feedback, now_ms, dt_s, speed_scale);
+        // 安全撤销、超时、反馈或时序异常后废弃旧指令；恢复须有新消息和外部安全解锁。
+        if (!result.output_requested) have_command_ = false;
         (void)PubPushMessage(publisher_, &result);
         return result;
     }
