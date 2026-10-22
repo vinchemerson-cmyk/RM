@@ -32,6 +32,7 @@
 #include "can/can.h"
 #include "can/canConfig.h"
 #include "motor/motor_common.h"
+#include "dji_controller.h"
 
 inline constexpr float k6020CommandUnitsPerAmp = 5461.333 ;
 
@@ -49,8 +50,8 @@ namespace DJI
 	/** @brief DJI 电机的控制器、型号和经典 CAN 注册配置。 */
 	struct Motor_Init_Config_s
 	{
-		Motor_Controller_Init_s controller_param_init_config{};
-		Motor_Control_Setting_s controller_setting_init_config{};
+		DJ_Motor_Controller_Init_s controller_param_init_config{};
+		DJ_Motor_Control_Setting_s controller_setting_init_config{};
 		Motor_Type_e            motor_type{};
 		classicCanConfigType    can_init_config{};
 	};
@@ -63,8 +64,8 @@ namespace DJI
  */
 struct DJI_Motor_s
 {
-	Motor_Controller_s                     controller{};
-	Motor_Control_Setting_s                motor_settings{};
+	DJ_Motor_Controller_s                     controller{};
+	DJ_Motor_Control_Setting_s                motor_settings{};
 	DJI::Motor_Type_e                      motor_type{DJI::MOTOR_TYPE_NONE};
 	Motor_Feedback_s                       feedback{};
 	CAN_<canConfig::classicCan>::Instance* can_instance{};

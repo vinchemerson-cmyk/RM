@@ -84,8 +84,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         Middlewares/Third_Party/SEGGER/RTT/SEGGER_RTT.c
         Middlewares/Third_Party/SEGGER/RTT/SEGGER_RTT_printf.c
         Modules/motor/dji/dji.cpp
+        Modules/motor/dji/dji_controller.cpp
         Modules/motor/dji/dji.h
-        Modules/motor/motor_common.cpp
         Modules/motor/motor_common.h
         Modules/motor/angle_target.h
         Application/chassis/chassis.cpp

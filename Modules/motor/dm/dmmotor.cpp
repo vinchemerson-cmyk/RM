@@ -1,412 +1,184 @@
-/**
- * @file dmmotor.cpp
- * @author MSC1309(msc1309@hnu.edu.cn)
- * @brief 达妙电机驱动，模仿dji_motor.c，对老代码进行优化而产出的统一，稳定的版本
- * @version 0.1
- * @date 2026-07-30
- *
- * @copyright Copyright (c) 2026
- *
- */
-
+/** @file dmmotor.cpp @brief MIT驱动，整理自原MSC1309实现；不含普通PID分支。 */
 #include "dmmotor.h"
-#include <cstring>
-#include "bsp_log.h"
-#include "dm.h"
-#include "memory.h"
-#include "dwt/bsp_dwt.h"
+#include "cmsis_os2.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include <limits>
 
-static uint8_t idx_dm = 0;//用于记录注册的电机数量
-static DMMotorInstance dm_motor_instance[DM_MOTOR_CNT];//提前定义好空白电机实例
-static uint8_t dm_cycle_cnt = 0;//用于分频计数，控制DM任务周期
-
-/* 两个用于将uint值和float值进行映射的函数,在设定发送值和解析反馈值时使用 */
-static uint16_t float_to_uint(float x, float x_min, float x_max, uint8_t bits)
+namespace
 {
-    float span = x_max - x_min;
-    float offset = x_min;
-    return (uint16_t)((x - offset) * ((float)((1 << bits) - 1)) / span);
+DMMotorInstance motors[DM_MOTOR_CNT]{};
+uint8_t count{}, cycle{};
+
+HAL_StatusTypeDef Send(DMMotorInstance& motor, const classicCan::Input& input)
+{
+    if (motor.motor_can_instance == nullptr) return HAL_ERROR;
+    ++motor.tx_enqueue_attempts;
+    const auto status = motor.motor_can_instance->Transmit(input);
+    if (status != HAL_OK) ++motor.tx_enqueue_failures;
+    return status;
 }
-static float uint_to_float(int x_int, float x_min, float x_max, int bits)
+HAL_StatusTypeDef SendMode(DMMotorInstance& motor, DMMotor_Mode_e command)
 {
-    float span = x_max - x_min;
-    float offset = x_min;
-    return ((float)x_int) * span / ((float)((1 << bits) - 1)) + offset;
+    classicCan::Input input{};
+    input.tx_len = 8U;
+    input.tx_buffer.fill(0xFFU);
+    input.tx_buffer[7] = static_cast<uint8_t>(command);
+    return Send(motor, input); // 只填报文，不memset CAN实例。
 }
-
-//用于给电机发送设置性质的指令，包含使能，失能，重设零点，清除错误
-static void DMMotorSetMode(DMMotor_Mode_e cmd, DMMotorInstance *motor)
+bool SendControl(DMMotorInstance& motor, bool active)
 {
-    memset(motor->motor_can_instance, 0xff, 7);  //发送电机指令的时候前面7bytes都是0xff//bug // BUG: [隐患] memset 给非平凡类型 CAN Instance 写 0xff，会破坏实例状态；下方已改用 Fdcan::Input，本行应删除
-
-	Fdcan::Input input{};
-	input.tx_len = 8U;
-	input.tx_buffer.fill(0xFF);
-	input.tx_buffer[7] = static_cast<uint8_t>(cmd);
-
-	motor->motor_can_instance->Transmit(input); // 最后一位是命令id
-}
-
-//DM电机接收回调函数，用于处理接收到的数据
-static void DMMotorDecode(FdcanType* attribute)
-{
-	if (attribute == nullptr || attribute->module_handle == nullptr)
-		return;
-
-	auto* motor =
-	static_cast<DMMotorInstance*>(attribute->module_handle);
-
-	if (motor->motor_can_instance == nullptr)
-		return;
-
-	const auto& rx = motor->motor_can_instance->output;
-	if (rx.rx_len != 8U)
-		return;
-
-	const uint8_t* rxbuff  = rx.rx_buffer.data();
-	auto*          measure = &motor->measure;
-	// 用于暂存解析值,稍后转换成float数据,避免多次创建临时变量
-
-	motor->rx_refresh_dt = 0; //一旦接收到反馈重置计数
-
-	uint8_t ERR    = (rxbuff[0] >> 4) & 0x0F;
-	measure->state = ERR; //解析状态位
-
-	measure->last_position = measure->position; //保存上一次的角度，用于多圈计算
-
-	auto tmp          = static_cast<uint16_t>((rxbuff[1] << 8) | rxbuff[2]);
-	measure->position = uint_to_float(tmp, DM_P_MIN, DM_P_MAX, 16); //解析角度
-
-	if (motor->rx_init_flag == 0)
-	{
-		measure->last_position = measure->position; //防止因为第一次接受到数据时measure->last_position默认为0导致计数错误
-		motor->rx_init_flag    = 1;
-	}
-
-	tmp               = static_cast<uint16_t>((rxbuff[3] << 4) | rxbuff[4] >> 4);
-	measure->velocity = uint_to_float(tmp, DM_V_MIN, DM_V_MAX, 12); //解析速度
-
-	tmp             = static_cast<uint16_t>(((rxbuff[4] & 0x0f) << 8) | rxbuff[5]);
-	measure->torque = uint_to_float(tmp, DM_T_MIN, DM_T_MAX, 12); //解析力矩
-
-	measure->T_Mos   = static_cast<float>(rxbuff[6]);
-	measure->T_Rotor = static_cast<float>(rxbuff[7]); //解析电机温度
-
-	// 多圈角度计数算法，前提是两次采样周期间隔内电机转动的角度不超过DM_P_MAX
-	if (motor->measure.position - motor->measure.last_position > DM_P_MAX)
-		motor->measure.total_round -= 1;
-	else if (motor->measure.position - motor->measure.last_position < -DM_P_MAX)
-		motor->measure.total_round += 1;
-	motor->measure.total_position = motor->measure.position + motor->measure.total_round * 2 * DM_P_MAX;
-}
-
-//用于自动恢复通信（清除timeout错误），自动使能意外失能的电机
-static void DMAutoRecoverComm(DMMotorInstance *motor)
-{
-    if (motor->measure.state == DM_STATE_DISABLE)
-        DMMotorSetMode(DM_CMD_MOTOR_MODE, motor);
-    if (motor->measure.state == DM_STATE_COMM_LOST)
-        DMMotorSetMode(DM_CMD_CLEAR_ERROR, motor);
-}
-
-//普通模式初始化函数
-DMMotorInstance *DMMotorInit(DM::Motor_Init_Config_s *config)
-{
-    if (idx_dm >= DM_MOTOR_CNT){//注册电机数量超过最大值，报错
-        LOGERROR("[dmmotor] Too many motors!");
-        return nullptr;
+    dmProtocol::Command command{};
+    if (active)
+    {
+        const float sign = motor.motor_reverse_flag == MOTOR_DIRECTION_REVERSE ? -1.0F : 1.0F;
+        command = {sign * motor.MIT_controller.ref_angle, sign * motor.MIT_controller.ref_speed,
+            sign * motor.MIT_controller.ref_torque, motor.MIT_controller.Kp, motor.MIT_controller.Kd};
     }
-
-    if(config->can_init_config.master_id > 0x0F){//电机的txid大于0xF，会使电机状态位解析值不可预测，报错//反馈帧tx_id
-        LOGERROR("[dmmotor] txID is greater than 0x0F.");
-        return nullptr;
+    classicCan::Input input{};
+    input.tx_len = 8U;
+    const bool valid = dmProtocol::Pack(command, motor.protocol_limits, input.tx_buffer);
+    if (!valid)
+    {
+        motor.stop_flag = MOTOR_STOP;
+        if (!dmProtocol::Pack({}, motor.protocol_limits, input.tx_buffer)) return false;
     }
+    return Send(motor, input) == HAL_OK && valid;
+}
+void DecodeFeedback(classicCanType* attribute)
+{
+    if (attribute == nullptr || attribute->module_handle == nullptr) return;
+    auto& motor = *static_cast<DMMotorInstance*>(attribute->module_handle);
+    if (motor.motor_can_instance == nullptr) return;
+    const auto& rx = motor.motor_can_instance->output;
+    dmProtocol::Feedback raw{};
+    if (!dmProtocol::Unpack(rx.rx_buffer.data(), rx.rx_len, motor.protocol_limits, raw) ||
+        raw.motor_id != attribute->master_id) return;
 
-    DMMotorInstance *motor = &dm_motor_instance[idx_dm];
-    idx_dm++;
-
-    //将注册信息填入实例中
-    motor->motor_settings = config->controller_setting_init_config;
-	motor->speed_PID.Reset();
-	motor->angle_PID.Reset();
-    motor->other_angle_feedback_ptr = config->controller_param_init_config.other_angle_feedback_ptr;
-    motor->other_speed_feedback_ptr = config->controller_param_init_config.other_speed_feedback_ptr;
-    motor->speed_feedforward_ptr = config->controller_param_init_config.speed_feedforward_ptr;
-    motor->force_feedforward_ptr = config->controller_param_init_config.force_feedforward_ptr;
-
-    //为电机实例注册CAN总线
-    config->can_init_config.can_callback_func = DMMotorDecode;
-    config->can_init_config.can_id = motor; // BUG: [编译错误] can_id 是 uint32_t，这里却赋 DMMotorInstance*；模块句柄应写 module_handle（参考 MITMotorInit 第 177 行）
-	motor->motor_can_instance =
-	DmCan::Register(config->can_init_config);
-
-    //模式为普通模式
-    motor->working_type = NORMAL_MODE;
-
-    //开启并使能电机
-    DMMotorEnable(motor);
-    DMMotorSetMode(DM_CMD_MOTOR_MODE, motor);
-    
-    return motor;
+    const float sign = motor.motor_reverse_flag == MOTOR_DIRECTION_REVERSE ? -1.0F : 1.0F;
+    const float position = sign * raw.position;
+    auto& feedback = motor.measure;
+    feedback.last_position = motor.rx_init_flag != 0 ? feedback.position : position;
+    const float span = motor.protocol_limits.position_max - motor.protocol_limits.position_min;
+    if (position - feedback.last_position > span * 0.5F && feedback.total_round > INT32_MIN)
+        --feedback.total_round;
+    else if (position - feedback.last_position < -span * 0.5F && feedback.total_round < INT32_MAX)
+        ++feedback.total_round;
+    feedback.position = position;
+    feedback.total_position = position + static_cast<float>(feedback.total_round) * span;
+    feedback.velocity = sign * raw.velocity;
+    feedback.torque = sign * raw.torque;
+    feedback.state = raw.state;
+    feedback.T_Mos = raw.mos_temperature;
+    feedback.T_Rotor = raw.rotor_temperature;
+    feedback.last_update_tick = osKernelGetTickCount();
+    motor.rx_init_flag = 1;
+    ++motor.feedback_sequence;
+    motor.rx_refresh_dt = 0;
+    motor.motor_can_instance->feedback_tick = feedback.last_update_tick;
+}
 }
 
-//MIT模式初始化函数
-DMMotorInstance *MITMotorInit(MIT_Init_Config_s *config)
+DMMotorInstance* MITMotorInit(const MIT_Init_Config_s* config)
 {
-    if (idx_dm >= DM_MOTOR_CNT) {//注册电机数量超过最大值，报错
-        LOGERROR("[dmmotor] Too many motors!");
+    if (config == nullptr || count >= DM_MOTOR_CNT || config->can_init_config.can_handle == nullptr ||
+        config->can_init_config.can_handle->Init.FrameFormat != FDCAN_FRAME_CLASSIC ||
+        config->can_init_config.master_id == 0U || config->can_init_config.master_id > 0xFU ||
+        config->can_init_config.can_id > 0x7FFU || !dmProtocol::Valid(config->protocol_limits) ||
+        config->feedback_timeout_ms == 0U || config->feedback_timeout_ms >= 0x80000000U ||
+        !std::isfinite(config->controller_param_init_config.Kp) ||
+        !std::isfinite(config->controller_param_init_config.Kd) ||
+        config->controller_param_init_config.Kp < 0.0F || config->controller_param_init_config.Kp > config->protocol_limits.kp_max ||
+        config->controller_param_init_config.Kd < 0.0F || config->controller_param_init_config.Kd > config->protocol_limits.kd_max ||
+        (config->motor_reverse_flag != MOTOR_DIRECTION_NORMAL && config->motor_reverse_flag != MOTOR_DIRECTION_REVERSE))
         return nullptr;
-    }
+    for (uint8_t i = 0U; i < count; ++i)
+        if (motors[i].motor_can_instance->dependency.hcan == config->can_init_config.can_handle &&
+            (motors[i].motor_can_instance->attribute.can_id == config->can_init_config.can_id ||
+             motors[i].motor_can_instance->attribute.master_id == config->can_init_config.master_id)) return nullptr;
 
-    if(config->can_init_config.master_id > 0x0F){//电机的masterid大于0xF，会使电机状态位解析值不可预测，报错
-        LOGERROR("[dmmotor] txID is greater than 0x0F.");
-        return nullptr;
-    }
-
-    DMMotorInstance *motor = &dm_motor_instance[idx_dm];
-    idx_dm++;
-
-    //将注册信息填入实例中
-    motor->motor_settings.motor_reverse_flag = config->motor_reverse_flag;
-
-    motor->MIT_controller.Kp = config->controller_param_init_config.Kp; // FIXME: [编译错误] MIT_Init_Config_s 没有 controller_param_init_config 成员；需在 dm.h 中定义 Kp/Kd 字段
-    motor->MIT_controller.Kd = config->controller_param_init_config.Kd; // FIXME: [编译错误] 同上：controller_param_init_config 不存在，Kd 无法读取
-
-    //为电机实例注册CAN总线
-	config->can_init_config.can_callback_func = DMMotorDecode;
-	config->can_init_config.module_handle     = motor;
-
-	motor->motor_can_instance =
-		CAN_<Fdcan>::Register(config->can_init_config);
-
-    //模式为MIT模式
-    motor->working_type = MIT_MODE;
-
-    //开启并使能电机
-    DMMotorEnable(motor);
-    DMMotorSetMode(DM_CMD_MOTOR_MODE, motor);
-    
-    return motor;
+    auto& motor = motors[count];
+    motor = {};
+    motor.motor_reverse_flag = config->motor_reverse_flag;
+    motor.protocol_limits = config->protocol_limits;
+    motor.feedback_timeout_ms = config->feedback_timeout_ms;
+    motor.MIT_controller.Kp = config->controller_param_init_config.Kp;
+    motor.MIT_controller.Kd = config->controller_param_init_config.Kd;
+    auto can_config = config->can_init_config;
+    can_config.can_callback_func = DecodeFeedback;
+    can_config.module_handle = &motor;
+    motor.motor_can_instance = DmCan::Register(can_config);
+    if (motor.motor_can_instance == nullptr) return nullptr;
+    ++count;
+    return &motor;
 }
 
-int16_t ClampOutput(const float output, const float limit)
+void DMMotorEnable(DMMotorInstance* motor)
 {
-	if (output > limit)
-		return static_cast<int16_t>(limit);
-	if (output < -limit)
-		return static_cast<int16_t>(-limit);
-	return static_cast<int16_t>(output);
+    if (motor == nullptr) return;
+    taskENTER_CRITICAL();
+    motor->enable_sequence = motor->feedback_sequence;
+    taskEXIT_CRITICAL();
+    motor->enable_tick = osKernelGetTickCount();
+    motor->enable_pending = SendMode(*motor, DM_CMD_MOTOR_MODE) == HAL_OK;
+    motor->stop_flag = motor->enable_pending ? MOTOR_ENABLE : MOTOR_STOP;
 }
-
-/// @brief 两种模式下均可使用的通用函数
-//开启电机（注意不是使能）
-void DMMotorEnable(DMMotorInstance *motor)
+void DMMotorStop(DMMotorInstance* motor)
 {
-    motor->stop_flag = MOTOR_ENABLE;
-}
-
-//关闭电机，使电机的输出为0，清空PID（注意不是失能）
-void DMMotorStop(DMMotorInstance *motor) 
-{
+    if (motor == nullptr) return;
     motor->stop_flag = MOTOR_STOP;
+    motor->enable_pending = false;
+    motor->MIT_controller.ref_angle = motor->MIT_controller.ref_speed = motor->MIT_controller.ref_torque = 0.0F;
+    (void)SendControl(*motor, false);
 }
-
-//用于重设零点
-void DMMotorCaliEncoder(DMMotorInstance *motor)
+void DMMotorDisable(DMMotorInstance* motor)
 {
-    DMMotorSetMode(DM_CMD_ZERO_POSITION, motor);
-    DWT_Delay(0.01);//重设零点会使电机短时间内无法使用，需要延时一段时间
+    if (motor == nullptr) return;
+    DMMotorStop(motor);
+    (void)SendMode(*motor, DM_CMD_RESET_MODE);
 }
-
-/// @brief 普通模式下设置各种参数
-//切换电机最外层闭环
-void DMMotorOuterLoop(DMMotorInstance *motor, Closeloop_Type_e type)
+void DMMotorCaliEncoder(DMMotorInstance* motor)
 {
-    motor->motor_settings.outer_loop_type = type;
+    if (motor == nullptr || motor->stop_flag != MOTOR_STOP) return;
+    // 非阻塞；只是入队，不能当成电机已完成重设。
+    if (SendMode(*motor, DM_CMD_ZERO_POSITION) == HAL_OK)
+    {
+        taskENTER_CRITICAL();
+        motor->rx_init_flag = 0;
+        motor->measure.total_round = 0;
+        taskEXIT_CRITICAL();
+    }
 }
+void DMMotorSetMITAngle(DMMotorInstance* motor, float value) { if (motor != nullptr) motor->MIT_controller.ref_angle = value; }
+void DMMotorSetMITSpeed(DMMotorInstance* motor, float value) { if (motor != nullptr) motor->MIT_controller.ref_speed = value; }
+void DMMotorSetMITTorque(DMMotorInstance* motor, float value) { if (motor != nullptr) motor->MIT_controller.ref_torque = value; }
 
-//切换电机反馈模式
-void DMMotorChangeFeed(DMMotorInstance *motor, Closeloop_Type_e loop, Feedback_Source_e type)
-{
-    if (loop == ANGLE_LOOP)
-        motor->motor_settings.angle_feedback_source = type;
-    else if (loop == SPEED_LOOP)
-        motor->motor_settings.speed_feedback_source = type;
-}
-
-//设置最外环参考值，内环参考值请通过前馈指针设置
-void DMMotorSetRef(DMMotorInstance *motor, float ref)
-{
-    motor->pid_ref = ref;
-}
-
-/// @brief MIT模式下设置各种参数
-void DMMotorSetMITAngle(DMMotorInstance *motor, float angle)
-{
-    motor->MIT_controller.ref_angle = angle;
-}
-
-void DMMotorSetMITSpeed(DMMotorInstance *motor, float speed)
-{
-    motor->MIT_controller.ref_speed = speed;
-}
-
-void DMMotorSetMITTorque(DMMotorInstance *motor, float torque)
-{
-    motor->MIT_controller.ref_torque = torque;
-}
-
-//DM任务函数，以一定频率执行（取决于DM_TASK_CYCLE），用于PID计算，发送控制帧，以及维护通信
 void DMMotorTask()
 {
-	//用于控制函数执行周期
-	if (idx_dm == 0)
-		return;
-
-	if (++dm_cycle_cnt < DM_TASK_CYCLE)
-		return;
-
-	dm_cycle_cnt = 0;
-
-	// 执行电机控制
-
-	DMMotor_Send_s       motor_send_mailbox;
-
-	for(int i = 0;i < idx_dm; i++){//遍历所有电机实例，分别执行任务
-
-		DMMotorInstance*         dmmotor       = &dm_motor_instance[i];
-		Motor_Control_Setting_s* motor_setting = &dmmotor->motor_settings;
-		DM_Motor_Measure_s*      measure       = &dmmotor->measure;
-
-		dmmotor->rx_refresh_dt++;//每遍历到这个电机一次，计数就自增一次
-
-		DMAutoRecoverComm(dmmotor);//自动恢复通信，将通信丢失和意外失能的电机重新拉回到使能状态
-
-		if (dmmotor->working_type == MIT_MODE)//MIT模式需要发送的控制帧
-		{
-			DMMotor_Send_s dmmotor_send{};
-			//将参数从浮点数转换为uint形式
-			motor_send_mailbox.position_des = ClampOutput(dmmotor_send.position_des, DM_P_MAX);
-			motor_send_mailbox.velocity_des = ClampOutput(dmmotor_send.velocity_des, DM_V_MAX);
-			motor_send_mailbox.torque_des   = ClampOutput(dmmotor_send.torque_des, DM_T_MAX);
-			motor_send_mailbox.Kp           = ClampOutput(dmmotor_send.Kp, KP_MAX);
-			motor_send_mailbox.Kd           = ClampOutput(dmmotor_send.Kp, KD_MAX);
-
-			//有反向标志位的情况
-			if (motor_setting->motor_reverse_flag == MOTOR_DIRECTION_REVERSE){
-				MIT_Controller_s MIT_Controller{};
-				motor_send_mailbox.position_des = ClampOutput(- MIT_Controller.ref_angle, DM_P_MAX);
-				motor_send_mailbox.velocity_des = ClampOutput(- MIT_Controller.ref_speed, DM_V_MAX);
-				motor_send_mailbox.torque_des   = ClampOutput(- MIT_Controller.ref_torque, DM_T_MAX);
-			}
-
-			//如果电机被关闭，则清空其PID以及力矩输出
-			if (dmmotor->stop_flag == MOTOR_STOP)
-			{
-				motor_send_mailbox.torque_des = float_to_uint(0, DM_T_MIN, DM_T_MAX, 12);
-				motor_send_mailbox.Kp         = float_to_uint(0, KP_MIN, KP_MAX, 12);
-				motor_send_mailbox.Kd         = float_to_uint(0, KD_MIN, KD_MAX, 12);
-			}
-
-			//将参数按通信协议中的格式填入到tx_buff中
-			Fdcan::Input input{};
-			input.tx_len = 8U;
-			auto& buffer = input.tx_buffer;
-
-			buffer[0] = static_cast<uint8_t>(motor_send_mailbox.position_des >> 8);
-			buffer[1] = static_cast<uint8_t>(motor_send_mailbox.position_des);
-			buffer[2] = static_cast<uint8_t>(motor_send_mailbox.velocity_des >> 4);
-			buffer[3] = static_cast<uint8_t>(
-				((motor_send_mailbox.velocity_des & 0xFU) << 4) |
-				(motor_send_mailbox.Kp >> 8));
-			buffer[4] = static_cast<uint8_t>(motor_send_mailbox.Kp);
-			buffer[5] = static_cast<uint8_t>(motor_send_mailbox.Kd >> 4);
-			buffer[6] = static_cast<uint8_t>(
-				((motor_send_mailbox.Kd & 0xFU) << 4) |
-				(motor_send_mailbox.torque_des >> 8));
-			buffer[7] = static_cast<uint8_t>(motor_send_mailbox.torque_des);
-
-			//发送控制帧
-			dmmotor->motor_can_instance->Transmit(input); // BUG: [逻辑] 与第 329 行重复发送同一控制帧
-		}
-		else if (dmmotor->working_type == NORMAL_MODE)//普通模式需要发送的控制帧
-		{
-			float pid_ref, pid_measure;
-
-			pid_ref = dmmotor->pid_ref;
-
-			if (motor_setting->motor_reverse_flag == MOTOR_DIRECTION_REVERSE)//如果设置反向，直接将参考值反转符号
-				pid_ref *= -1;
-
-			if ((motor_setting->close_loop_type & ANGLE_LOOP) && motor_setting->outer_loop_type == ANGLE_LOOP)//如果启用了角度环且最外层闭环为角度环，则计算角度环
-			{
-				if (motor_setting->angle_feedback_source == OTHER_FEED)//判断是否使用电机反馈
-					pid_measure = *dmmotor->other_angle_feedback_ptr;
-				else
-					pid_measure = measure->total_position;
-
-				pid_ref = PIDCalculate(&dmmotor->angle_PID, pid_measure, pid_ref); //对总角度进行闭环，而不是单圈角度 // FIXME: [编译错误] PIDCalculate 未声明；pid.h 已改为 PIDInstance::Update(target, measurement, dt_s)
-			}
-
-			if ((motor_setting->close_loop_type & SPEED_LOOP) && (motor_setting->outer_loop_type & (ANGLE_LOOP | SPEED_LOOP)))//如果启用了速度环且最外层闭环为角度环或速度环，则计算速度环
-			{
-				if (motor_setting->feedforward_flag & SPEED_FEEDFORWARD)
-					pid_ref += *dmmotor->speed_feedforward_ptr; //速度前馈
-
-				if (motor_setting->speed_feedback_source == OTHER_FEED)//判断是否使用电机反馈
-					pid_measure = *dmmotor->other_speed_feedback_ptr;
-				else
-					pid_measure = measure->velocity;
-
-				pid_ref = PIDCalculate(&dmmotor->speed_PID, pid_measure, pid_ref);//对速度环闭环 // FIXME: [编译错误] PIDCalculate 未声明；应改为 speed_PID.Update(...)
-			}
-
-
-			if (motor_setting->feedforward_flag & FORCE_FEEDFORWARD)
-				pid_ref += *dmmotor->force_feedforward_ptr;//力矩前馈
-
-			float set = pid_ref;//得到最终的控制值
-
-			LIMIT_MIN_MAX(set, DM_T_MIN, DM_T_MAX);//进行限幅防止溢出
-
-			//只对力矩（控制量）进行设置，其他均为0
-			motor_send_mailbox.position_des = float_to_uint(0, DM_P_MIN, DM_P_MAX, 16);
-			motor_send_mailbox.velocity_des = float_to_uint(0, DM_V_MIN, DM_V_MAX, 12);
-			motor_send_mailbox.torque_des   = float_to_uint(set, DM_T_MIN, DM_T_MAX, 12);
-			motor_send_mailbox.Kp           = float_to_uint(0, KP_MIN, KP_MAX, 12);
-			motor_send_mailbox.Kd           = float_to_uint(0, KD_MIN, KD_MAX, 12);
-
-			//如果电机被关闭，则清空其PID以及力矩输出
-			if (dmmotor->stop_flag == MOTOR_STOP)
-			{
-				motor_send_mailbox.torque_des = float_to_uint(0, DM_T_MIN, DM_T_MAX, 12);
-				angle_PID.Reset(&dmmotor->angle_PID); // FIXME: [编译错误] PIDClear 未声明；应改为 angle_PID.Reset()
-				PIDClear(&dmmotor->speed_PID); // FIXME: [编译错误] PIDClear 未声明；应改为 speed_PID.Reset()
-			}
-
-			//将参数按通信协议中的格式填入到tx_buff中
-			Fdcan::Input input{};
-			input.tx_len = 8U;
-
-			input.tx_buffer[0] =
-				static_cast<uint8_t>(motor_send_mailbox.position_des >> 8);
-			input.tx_buffer[1] =
-				static_cast<uint8_t>(motor_send_mailbox.position_des);
-			input.tx_buffer[2] =
-				static_cast<uint8_t>(motor_send_mailbox.velocity_des >> 8);
-			input.tx_buffer[3] =
-				static_cast<uint8_t>(motor_send_mailbox.velocity_des);
-			input.tx_buffer[4] =
-				static_cast<uint8_t>(motor_send_mailbox.Kp);
-			input.tx_buffer[5] =
-				static_cast<uint8_t>(motor_send_mailbox.Kd>>4);
-			input.tx_buffer[6] =
-				static_cast<uint8_t>(((motor_send_mailbox.Kd & 0xFU) << 4) |(motor_send_mailbox.torque_des >> 8));
-			input.tx_buffer[7] =
-				static_cast<uint8_t>(motor_send_mailbox.torque_des);
-
-			//发送控制帧
-			dmmotor->motor_can_instance->Transmit(motor_send_mailbox[]);
-		}
-	}
+    if (count == 0U) { cycle = 0U; return; }
+    if (++cycle < DM_TASK_CYCLE) return;
+    cycle = 0U;
+    const uint32_t now = osKernelGetTickCount();
+    for (uint8_t i = 0U; i < count; ++i)
+    {
+        auto& motor = motors[i];
+        taskENTER_CRITICAL();
+        const auto feedback = motor.measure;
+        const bool seen = motor.rx_init_flag != 0;
+        const uint32_t feedback_sequence = motor.feedback_sequence;
+        if (motor.rx_refresh_dt < std::numeric_limits<int>::max()) ++motor.rx_refresh_dt;
+        taskEXIT_CRITICAL();
+        const bool fresh = seen && now - feedback.last_update_tick <= motor.feedback_timeout_ms;
+        if (motor.enable_pending)
+        {
+            if (fresh && feedback_sequence != motor.enable_sequence && feedback.state == DM_STATE_ENABLE)
+                motor.enable_pending = false;
+            else if (now - motor.enable_tick > motor.feedback_timeout_ms)
+            { motor.enable_pending = false; motor.stop_flag = MOTOR_STOP; }
+        }
+        if (!motor.enable_pending && seen && (!fresh || feedback.state != DM_STATE_ENABLE)) motor.stop_flag = MOTOR_STOP;
+        const bool active = motor.stop_flag == MOTOR_ENABLE && !motor.enable_pending && fresh && feedback.state == DM_STATE_ENABLE;
+        // 未见有效反馈时发送零转矩，故障不自动清错或恢复。
+        if (!SendControl(motor, active)) motor.stop_flag = MOTOR_STOP;
+    }
 }

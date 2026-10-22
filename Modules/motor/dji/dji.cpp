@@ -216,8 +216,8 @@ namespace
 	 */
 	float ComputeOutput(DJI_Motor_s& motor, const Motor_Feedback_s& feedback, const float dt_s)
 	{
-		const Motor_Control_Setting_s& setting    = motor.motor_settings;
-		Motor_Controller_s&            controller = motor.controller;
+		const DJ_Motor_Control_Setting_s& setting    = motor.motor_settings;
+		DJ_Motor_Controller_s&            controller = motor.controller;
 
 		//速度反馈
 		const float speed_feedback = setting.speed_feedback_source == OTHER_FEED
@@ -305,7 +305,7 @@ DJI_Motor_s* DJI_Motor_Init(const DJI::Motor_Init_Config_s& config_instance)
 	motor.motor_settings = config_instance.controller_setting_init_config;
 
 	// 未使用的环允许全零参数；当前闭环所需的 PID 必须已成功配置。
-	if (!Motor_Controller_InitPids(motor.controller, config_instance.controller_param_init_config))
+	if (!DJ_Motor_Controller_InitPids(motor.controller, config_instance.controller_param_init_config))
 		return nullptr;
 
 	switch (motor.motor_settings.close_loop_type)
