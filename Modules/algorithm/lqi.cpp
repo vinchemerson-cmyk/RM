@@ -105,6 +105,7 @@ LQI_Solve_Status LQI_Solve(const LQI_Model_s&  model, const LQI_Init_Config_s&  
 	//10:相对容差非正
 	//11:绝对容差非有限
 	//12:绝对容差为负
+	//
 	if (!std::isfinite(model.sample_period_s) || model.sample_period_s <= 0.0 ||
 		!std::isfinite(config.sample_period_s) || config.sample_period_s <= 0.0F ||
 		std::fabs(model.sample_period_s - config.sample_period_s) >
