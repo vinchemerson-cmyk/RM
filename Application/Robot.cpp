@@ -20,7 +20,6 @@ namespace
 											  (InfantryInitialization::ENABLE_GIMBAL ? 2048U : 0U) +
 											  (InfantryInitialization::ENABLE_SHOOT ? 3072U : 0U) +
 											  (InfantryInitialization::ENABLE_INTERBOARD ? 2048U : 0U) +
-											  (InfantryInitialization::ENABLE_UART_SERIAL ? 2048U : 0U) +
 											  (InfantryInitialization::ENABLE_ENCODER_UART7 ? 2048U : 0U) +
 											  (InfantryInitialization::ENABLE_BUZZER ? 1024U : 0U);
 	static_assert(configTOTAL_HEAP_SIZE >= kApplicationStackBytes + 8192U,
@@ -58,9 +57,6 @@ void InfantryInit(void)
 	// 双板链路独占指定 FDCAN，须先于同一路 CAN 上的其他模块注册。
 	if (InfantryInitialization::ENABLE_INTERBOARD && !interboard::Start())
 		Error_Handler();
-
-	if (InfantryInitialization::ENABLE_UART_SERIAL)
-		serialTasks::CreateUartSerialTask();
 
 	if (InfantryInitialization::ENABLE_BUZZER)
 		appTasks::CreateBuzzerTask();

@@ -7,7 +7,7 @@
  * 投递到 osMessageQueue; UartSerialTask 阻塞出队后用 DMA 原样发回。
  *
  * 关键约束:
- *   - 任务在第一次循环前才注册串口 (而非 CreateUartSerialTask 时),
+ *   - 任务在第一次循环前才注册串口,
  *     此时调度器已运行, 可安全使用 osDelay;
  *   - 发送 HAL_BUSY 表示上一次 DMA 尚未完成, 等待 1ms 重试;
  *   - BSP 会把待发数据复制到 AXI SRAM 的长期缓冲区, DMA 完成前
@@ -106,17 +106,3 @@ namespace
 	}
 } // namespace
 
-/** @brief 创建 UART7 回环任务和接收队列；重复调用不重复创建。 */
-void serialTasks::CreateUartSerialTask()
-{
-	if (taskHandle != nullptr)
-		return;
-
-	rxQueue = osMessageQueueNew(kQueueDepth, sizeof(Packet), nullptr);
-	if (rxQueue == nullptr)
-		Error_Handler();
-
-	taskHandle = osThreadNew(Task, nullptr, &taskAttrs);
-	if (taskHandle == nullptr)
-		Error_Handler();
-}
