@@ -43,25 +43,25 @@ namespace chassis::draft
 
 	struct Config
 	{
-		bool                          commissioned{false}; // 机构、方向和安全策略确认前不得设为true。
-		float                         wheel_radius_m{};//车轮半径
-		float                         wheelbase_m{};   // 前后轮中心距离；假定四轮在矩形四角。
-		float                         track_width_m{}; // 左右轮中心距离。
-		float                         max_translation_mps{};//底盘最大平移速度
-		float                         max_yaw_dps{};//最大底盘yaw轴转速(小陀螺用?
-		float                         max_wheel_output_dps{}; // 实际车轮轴，不是电机转子。
-		float                         follow_gain_per_s{};    // yaw误差deg -> yaw速度deg/s；不照搬参考平方增益。
-		float                         spin_yaw_dps{};//小陀螺转速
-		uint32_t                      command_timeout_ms{100U}; // 草稿值，接入时与指令发布周期核对。
-		uint32_t                      feedback_timeout_ms{100U};//反馈超时
+		bool                          commissioned{false};       // 机构、方向和安全策略确认前不得设为true。
+		float                         wheel_radius_m{};          //车轮半径
+		float                         wheelbase_m{};             // 前后轮中心距离；假定四轮在矩形四角。
+		float                         track_width_m{};           // 左右轮中心距离。
+		float                         max_translation_mps{};     //底盘最大平移速度
+		float                         max_yaw_dps{};             //最大底盘yaw轴转速(小陀螺用?
+		float                         max_wheel_output_dps{};    // 实际车轮轴，不是电机转子。
+		float                         follow_gain_per_s{};       // yaw误差deg -> yaw速度deg/s；不照搬参考平方增益。
+		float                         spin_yaw_dps{};            //小陀螺转速
+		uint32_t                      command_timeout_ms{100U};  // 草稿值，接入时与指令发布周期核对。
+		uint32_t                      feedback_timeout_ms{100U}; //反馈超时
 		float                         max_dt_s{0.001F};
 		// 各轮正向滚动的驱动方向角，从底盘+x向+y为正；不是轮轴指向。
 		// 必须按实物填写，不能套用麦轮公式。轮序FL/FR/RL/RR。
 		std::array<float, WheelCount> drive_direction_deg{};
-		float max_translation_accel_mps2{3.0F}; // 草稿起点，实车需按轮胎抓地/负载整定。
-		float max_yaw_accel_dps2{720.0F};
-		float follow_deadband_deg{1.0F}; // 跟随死区连续减去，避免边界速度跳变。
-		bool require_wheel_feedback{true}; // false仅用于离线仿真，不建议实车关闭。
+		float                         max_translation_accel_mps2{3.0F}; // 草稿起点，实车需按轮胎抓地/负载整定。
+		float                         max_yaw_accel_dps2{720.0F};
+		float                         follow_deadband_deg{1.0F};    // 跟随死区连续减去，避免边界速度跳变。
+		bool                          require_wheel_feedback{true}; // false仅用于离线仿真，不建议实车关闭。
 	};
 
 	struct Command
