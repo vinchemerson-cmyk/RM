@@ -8,10 +8,10 @@ namespace shoot
 {
 	inline FDCAN_HandleTypeDef* const kCanHandle         = &hfdcan2;
 	/** @brief 三电机测试阶段不注册或驱动拨弹盘。 */
-	inline constexpr bool             kEnableFeeder      = false;  //测拨弹盘是否启用
+	inline constexpr bool             kEnableFeeder      = true;  //测拨弹盘是否启用
 	inline constexpr uint32_t         kFeederFeedbackId  = 0x201U; // todo 拨弹盘电机	ID
-	inline constexpr uint32_t         kRightFeedbackId   = 0x202U; // M3508/C620 ID2
-	inline constexpr uint32_t         kLeftFeedbackId    = 0x201U; // M3508/C620 ID1
+	inline constexpr uint32_t         kRightFeedbackId   = 0x202U; // todo M3508/C620 ID2
+	inline constexpr uint32_t         kLeftFeedbackId    = 0x201U; // todo M3508/C620 ID1
 	inline constexpr bool             kFeederReverse     = false;
 	inline constexpr bool             kRightReverse      = false;
 	inline constexpr bool             kLeftReverse       = true;
