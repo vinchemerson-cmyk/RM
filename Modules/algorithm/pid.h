@@ -28,9 +28,9 @@
  */
 struct PID_Init_Config_s
 {
-	float kp{};
-	float ki{};
-	float kd{};
+	float kp{};//比例
+	float ki{};//积分
+	float kd{};//微分
 	float output_min{};//输出最小值
 	float output_max{};//输出最大值
 	float integral_min{};//积分最小值
