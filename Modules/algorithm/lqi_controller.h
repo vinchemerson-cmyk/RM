@@ -13,7 +13,7 @@ class LQIController
 		void Reset();
 		void Disable();
 
-		/**
+	/**
      * @brief 按 I=-K*[实际角度-目标角度,实际速度,误差积分] 计算电流 A。
      * @note 角度必须采用同一连续坐标，dt_s 使用实际控制周期。
      *       本周期使用 z[k] 计算输出，再更新 z[k+1]，与 DARE 积分模型一致。
