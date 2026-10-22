@@ -5,34 +5,45 @@
 
 namespace shoot
 {
-	enum class Trigger : uint8_t { Stop, Single, Continuous };
+	enum class Trigger : uint8_t
+	{
+		Stop,//触发
+		Single,//单发
+		Continuous//持续
+	};
 
-	enum class FeederState : uint8_t { Idle, Single, Continuous, Reversing, Fault };
+	enum class FeederState : uint8_t
+	{
+		Idle,//闲置的
+		Single,//单发
+		Continuous,//连发
+		Reversing,//反转
+		Fault//失败
+	};
 
 	/** @brief 所有速度、角度均为电机转子轴单位，反馈方向在电机驱动中归一化。 */
 	struct ControlConfig
 	{
-
 		//摩擦轮参数
-		bool     enable_feeder{true};       // 测试双摩擦轮时可单独禁止拨弹。
-		float    wheel_speed_dps{36000.0F}; // 转子目标转速 6000 RPM
+		bool     enable_feeder{true};                // 测试双摩擦轮时可单独禁止拨弹。
+		float    wheel_speed_dps{36000.0F};          // 转子目标转速 6000 RPM
 		float    wheel_acceleration_dps2{12000.0F};  //转子加速度
 		float    wheel_ready_tolerance_dps{1500.0F}; //转子与目标速度容忍误差
-		uint32_t wheel_ready_hold_ms{200U};		//就绪容忍时长
+		uint32_t wheel_ready_hold_ms{200U};          //就绪容忍时长
 
 		//拨弹与单发完成参数
-		float    feeder_speed_dps{12960.0F};     // 36:1 减速后拨盘 60 RPM
-		float    single_shot_angle_deg{2160.0F}; // 36:1，六槽拨盘一次 60 度
-		float    single_done_tolerance_deg{30.0F};//单发完成允许的角度误差
-		float    single_done_speed_dps{360.0F};//单发完成允许的最大实际速度绝对值
+		float feeder_speed_dps{12960.0F};       // 36:1 减速后拨盘 60 RPM
+		float single_shot_angle_deg{2160.0F};   // 36:1，六槽拨盘一次 60 度
+		float single_done_tolerance_deg{30.0F}; //单发完成允许的角度误差
+		float single_done_speed_dps{360.0F};    //单发完成允许的最大实际速度绝对值
 
 		//堵转检测与程序
-		float    stall_speed_dps{600.0F};//堵转检测速度阈值
-		int16_t  stall_current_raw{5000};//堵转检测大电流阈值
-		uint32_t stall_hold_ms{250U};//判定持续时间
-		float    reverse_speed_dps{6480.0F};//反转速度
-		uint32_t reverse_duration_ms{180U};//反转时间
-		uint8_t  max_reverse_attempts{3U};//最多尝试时间
+		float    stall_speed_dps{600.0F};    //堵转检测速度阈值
+		int16_t  stall_current_raw{5000};    //堵转检测大电流阈值
+		uint32_t stall_hold_ms{250U};        //判定持续时间
+		float    reverse_speed_dps{6480.0F}; //反转速度
+		uint32_t reverse_duration_ms{180U};  //反转时间
+		uint8_t  max_reverse_attempts{3U};   //最多尝试时间
 	};
 
 	struct ControlInput
@@ -53,7 +64,7 @@ namespace shoot
 		bool        feeder_enabled{};                       //是否使能拨弹盘
 		bool        feeder_position_mode{};                 //是否拨弹盘为位置模式
 		float       feeder_speed_dps{}, feeder_angle_deg{}; //摩擦轮速度位置
-		FeederState feeder_state{FeederState::Idle};        //摩擦轮状态
+		FeederState feeder_state{FeederState::Idle};        //拨弹盘状态
 	};
 
 	class Controller
@@ -201,11 +212,13 @@ namespace shoot
 			}
 
 		private:
+
+			//拨弹盘异常后复位
 			void CancelFeeder(Trigger trigger)
 			{
-				state_            = FeederState::Idle;
-				fire_armed_       = false;
-				previous_trigger_ = trigger;
+				state_            = FeederState::Idle;//初始化空闲状态
+				fire_armed_       = false;//safetyoff
+				previous_trigger_ = trigger;//上一次触发状态
 				reverse_attempts_ = 0U;
 				stall_tracking_   = false;
 				target_angle_     = 0.0F;

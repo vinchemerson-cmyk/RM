@@ -1,13 +1,13 @@
 /** @file shoot.cpp @brief 将遥控拨杆、反馈与发射状态机接入 DJI CAN 闭环。 */
 #include "shoot.h"
+#include "cmsis_os2.h"
+#include "FreeRTOS.h"
+#include "main.h"
 #include "ShootConfig.hpp"
+#include "task.h"
 #include "motor/dji/dji.h"
 #include "rc/rc.h"
 #include "safety/safety.h"
-#include "cmsis_os2.h"
-#include "FreeRTOS.h"
-#include "task.h"
-#include "main.h"
 
 namespace
 {
