@@ -95,6 +95,7 @@ add_executable(${CMAKE_PROJECT_NAME}
         Modules/motor/dm/dmmotor.cpp
         Application/chassis/chassis_control.h
         Modules/motor/speed_target.h
+        Application/chassis/ChassisConfig.h
 )
 
 # Add STM32CubeMX generated sources
