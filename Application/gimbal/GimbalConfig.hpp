@@ -46,7 +46,7 @@ inline FDCAN_HandleTypeDef* const kGimbalCanHandle = &hfdcan1;
 
 /** @brief 两轴 LQI 运动使能；pitch 保留行程方向保护。 */
 inline constexpr bool kEnableYaw   = true;
-inline constexpr bool kEnablePitch = true;
+inline constexpr bool kEnableAimPitch = true;
 
 /** @brief 独立于 yaw 运动使能保留编码器采集；禁用运动后仍可打印反馈。 */
 inline constexpr bool kReadYawEncoder = true;
@@ -57,11 +57,11 @@ inline constexpr bool kReadYawEncoder = true;
 inline constexpr uint32_t kYawMotorFeedbackId = 0x206U;
 
 /** @brief pitch 轴电机的反馈 ID (对应 GM6020 电调 ID1)。 */
-inline constexpr uint32_t kPitchMotorFeedbackId = 0x205U;
+inline constexpr uint32_t kAimPitchMotorFeedbackId = 0x205U;
 
 /** @brief 电机安装方向: 置 true 表示该轴输出与期望方向相反。 */
 inline constexpr bool kYawMotorReverse   = true;
-inline constexpr bool kPitchMotorReverse = false;
+inline constexpr bool kAimPitchMotorReverse = false;
 
 /** @brief GM6020 电流帧 0x1FE 的第 0/1 个槽位为 pitch ID1 / yaw ID2。 */
 
@@ -70,13 +70,13 @@ inline constexpr bool kPitchMotorReverse = false;
  * @note 开启前先记录物理零位的 13 位编码器值，并实测相对零位的可动角度。
  */
 inline constexpr bool kYawPositionMode   = true; // 与 pitch 一样使用位置目标，松杆保持。
-inline constexpr bool kPitchPositionMode = true; // 当前使用 LQI 位置目标；松杆保持。
+inline constexpr bool kAimPitchPositionMode = true; // 当前使用 LQI 位置目标；松杆保持。
 
 /**
  * @brief 相对物理零位的行程。continuous 仅用于已确认可以连续旋转的 yaw 轴。
  * @note 非连续轴的行程必须落在零点 ±180 度内；跨越多圈需另配绝对位置传感器。
  */
-inline constexpr uint16_t kPitchZeroRaw   = 893U;
+inline constexpr uint16_t kAimPitchZeroRaw   = 893U;
 inline constexpr uint16_t kPitchTopRaw    = 120U;
 inline constexpr uint16_t kPitchBottomRaw = 1490U;
 inline constexpr uint16_t kYawZeroRaw     = 3741U;
@@ -85,9 +85,9 @@ inline constexpr uint16_t kYawZeroRaw     = 3741U;
 inline constexpr float kPitchLimitMarginDeg = 7.0F;
 
 inline constexpr float kPitchTopDeg =
-	(static_cast<int32_t>(kPitchTopRaw) - kPitchZeroRaw) * (360.0F / 8192.0F);
+	(static_cast<int32_t>(kPitchTopRaw) - kAimPitchZeroRaw) * (360.0F / 8192.0F);
 inline constexpr float kPitchBottomDeg =
-	(static_cast<int32_t>(kPitchBottomRaw) - kPitchZeroRaw) * (360.0F / 8192.0F);
+	(static_cast<int32_t>(kPitchBottomRaw) - kAimPitchZeroRaw) * (360.0F / 8192.0F);
 static_assert(kPitchTopDeg + kPitchLimitMarginDeg < 0.0F &&
 			  kPitchBottomDeg - kPitchLimitMarginDeg > 0.0F,
 			  "Pitch endpoint guard zones must leave the horizontal zero inside the travel");
@@ -98,9 +98,9 @@ inline constexpr MotorAngleLimits kYawAngleLimits{
 inline constexpr MotorAngleLimits kPitchAngleLimits{
 	.calibrated = true,
 	.continuous = false,
-	.zero_raw   = kPitchZeroRaw,
-	.min_deg    = (kPitchMotorReverse ? -kPitchBottomDeg : kPitchTopDeg) + kPitchLimitMarginDeg,
-	.max_deg    = (kPitchMotorReverse ? -kPitchTopDeg : kPitchBottomDeg) - kPitchLimitMarginDeg
+	.zero_raw   = kAimPitchZeroRaw,
+	.min_deg    = (kAimPitchMotorReverse ? -kPitchBottomDeg : kPitchTopDeg) + kPitchLimitMarginDeg,
+	.max_deg    = (kAimPitchMotorReverse ? -kPitchTopDeg : kPitchBottomDeg) - kPitchLimitMarginDeg
 };
 
 //如果开启偏航位置模式 (kYawPositionMode=true)，则必须配置好偏航角度限制
@@ -108,7 +108,7 @@ static_assert(!kEnableYaw || !kYawPositionMode || kYawAngleLimits.IsConfigured()
 			  "Yaw position mode requires measured travel or confirmed continuous rotation");
 
 //开启俯仰位置控制模式，就必须配置非连续型的实测机械角度限位，编译期静态检查，不满足则编译失败。
-static_assert(!kEnablePitch || !kPitchPositionMode ||
+static_assert(!kEnableAimPitch || !kAimPitchPositionMode ||
 			  (!kPitchAngleLimits.continuous && kPitchAngleLimits.IsConfigured()),
 			  "Pitch position mode requires measured mechanical limits");
 
@@ -211,7 +211,7 @@ inline constexpr LQI_Model_s kYawLqiModel{
 /** @brief 上电单次增益求解的迭代上限与收敛阈值。 */
 inline constexpr LQI_Solver_Options_s kGimbalLqiSolverOptions{};
 
-static_assert(kPitchPositionMode, "Pitch LQI requires position targets");
+static_assert(kAimPitchPositionMode, "Pitch LQI requires position targets");
 static_assert(kYawPositionMode || kYawLqiGainSource == GimbalLqiGainSource::Manual,
 			  "Yaw speed-only test requires manual gains");
 static_assert(kYawSpeedTestCurrentLimitA > 0.0F && kYawSpeedTestCurrentLimitA <= kGimbalCurrentLimitA,

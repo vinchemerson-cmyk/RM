@@ -47,19 +47,19 @@ namespace
 
 	/** @brief 角度目标在失联或重新使能时会同步到当前反馈。 */
 	MotorAngleTarget             yawTarget{};                //yaw的目标
-	MotorAngleTarget             pitchTarget{};              //pitch的目标
+	MotorAngleTarget             aim_pitchTarget{};              //aimpitch的目标
 	LQIController                yawLqi{};                   //yaw的lqi
-	LQIController                pitchLqi{};                 //pitch的lqi
+	LQIController                aim_pitchLqi{};                 //aimpitch的lqi
 	Motor_Feedback_s             yawControlFeedback{};       //yaw的控制反馈
 	uint32_t                     yawControlTick{};           //yaw的控制滴答
 	float                        yawControlTargetSpeedDps{}; //位置模式下为摇杆给定的目标角度变化率，仅诊断。
 	serialTasks::EncoderSnapshot yawControlSnapshot{};       //yaw编码器快照
-	serialTasks::EncoderSnapshot pitchControlSnapshot{};	 //pitch编码器快照
-	bool                         yawPulseArmed     = false;//yaw测试脉冲就绪标志
+	serialTasks::EncoderSnapshot aim_pitchControlSnapshot{};     //pitch编码器快照
+	bool                         yawPulseArmed     = false;  //yaw测试脉冲就绪标志
 	bool                         yawPulseActive    = false;
 	uint32_t                     yawPulseStartTick = 0U;
 	float                        yawPulseDirection = 0.0F;
-	gimbal::yawonetest    remoteCommandTest{};
+	gimbal::yawonetest           remoteCommandTest{};
 	static_assert(!kYawRemoteCommandTestEnabled || !kYawFixedCurrentTestEnabled,
 				  "Remote command test and fixed current test are mutually exclusive");
 
@@ -75,6 +75,7 @@ namespace
  * @param feedback_id 该电机的反馈 ID, 决定它在指令帧中的槽位。
  * @param reverse 输出方向是否取反。
  * @note LQI 直接写入电流指令，MCU 上的三层 PID 均不参与，电机内部电流环保持开启。
+ * @bug:云台应为DM电机
  */
 	DJI::Motor_Init_Config_s MakeMotorConfig(const DJI::Motor_Type_e motor_type, const uint32_t feedback_id,
 											 const bool              reverse)
@@ -97,7 +98,7 @@ namespace
 		config.controller_setting_init_config.feedforward_flag      = FEEDFORWARD_NONE;
 
 		config.can_init_config.can_handle = kGimbalCanHandle;
-		config.can_init_config.can_id      = feedback_id;
+		config.can_init_config.can_id     = feedback_id;
 		return config;
 	}
 
@@ -160,17 +161,17 @@ namespace
 	}
 
 	/**
- * @brief 更新单轴目标；急停或遥控失联后发送零输出，测试模式不检查电机反馈超时。
- * @note 位置模式重新使能时先将目标同步到当前角度，避免重新追逐旧目标。
- * todo read
- */
+	* @brief 更新单轴目标；急停或遥控失联后发送零输出，测试模式不检查电机反馈超时。
+	* @note 位置模式重新使能时先将目标同步到当前角度，避免重新追逐旧目标。
+	* todo read
+	*/
 	void UpdateAxis(DJI_Motor_s* motor, MotorAngleTarget& target, LQIController& lqi,
 					bool         outputAllowed, const MotorAngleLimits& limits,
 					float        stick, float targetRateDps, float dt_s, bool positionMode = true)
 	{
 		if (motor == nullptr)
 			return;
-		const Motor_Feedback_s feedback = FeedbackSnapshot(*motor);
+		const Motor_Feedback_s feedback = FeedbackSnapshot(*motor);//拷贝一份反馈快照
 		if (motor == yawMotor)
 		{
 			yawControlFeedback       = feedback;
@@ -226,7 +227,7 @@ namespace
 			motor->motor_settings.speed           = speedTarget;
 			motor->motor_settings.angle           = feedback.total_angle;
 			motor->motor_settings.current         = lqi.UpdateRecoverySpeed(speedTarget, feedback.speed, dt_s) *
-											k6020CommandUnitsPerAmp;
+													k6020CommandUnitsPerAmp;
 			if (!motor->enabled)
 				DJI_Motor_Enable(motor);
 			return;
@@ -259,8 +260,8 @@ namespace
 			yawControlTargetSpeedDps = std::fmax(-1.0F, std::fmin(1.0F, stick)) * targetRateDps;
 		motor->motor_settings.angle_epoch = feedback.angle_epoch;
 		const float feedforwardA          = motor == yawMotor
-									   ? kYawTargetSpeedFeedforwardAperDps * yawControlTargetSpeedDps
-									   : 0.0F;
+												? kYawTargetSpeedFeedforwardAperDps * yawControlTargetSpeedDps
+												: 0.0F;
 		const float currentA = lqi.Update(motor->motor_settings.angle, feedback.total_angle,
 										  feedback.speed, dt_s, feedforwardA);
 		motor->motor_settings.current = currentA * k6020CommandUnitsPerAmp;
@@ -325,8 +326,8 @@ namespace
 		yawMotor->motor_settings.close_loop_type = CURRENT_LOOP;
 		yawMotor->motor_settings.speed           = 0.0F; // 无速度目标。
 		yawMotor->motor_settings.angle           = feedback.total_angle;
-		yawMotor->motor_settings.current         = yawPulseDirection * kYawFixedCurrentTestA *//电流设置
-										   k6020CommandUnitsPerAmp;
+		yawMotor->motor_settings.current         = yawPulseDirection * kYawFixedCurrentTestA * //电流设置
+												   k6020CommandUnitsPerAmp;
 
 		if (!yawMotor->enabled)
 			DJI_Motor_Enable(yawMotor);
@@ -351,8 +352,8 @@ namespace
 		snapshot.yaw_feedback_current_a  = yawControlFeedback.current;
 		snapshot.yaw_output_enabled      = yawMotor->enabled;
 		snapshot.yaw_command_current_a   = yawMotor->enabled
-											 ? yawMotor->motor_settings.current / k6020CommandUnitsPerAmp
-											 : 0.0F;
+											   ? yawMotor->motor_settings.current / k6020CommandUnitsPerAmp
+											   : 0.0F;
 		snapshot.yaw_position_current_a = yawMotor->enabled ? yawLqi.PositionCurrent() : 0.0F;
 		snapshot.yaw_speed_current_a    = yawMotor->enabled ? yawLqi.SpeedCurrent() : 0.0F;
 		snapshot.yaw_tx_attempts        = yawMotor->tx_enqueue_attempts;
@@ -382,10 +383,10 @@ namespace
 				dt_s = kGimbalMaxDtS;
 
 			const auto remote        = rc::Snapshot();
-			const bool outputAllowed =timingValid &&
+			const bool outputAllowed = timingValid &&
 									   rc::IsOnline() && safety::ShouldOutput();
-			float yawStick   = rc::Normalize(remote.channels[0]);//yaw摇杆值
-			float pitchStick = rc::Normalize(remote.channels[1]);//pitch摇杆值
+			float yawStick   = rc::Normalize(remote.channels[0]); //yaw摇杆值
+			float pitchStick = rc::Normalize(remote.channels[1]); //pitch摇杆值
 			if constexpr (kYawRemoteCommandTestEnabled)
 			{
 				const bool allowed = outputAllowed && kEnableYaw &&
@@ -393,7 +394,7 @@ namespace
 									 remote.switch_left == rc::Left_Switch_e::MIDDLE;
 				const bool requested = remote.switch_right == rc::Right_Switch_e::UP;
 				yawStick             = remoteCommandTest.Update(now, allowed, requested,
-													kYawRemoteCommandTestConfig);
+																kYawRemoteCommandTestConfig);
 				pitchStick = 0.0F;
 			}
 			if constexpr (kYawFixedCurrentTestEnabled)
@@ -404,7 +405,7 @@ namespace
 						   kYawAngleLimits, yawStick,
 						   kYawPositionMode ? kYawTargetRateDps : kYawSpeedTestMaxDps,
 						   dt_s, kYawPositionMode);
-			UpdateAxis(pitchMotor, pitchTarget, pitchLqi, outputAllowed && kEnablePitch,
+			UpdateAxis(pitchMotor, aim_pitchTarget, aim_pitchLqi, outputAllowed && kEnableAimPitch,
 					   kPitchAngleLimits, pitchStick,
 					   kPitchTargetRateDps, dt_s);
 
@@ -442,14 +443,14 @@ serialTasks::EncoderSnapshot gimbal::GetEncoderSnapshot()
 			const bool reverse = pitchMotor->motor_settings.motor_reverse_flag ==
 								 MOTOR_DIRECTION_REVERSE;
 			const float position_deg = static_cast<float>(MotorEncoderDelta(
-																			kPitchZeroRaw,
+																			kAimPitchZeroRaw,
 																			static_cast<uint16_t>(pitchMotor->feedback.
 																											  raw_angle)))
 									   *
 									   (360.0F / 8192.0F) * (reverse ? -1.0F : 1.0F);
 			snapshot.pitch_position_actual_deg = position_deg;
 			if (pitchMotor->enabled &&
-				pitchTarget.Ready() &&
+				aim_pitchTarget.Ready() &&
 				pitchMotor->motor_settings.angle_epoch == pitchMotor->feedback.angle_epoch)
 				snapshot.pitch_position_target_deg = pitchMotor->motor_settings.angle -
 													 pitchMotor->feedback.total_angle + position_deg;
@@ -470,14 +471,14 @@ serialTasks::EncoderSnapshot gimbal::GetEncoderSnapshot()
 		snapshot.yaw_feedback_current_a = yawMotor->feedback.current;
 		snapshot.yaw_target_speed_dps   = yawMotor->enabled ? yawMotor->motor_settings.speed : 0.0F;
 		snapshot.yaw_command_current_a  = yawMotor->enabled
-											 ? yawMotor->motor_settings.current / k6020CommandUnitsPerAmp
-											 : 0.0F;
+											  ? yawMotor->motor_settings.current / k6020CommandUnitsPerAmp
+											  : 0.0F;
 	}
 	taskEXIT_CRITICAL();
 	return snapshot;
 }
 
-serialTasks::EncoderSnapshot gimbal::GetYawControlSnapshot()
+serialTasks::EncoderSnapshot gimbal::GetYawControlSnapshot()//若要打印电机数据,Robot.cpp调用这个函数
 {
 	taskENTER_CRITICAL();
 	const auto snapshot = yawControlSnapshot;
@@ -485,10 +486,10 @@ serialTasks::EncoderSnapshot gimbal::GetYawControlSnapshot()
 	return snapshot;
 }
 
-serialTasks::EncoderSnapshot gimbal::GetPitchControlSnapshot()
+serialTasks::EncoderSnapshot gimbal::GetPitchControlSnapshot()//或者这个
 {
 	taskENTER_CRITICAL();
-	const auto snapshot = pitchControlSnapshot;
+	const auto snapshot = aim_pitchControlSnapshot;
 	taskEXIT_CRITICAL();
 	return snapshot;
 }
@@ -500,14 +501,15 @@ void gimbal::Init()
 
 	// 反馈 ID 必须在 0x205..0x208 范围内, 对应 GM6020 的指令帧槽位。
 	const DJI::Motor_Init_Config_s yawConfig   = MakeMotorConfig(DJI::GM6020, kYawMotorFeedbackId, kYawMotorReverse);
-	const DJI::Motor_Init_Config_s pitchConfig = MakeMotorConfig(DJI::GM6020, kPitchMotorFeedbackId, kPitchMotorReverse);
+	const DJI::Motor_Init_Config_s pitchConfig =
+		MakeMotorConfig(DJI::GM6020, kAimPitchMotorFeedbackId, kAimPitchMotorReverse);
 
 	if constexpr (kEnableYaw || kReadYawEncoder)
 		yawMotor = DJI_Motor_Init(yawConfig);
-	if constexpr (kEnablePitch)
+	if constexpr (kEnableAimPitch)
 		pitchMotor = DJI_Motor_Init(pitchConfig);
 	if ((yawMotor == nullptr) ||
-		(kEnablePitch && pitchMotor == nullptr))
+		(kEnableAimPitch && pitchMotor == nullptr))
 		Error_Handler(); // 只校验当前启用的轴。
 
 	gimbalMotors[0] = yawMotor;
@@ -517,8 +519,8 @@ void gimbal::Init()
 
 	if constexpr (kEnableYaw)
 		InitializeLqi("yaw", kYawLqiModel, kYawLqiConfig, yawLqi, kYawLqiGainSource);
-	if constexpr (kEnablePitch)
-		InitializeLqi("pitch", kPitchLqiModel, kPitchLqiConfig, pitchLqi, kPitchLqiGainSource);
+	if constexpr (kEnableAimPitch)
+		InitializeLqi("pitch", kPitchLqiModel, kPitchLqiConfig, aim_pitchLqi, kPitchLqiGainSource);
 
 	taskHandle = osThreadNew(Task, nullptr, &taskAttrs);
 	if (taskHandle == nullptr)
