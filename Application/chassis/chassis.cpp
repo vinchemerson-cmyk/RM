@@ -4,13 +4,10 @@
 
 #include "chassis.h"
 
-#include "bsp_log.h"
 #include "ChassisConfig.h"
 #include "cmsis_os2.h"
-#include "portmacro.h"
+#include "FreeRTOS.h"
 #include "task.h"
-#include "algorithm/lqi.h"
-#include "algorithm/lqi_controller.h"
 #include "communication/encoder_telemetry.h"
 #include "motor/speed_target.h"
 #include "motor/dji/dji.h"
@@ -26,7 +23,7 @@ namespace
 	{
 		DJI_Motor_s*                 motor{};
 		MotorSpeedTarget             speedTarget;
-		LQIController                lqicontroller;
+		// 速度 PI 由 motor->controller.speed_PID 持有，每个电机独立维护积分。
 		Motor_Feedback_s             motorFeedback;
 		uint32_t                     ControTick{};
 		serialTasks::EncoderSnapshot encoderSnapshot{};
@@ -41,12 +38,7 @@ namespace
 	};
 
 
-	DJI_Motor_s* motors[] = {
-		fl.motor,
-		fr.motor,
-		bl.motor,
-		br.motor,
-	};
+	// 注册完成后，在控制周期内由 fl/fr/bl/br.motor 组装局部指针数组再统一发送。
 
 	DJI::Motor_Init_Config_s MakeMotorConfig(const DJI::Motor_Type_e motor_type, const uint32_t feedback_id,
 											 const bool              reverse)
@@ -60,8 +52,10 @@ namespace
 		config.controller_param_init_config.speed_feedforward_ptr    = nullptr; //速度前馈
 		config.controller_param_init_config.current_feedforward_ptr  = nullptr; //电流前馈
 
-		config.controller_setting_init_config.close_loop_type    = CURRENT_LOOP;
-		config.controller_setting_init_config.outer_loop_type    = CURRENT_LOOP;
+		config.controller_param_init_config.speed_PID = kChassisWheelSpeedPi;
+		// MCU 计算速度 PI；电流环由电调闭合，不启用 MCU 角度环或电流 PID。
+		config.controller_setting_init_config.close_loop_type    = SPEED_AND_CURRENT_LOOP;
+		config.controller_setting_init_config.outer_loop_type    = SPEED_LOOP;
 		config.controller_setting_init_config.motor_reverse_flag =
 			reverse ? MOTOR_DIRECTION_REVERSE : MOTOR_DIRECTION_NORMAL;
 		config.controller_setting_init_config.angle_feedback_source = MOTOR_FEED;
@@ -81,51 +75,11 @@ namespace
 		return feedback;
 	}
 
-	void InitializeLqi(const char*              axis, const LQI_Model_s& model,
-					   const LQI_Init_Config_s& source, LQIController&   controller,
-					   ChassisLqiGainSource      gainSource)
+	void StopWheel(DJI_Motor_s& motor, MotorSpeedTarget& target)
 	{
-		controller.Disable();
-		if (gainSource == ChaasisLqiGainSource::Manual)
-		{
-			if (!controller.Configure(source))
-			{
-				LOGERROR("[chassis] %s manual LQI K/limits invalid; axis disabled", axis);
-				return;
-			}
-			LOGINFO("[chassis] %s LQI ready, manual K", axis);
-			return;
-		}
-		if (gainSource != ChassisLqiGainSource::BootSolve)
-		{
-			LOGERROR("[chassis] %s LQI gain source invalid; axis disabled", axis);
-			return;
-		}
-		LQI_Solve_Result_s result{};
-		const auto         status = LQI_Solve(model, source, result, kChassisqiSolverOptions);
-		if (status != LQI_Solve_Status::Success)
-		{
-			LOGERROR("[chassis] %s LQI solve failed: status=%u, iterations=%u; axis disabled",
-					 axis, static_cast<unsigned>(status), static_cast<unsigned>(result.iterations));
-			return;
-		}
-		auto config       = source;
-		config.k_angle    = result.gain[0];
-		config.k_speed    = result.gain[1];
-		config.k_integral = result.gain[2];
-		if (!controller.Configure(config))
-		{
-			LOGERROR("[chassis] %s LQI limits/config invalid; axis disabled", axis);
-			return;
-		}
-		LOGINFO("[chassis] %s LQI ready, iterations=%u", axis, static_cast<unsigned>(result.iterations));
-	}
-
-	void StopWheel(DJI_Motor_s& motor,MotorSpeedTarget& Target,LQIController& controller)
-	{
+		// Disable 已清除驱动内部 PI 历史；另清速度指令和斜坡状态。
 		DJI_Motor_Disable(&motor);
-		Target.Reset();
-		controller.Reset();
+		target.Reset();
 	}
 
 
