@@ -46,23 +46,23 @@ namespace interboard
 		constexpr uint8_t  kChunkSize         = 6;     //每个 CAN 分片最多携带的消息内容的字节
 		constexpr size_t   kTopicCapacity     = 8;     //最大主题容量
 
-#if INFANTRY_INTERBOARD_FDCAN == 1
+	#if INFANTRY_INTERBOARD_FDCAN == 1
 		FDCAN_HandleTypeDef* const canHandle = &hfdcan1;
-#elif INFANTRY_INTERBOARD_FDCAN == 2
+	#elif INFANTRY_INTERBOARD_FDCAN == 2
 		FDCAN_HandleTypeDef* const canHandle = &hfdcan2;
-#elif INFANTRY_INTERBOARD_FDCAN == 3
+	#elif INFANTRY_INTERBOARD_FDCAN == 3
 		FDCAN_HandleTypeDef* const canHandle = &hfdcan3;
-#else
-#error "INFANTRY_INTERBOARD_FDCAN must be 1, 2 or 3"
-#endif
+	#else
+	#error "INFANTRY_INTERBOARD_FDCAN must be 1, 2 or 3"
+	#endif
 
-#if INFANTRY_BOARD_GIMBAL
+	#if INFANTRY_BOARD_GIMBAL
 		constexpr uint32_t kTxId = kGimbalToChassisId; //云台到底盘的CANID
 		constexpr uint32_t kRxId = kChassisToGimbalId; //底盘到云台的CANID
-#else
+	#else
 		constexpr uint32_t kTxId = kChassisToGimbalId; //底盘到云台的CANID
 		constexpr uint32_t kRxId = kGimbalToChassisId; //云台到底盘的CANID
-#endif
+	#endif
 
 		/** @brief 中断送入任务队列的经典 CAN 帧副本。 */
 		struct RxFrame
@@ -71,18 +71,19 @@ namespace interboard
 			uint8_t data[8];
 		};
 
+		//todo:评估后期是否需要根据消息长度切换到canfd模式
 		/** @brief 单个双板主题的注册信息和接收分片状态。 */
 		struct Topic
 		{
-			uint8_t                          id{};
-			uint8_t                          length{};
-			uint8_t                          tx_sequence{};
-			uint8_t                          rx_sequence{};
-			uint8_t                          next_fragment{};
+			uint8_t                          id{};//canid
+			uint8_t                          length{};//消息长度
+			uint8_t                          tx_sequence{};//发送队列
+			uint8_t                          rx_sequence{};//接收队列
+			uint8_t                          next_fragment{};//下一个期望接收的分片索引
 			uint32_t                         fragment_tick{};
-			bool                             assembling{};
-			Publisher_t*                     publisher{};
-			Subscriber_t*                    subscriber{};
+			bool                             assembling{};//组装中标志位
+			Publisher_t*                     publisher{};//发布
+			Subscriber_t*                    subscriber{};//订阅
 			std::array<uint8_t, kMaxPayload> assembly{};
 		};
 
@@ -258,7 +259,10 @@ namespace interboard
 			}
 		}
 
-		/** @brief 在任务运行前绑定主题 ID 与板内消息中心的发布者或订阅者。 */
+		/**
+		 * @brief 在任务运行前绑定主题 ID 与板内消息中心的发布者或订阅者。
+		 * @param transmit 是否为"发送"
+		 */
 		bool RegisterTopic(std::array<Topic, kTopicCapacity>& topics, size_t& used,
 						   uint8_t                            id, char*       name, uint8_t length, bool transmit)
 		{
