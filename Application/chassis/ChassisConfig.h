@@ -4,9 +4,9 @@
 
 #ifndef INFANTRY_H723_CHASSISCONFIG_H
 #define INFANTRY_H723_CHASSISCONFIG_H
-#include "algorithm/pid.h"
 #include "fdcan.h"
 #include "stm32h7xx_hal_fdcan.h"
+#include "algorithm/pid.h"
 
 inline FDCAN_HandleTypeDef* const kChassisCanHandle = &hfdcan1;
 
@@ -26,5 +26,9 @@ inline constexpr PID_Init_Config_s kChassisWheelSpeedPi{
     .integral_max = 2000.0F,
 };
 static_assert(kChassisWheelSpeedPi.kd == 0.0F, "Chassis wheel control uses PI only");
+
+inline constexpr float kChassisControlPeriodS = 0.001F;
+
+inline constexpr float kChassisMaxDtS = 0.1F;
 
 #endif //INFANTRY_H723_CHASSISCONFIG_H

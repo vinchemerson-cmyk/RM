@@ -31,6 +31,8 @@ namespace chassis
 		Chassis,
 		Gimbal
 	};
+
+
 }
 
 #endif //INFANTRY_H723_CHASSIS_CONTROL_H
