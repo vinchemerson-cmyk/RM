@@ -393,7 +393,7 @@ void DJI_Motor_Control(DJI_Motor_s** motor_list, const uint8_t count, const floa
 	struct CommandFrame
 	{
 		FDCAN_HandleTypeDef*        bus{};
-		CAN_<classicCan>::Instance* sender{};
+		CAN_<classicCan>::Instance* sender{};//发送人
 		uint32_t                    id{};
 		std::array<uint8_t, 8>      payload{};
 	};
@@ -433,13 +433,15 @@ void DJI_Motor_Control(DJI_Motor_s** motor_list, const uint8_t count, const floa
 		taskENTER_CRITICAL();
 		const Motor_Feedback_s feedback = motor->feedback; //接收反馈
 		taskEXIT_CRITICAL();
-		float      output       = 0.0F;
+		float      output       = 0.0F;//目标控制量
 		const bool positionLoop = motor->motor_settings.close_loop_type == ANGLE_AND_SPEED_LOOP ||
 								  motor->motor_settings.close_loop_type == ALL_THERE_LOOP;
 		const bool targetFresh = !positionLoop || motor->motor_settings.angle_epoch == feedback.angle_epoch;
 		// 测试模式不等待首帧，也不因反馈超时置零；无反馈时按零初始化值闭环。
 		if (motor->enabled && targetFresh)
 			output = ComputeOutput(*motor, feedback, dt_s);
+
+		//限幅与量化
 		const auto value = static_cast<uint16_t>(ClampOutput(output, spec->output_limit));
 		frames[frameIndex].payload[address.slot * 2U] = static_cast<uint8_t>(value >> 8U);
 		frames[frameIndex].payload[address.slot * 2U + 1U] = static_cast<uint8_t>(value);
