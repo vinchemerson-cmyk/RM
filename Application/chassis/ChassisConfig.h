@@ -4,11 +4,38 @@
 
 #ifndef INFANTRY_H723_CHASSISCONFIG_H
 #define INFANTRY_H723_CHASSISCONFIG_H
+#include "chassis_control.h"
 #include "fdcan.h"
 #include "stm32h7xx_hal_fdcan.h"
 #include "algorithm/pid.h"
+#include "motor/dji/dji.h"
+#include "rc/rc.h"
 
 inline FDCAN_HandleTypeDef* const kChassisCanHandle = &hfdcan1;
+
+// 实物未确认：保持false，Init不注册电机、不创建任务；不接入Robot.cpp。
+inline constexpr bool kChassisHardwareConfirmed = false;
+struct ChassisWheelHardware
+{
+    DJI::Motor_Type_e type{DJI::MOTOR_TYPE_NONE};
+    uint32_t feedback_id{}; // M3508/M2006: 0x201..0x208；0表示未填写。
+    bool reverse{};
+    float gear_ratio{};    // 转子速度 / 输出轴速度，须填写实际值。
+};
+// FL、FR、BL、BR；同总线同指令帧必须由本任务独占发送。
+inline constexpr std::array<ChassisWheelHardware, chassis::kWheelCount> kChassisWheels{};
+inline constexpr std::array<chassis::WheelGeometry, chassis::kWheelCount> kChassisGeometry{};
+inline constexpr chassis::MotionLimits kChassisMotionLimits{};
+
+inline constexpr unsigned kChassisForwardChannel    = 1U;
+inline constexpr unsigned kChassisLeftChannel       = 0U;
+inline constexpr unsigned kChassisYawChannel        = 2U;
+inline constexpr float    kChassisForwardSign       = 1.0F;
+inline constexpr float    kChassisLeftSign          = -1.0F;
+inline constexpr float    kChassisYawSign           = -1.0F;
+inline constexpr float    kChassisStickDeadband     = 0.03F;
+inline constexpr auto     kChassisRunSwitch         = rc::Right_Switch_e::MIDDLE;
+inline constexpr uint32_t kChassisFeedbackTimeoutMs = 100U;
 
 /**
  * @brief 四轮速度 PI 的联调初值，尚未经过底盘负载验证。
