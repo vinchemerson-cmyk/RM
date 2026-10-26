@@ -1,7 +1,7 @@
 #pragma once
 /** @file dji_controller.h @brief DJI专用控制设置、运行PID与初始化配置。 */
-#include "motor/motor_common.h"
 #include "algorithm/pid.h"
+#include "motor/motor_common.h"
 
 /**
  * @brief 通用控制环路、反馈方向、前馈选择以及上层写入的期望值。
@@ -14,8 +14,8 @@ struct DJ_Motor_Control_Setting_s
 	Closeloop_Type_e     close_loop_type{};    //使用的(串级)闭环
 	Motor_Reverse_Flag_e motor_reverse_flag{}; //电机反转标志
 
-	Feedback_Source_e angle_feedback_source{}; //角度反馈
-	Feedback_Source_e speed_feedback_source{}; //速度反馈
+	Feedback_Source_From_e angle_feedback_source{}; //角度反馈
+	Feedback_Source_From_e speed_feedback_source{}; //速度反馈
 	Feedfoward_Type_e feedforward_flag{};      //前馈标志
 
 	float    angle{};
@@ -48,8 +48,8 @@ struct DJ_Motor_Controller_Init_s
 	float*            speed_feedforward_ptr{};//速度前馈
 	float*            current_feedforward_ptr{};//电流前馈
 
-	Feedback_Source_e angle_feedback_source{}; // 兼容既有配置字段；当前有效来源由motor_settings选择。
-	Feedback_Source_e speed_feedback_source{};
+	Feedback_Source_From_e angle_feedback_source{}; // 兼容既有配置字段；当前有效来源由motor_settings选择。
+	Feedback_Source_From_e speed_feedback_source{};
 
 	PID_Init_Config_s current_PID{};
 	PID_Init_Config_s speed_PID{};

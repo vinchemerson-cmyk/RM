@@ -46,7 +46,7 @@ enum Motor_Reverse_Flag_e
 };
 
 /** @brief 反馈来自电机自身或外部传感器。 */
-enum Feedback_Source_e
+enum Feedback_Source_From_e
 {
 	MOTOR_FEED = 0,
 	IMU_FEED   = 1,
