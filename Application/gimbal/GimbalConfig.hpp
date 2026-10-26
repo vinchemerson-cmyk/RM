@@ -42,7 +42,7 @@ static_assert(static_cast<uint64_t>(kYawRemoteCommandTestConfig.initial_hold_ms)
  */
 
 /** @brief 云台使用的 FDCAN 控制器。 */
-inline FDCAN_HandleTypeDef* const kGimbalCanHandle = &hfdcan1;
+inline FDCAN_HandleTypeDef* const kGimbalCanHandle = &hfdcan1;//todo:根据接线图应该为can2
 
 /** @brief 两轴 LQI 运动使能；pitch 保留行程方向保护。 */
 inline constexpr bool kEnableYaw   = true;

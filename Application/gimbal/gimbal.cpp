@@ -70,13 +70,13 @@ namespace
 	};
 
 	/**
- * @brief 构造一个云台电机的初始化配置。
- * @param motor_type 仅用于标记型号, 必须为 GM6020。
- * @param feedback_id 该电机的反馈 ID, 决定它在指令帧中的槽位。
- * @param reverse 输出方向是否取反。
- * @note LQI 直接写入电流指令，MCU 上的三层 PID 均不参与，电机内部电流环保持开启。
- * @bug:云台应为DM电机
- */
+	 * @brief 构造一个云台电机的初始化配置。
+	 * @param motor_type 仅用于标记型号, 必须为 GM6020。
+	 * @param feedback_id 该电机的反馈 ID, 决定它在指令帧中的槽位。
+	 * @param reverse 输出方向是否取反。
+	 * @note LQI 直接写入电流指令，MCU 上的三层 PID 均不参与，电机内部电流环保持开启。
+	 * @bug:云台应为DM电机
+	 */
 	DJI::Motor_Init_Config_s MakeMotorConfig(const DJI::Motor_Type_e motor_type, const uint32_t feedback_id,
 											 const bool              reverse)
 	{
