@@ -29,10 +29,10 @@
 #ifndef INFANTRY_H723_DJI_H
 #define INFANTRY_H723_DJI_H
 
+#include "dji_controller.h"
 #include "can/can.h"
 #include "can/canConfig.h"
 #include "motor/motor_common.h"
-#include "dji_controller.h"
 
 inline constexpr float k6020CommandUnitsPerAmp = 5461.333 ;
 

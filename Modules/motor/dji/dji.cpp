@@ -78,6 +78,7 @@ namespace
 		},
 	};
 
+	//fixme只有3508和2006
 	bool DjiResolveCommand(bool gm6020, uint32_t feedback_id, DjiCommandAddress& address)
 	{
 		const uint32_t first = gm6020 ? 0x205U : 0x201U;
@@ -388,6 +389,7 @@ void DJI_Motor_Disable(DJI_Motor_s* motor)
 
 void DJI_Motor_Control(DJI_Motor_s** motor_list, const uint8_t count, const float dt_s)
 {
+	//初始化与前置检查
 	if (motor_list == nullptr || count == 0U || !(dt_s > 0.0F))
 		return;
 	struct CommandFrame
@@ -400,19 +402,21 @@ void DJI_Motor_Control(DJI_Motor_s** motor_list, const uint8_t count, const floa
 	// 同一物理总线 + 同一帧 ID 只发送一次，M3508/M2006 可共用 0x200。
 	std::array<CommandFrame, 16> frames{};
 	uint8_t                      frameCount = 0U;
-
+		//遍历电机,计算输出合并帧
 	for (uint8_t i = 0; i < count; ++i)
 	{
 		DJI_Motor_s* motor = motor_list[i];
-
 		if (motor == nullptr || motor->can_instance == nullptr)
 			continue;
-		const MotorTypeSpec* spec = FindSpec(motor->motor_type);
+
+		const MotorTypeSpec* spec = FindSpec(motor->motor_type);//查找规格
 		DjiCommandAddress    address{};
 
-		if (spec == nullptr || !DjiResolveCommand(motor->motor_type == DJI::GM6020,
+		if (spec == nullptr || !DjiResolveCommand(motor->motor_type == DJI::M2006,//fixme:DjiResolveCommand有问题
 												  motor->can_instance->attribute.can_id, address))
 			continue;
+
+		//合并帧
 		FDCAN_HandleTypeDef* bus        = motor->can_instance->dependency.hcan;
 		uint8_t              frameIndex = 0U;
 
@@ -429,15 +433,17 @@ void DJI_Motor_Control(DJI_Motor_s** motor_list, const uint8_t count, const floa
 			frames[frameIndex].id     = address.frame_id;
 			++frameCount;
 		}
-
+		//安全拷贝
 		taskENTER_CRITICAL();
 		const Motor_Feedback_s feedback = motor->feedback; //接收反馈
 		taskEXIT_CRITICAL();
+
+		//目标新鲜度检查与计算
 		float      output       = 0.0F;//目标控制量
 		const bool positionLoop = motor->motor_settings.close_loop_type == ANGLE_AND_SPEED_LOOP ||
 								  motor->motor_settings.close_loop_type == ALL_THERE_LOOP;
 		const bool targetFresh = !positionLoop || motor->motor_settings.angle_epoch == feedback.angle_epoch;
-		// 测试模式不等待首帧，也不因反馈超时置零；无反馈时按零初始化值闭环。
+		// 测试模式不等待首帧，也不因反馈超时置零；无反馈时按零初始化值闭环
 		if (motor->enabled && targetFresh)
 			output = ComputeOutput(*motor, feedback, dt_s);
 
@@ -460,7 +466,7 @@ void DJI_Motor_Control(DJI_Motor_s** motor_list, const uint8_t count, const floa
 			DjiCommandAddress address{};             //准备地址结构
 			if (motor == nullptr || motor->can_instance == nullptr ||
 				motor->can_instance->dependency.hcan != frames[i].bus ||
-				!DjiResolveCommand(motor->motor_type == DJI::GM6020,
+				!DjiResolveCommand(motor->motor_type == DJI::M3508,
 								   motor->can_instance->attribute.can_id, address) ||
 				address.frame_id != frames[i].id) //电机空指针;CAN示例空指针；CAN总线不匹配；地址解析失败；帧ID不匹配
 				continue;
