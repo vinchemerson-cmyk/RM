@@ -21,6 +21,8 @@ namespace
 
 	HAL_StatusTypeDef SendMode(DMMotorInstance& motor, DMMotor_Mode_e command)
 	{
+		// TODO[CANFD-06 保留8字节]：后端扩容64后，本帧tx_len仍为8，模式命令仍位于第7字节。
+		// tx_buffer容量不是协议帧长度，不能把input.tx_buffer.size()作为DM模式帧的发送长度。
 		Fdcan::Input input{};
 		input.tx_len = 8U;
 		input.tx_buffer.fill(0xFFU);
@@ -47,6 +49,9 @@ namespace
 		}
 		Fdcan::Input input{};
 		input.tx_len     = 8U;
+		// TODO[CANFD-06 打包适配]：Fdcan::DATA_SIZE扩为64后，Pack需要的std::array<uint8_t,8>&
+		// 与通用tx_buffer类型不同；先Pack到临时8字节数组，再将8字节复制到已清零的发送缓冲区。
+		// 正常command和下方失败回退的零command两处都要适配，保持tx_len=8，不改变MIT字段布局。
 		const bool valid = dmProtocol::Pack(command, motor.protocol_limits, input.tx_buffer);
 		if (!valid)
 		{
@@ -58,6 +63,8 @@ namespace
 
 	void DecodeFeedback(FdcanType* attribute)
 	{
+		// TODO[CANFD-06 收包边界]：FD后端可容纳板间64字节，但本回调只处理本电机ID的8字节MIT反馈。
+		// 保留Unpack长度检查；板间帧应在底层路由到板间回调，不截取其前8字节当作电机反馈。
 		if (attribute == nullptr || attribute->module_handle == nullptr) return;
 		auto& motor = *static_cast<DMMotorInstance*>(attribute->module_handle);
 		if (motor.motor_can_instance == nullptr) return;
@@ -93,6 +100,8 @@ namespace
 
 DMMotorInstance* MITMotorInit(const MIT_Init_Config_s* config)
 {
+	// TODO[CANFD-06 初始化检查]：下方目前强制FDCAN_FRAME_CLASSIC，会拒绝真正的FD控制器。
+	// 迁移时按选定的FD+BRS/FD不变速策略校验，并与两端实际仲裁/数据波特率一致，不能直接去掉全部检查。
 	if (config == nullptr || count >= DM_MOTOR_CNT || config->can_init_config.can_handle == nullptr ||
 		config->can_init_config.can_handle->Init.FrameFormat != FDCAN_FRAME_CLASSIC ||
 		config->can_init_config.master_id == 0U || config->can_init_config.master_id > 0xFU ||

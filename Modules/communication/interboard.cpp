@@ -2,7 +2,7 @@
  * @file interboard.cpp
  * @brief 通过专用 FDCAN 链路转发消息中心主题并监测双板连接。
  *
- * 线路协议 (经典 CAN 标准帧; 云台->底盘 0x301, 底盘->云台 0x302):
+ * 线路协议 (fdCAN 标准帧; 云台->底盘 0x301, 底盘->云台 0x302):
  *   [0]     话题 ID (1..255); 0 保留为心跳帧 (无负载)。
  *   [1]     高 4 位 = 消息序号 (0..15 循环), 低 4 位 = 分片编号。
  *   [2..7]  负载分片, 每片最多 kChunkSize=6 字节。
@@ -32,6 +32,10 @@
 #include "RobotConfig.hpp"
 #include "can/can.h"
 #include "message_center/message_center.h"
+
+// TODO[CANFD-07 协议迁移]：当前整文件实现的是“独占总线+经典8字节分片”，不是共享CAN FD。
+// 迁移目标：与DM共用CAN_<Fdcan>后端，按不同CAN ID收发；DM保持8字节，板间单帧按需用到64字节。
+// 必须联动修改容量、DLC、帧格式、收包回调、过滤器归属和消息长度校验，不能只改某一个常量。
 
 namespace interboard
 {
@@ -67,11 +71,14 @@ namespace interboard
 		/** @brief 中断送入任务队列的经典 CAN 帧副本。 */
 		struct RxFrame
 		{
+			// TODO[CANFD-03 队列容量]：板间收包副本扩到最大64字节，实际length由DLC解码得到。
+			// 同时核对osMessageQueueNew的单项大小、队列总内存和任务栈预算，不能仍用旧8字节副本。
 			uint8_t length;
-			uint8_t data[8];
+			uint8_t data[64];
 		};
 
-		//todo:评估后期是否需要根据消息长度切换到canfd模式
+		// TODO[CANFD-07 按帧选长]：外设一次配置为FD，同一路可连续发8/64字节，不按话题大小反复重配硬件。
+		// 现有Topic序号用于分片重组；改为单帧后仍须约定序号、真实业务长度、补齐字节及心跳格式。
 		/** @brief 单个双板主题的注册信息和接收分片状态。 */
 		struct Topic
 		{
@@ -106,7 +113,9 @@ namespace interboard
 		/** @brief 将 HAL DLC 值换算为经典 CAN 有效字节数。 */
 		uint8_t DlcLength(uint32_t dlc)
 		{
-			return dlc <= FDCAN_DLC_BYTES_8 ? static_cast<uint8_t>(dlc) : 0;
+			// TODO[CANFD-04 DLC解码]：补齐12/16/20/24/32/48/64的映射或复用统一工具，
+			// DLC不是实际字节数；当前逻辑会将所有大于8字节的FD帧解为0。
+			return dlc <= FDCAN_DLC_BYTES_64 ? static_cast<uint8_t>(dlc) : 0;
 		}
 
 		/**
@@ -115,6 +124,9 @@ namespace interboard
          */
 		bool Send(uint8_t id, uint8_t sequence, uint8_t fragment, const uint8_t* bytes, uint8_t count)
 		{
+			// TODO[CANFD-07 发送接口]：迁移到已注册板间实例的Transmit，使用FD帧和实际长度对应的DLC。
+			// 更新本地frame容量、count上限、拷贝范围，先确认“协议头+业务数据”不超过64。
+			// 非标准长度向上补齐时清零填充字节，并在协议中区分真实长度；BRS与本总线配置保持一致。
 			if (HAL_FDCAN_GetTxFifoFreeLevel(canHandle) == 0)
 				return false;
 
@@ -142,11 +154,15 @@ namespace interboard
 		/** @brief 在 FDCAN 回调中取出接收帧并送往任务队列。 */
 		void OnCanRx(FDCAN_HandleTypeDef* handle, uint32_t fifo)
 		{
+			// TODO[CANFD-05 不再独占取帧]：改为统一后端已完成取帧/ID路由后的模块回调，
+			// 不再在这里取空整个FIFO，否则同路电机反馈会被本模块消耗或丢弃。
+			// TODO[CANFD-03 接收越界]：当前frame.data仅8字节，HAL复制发生在后面的长度判断之前；
+			// 必须先扩容所有接收副本再启用长帧，不能认为Identifier/长度过滤会保护这次HAL写入。
 			// 此 FDCAN 控制器由双板链路独占；在中断里取空 FIFO，后续处理交给任务。
 			while (HAL_FDCAN_GetRxFifoFillLevel(handle, fifo) != 0U)
 			{
 				FDCAN_RxHeaderTypeDef header{};
-				RxFrame               frame{};
+				RxFrame               frame{};//消息内容
 				if (HAL_FDCAN_GetRxMessage(handle, fifo, &header, frame.data) != HAL_OK)
 					break;
 				if (header.Identifier != kRxId || header.IdType != FDCAN_STANDARD_ID ||
@@ -155,18 +171,20 @@ namespace interboard
 				frame.length = DlcLength(header.DataLength);
 				if (frame.length < 2 || frame.length > 8 || rxQueue == nullptr)
 					continue;
-				(void)osMessageQueuePut(rxQueue, &frame, 0, 0);
+				(void)osMessageQueuePut(rxQueue, &frame, 0, 0);//timeout必须为0
 			}
 		}
 
 		/** @brief 更新链路状态，并按主题、序号和分片顺序重组有效载荷。 */
 		void Process(const RxFrame& frame)
 		{
+			// TODO[CANFD-07 接收协议]：与发送端共同定义单FD帧的头、真实长度和补齐规则；
+			// 当前是按6字节片段重组，不能仅把RxFrame扩容就直接用于64字节单帧消息。
 			++status.rx_frames;
 			status.last_rx_tick   = osKernelGetTickCount();
-			const bool wasOffline = status.online == 0;
+			const bool wasOffline = status.online == 0;//记录此前是否离线
 			status.online         = 1;
-			if (wasOffline || frame.data[0] == 0)
+			if (wasOffline || frame.data[0] == 0)// note:frame.data[0]应当为心跳帧
 				PubPushMessage(statusPublisher, &status);
 			if (frame.data[0] == 0)
 				return;
@@ -179,7 +197,7 @@ namespace interboard
 
 				const uint8_t sequence      = frame.data[1] >> 4U;
 				const uint8_t fragment      = frame.data[1] & 0x0FU;
-				const uint8_t fragmentCount = static_cast<uint8_t>((topic.length + kChunkSize - 1U) / kChunkSize);
+				const auto fragmentCount = static_cast<uint8_t>((topic.length + kChunkSize - 1U) / kChunkSize);
 				if (fragment >= fragmentCount)
 					return;
 				// 首片开启新一轮重组；后续分片必须按序且在超时前到达。
@@ -194,8 +212,8 @@ namespace interboard
 					(fragment != 0 && osKernelGetTickCount() - topic.fragment_tick > kAssemblyTimeoutMs))
 					return;
 
-				const uint8_t offset = static_cast<uint8_t>(fragment * kChunkSize);
-				const uint8_t count  = static_cast<uint8_t>(topic.length - offset < kChunkSize
+				const auto offset = static_cast<uint8_t>(fragment * kChunkSize);
+				const auto count  = static_cast<uint8_t>(topic.length - offset < kChunkSize
 																? topic.length - offset
 																: kChunkSize);
 				if (frame.length != count + 2U)
@@ -238,6 +256,9 @@ namespace interboard
 				{
 					Topic&        topic        = txTopics[i];
 					const uint8_t framesNeeded = static_cast<uint8_t>((topic.length + kChunkSize - 1U) / kChunkSize);
+					// TODO[CANFD-08 发送调度]：FD单帧方案须联动调整framesNeeded及下方分片循环。
+					// 与电机共线时限制板间发送频率/突发数量，为周期电机帧保留队列空间；
+					// CAN ID仲裁优先级只在仲裁时起作用，已经上总线的64字节帧不能被电机帧中途抢占。
 					if (HAL_FDCAN_GetTxFifoFreeLevel(canHandle) < framesNeeded)
 						continue;
 					// 从板内消息中心取一次数据，再拆成最多 6 字节一片发送。
@@ -290,6 +311,8 @@ namespace interboard
 
 	bool Start()
 	{
+		// TODO[CANFD-05/07 启动迁移]：不再要求该路硬件元素必须等于8，应支持最大64并与底层配置一致。
+		// 通过统一FD后端注册板间收发ID；下面手工占过滤器0、改全局过滤、独占接收与启停需一起移除/改造。
 		if (taskHandle != nullptr)
 			return true;
 		if (canHandle->Init.RxFifo0ElmtSize != FDCAN_DATA_BYTES_8 ||
@@ -314,6 +337,8 @@ namespace interboard
 			HAL_FDCAN_ConfigGlobalFilter(canHandle, FDCAN_REJECT, FDCAN_REJECT,
 										 FDCAN_REJECT_REMOTE, FDCAN_REJECT_REMOTE) != HAL_OK)
 			return false;
+		// TODO[CANFD-05 共享核心冲突]：该调用目前按句柄接管整路CAN，不能与同路DM直接并存。
+		// 换成普通模块回调；初始化失败时也不能停掉电机正在使用的总线，须由总线所有者管理生命周期。
 		CAN_SetDedicatedRxHandler(canHandle, OnCanRx);
 		if (HAL_FDCAN_ActivateNotification(canHandle, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK ||
 			HAL_FDCAN_Start(canHandle) != HAL_OK)

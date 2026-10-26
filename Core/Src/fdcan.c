@@ -22,6 +22,21 @@
 
 /* USER CODE BEGIN 0 */
 
+/* TODO[CANFD-01/02 双板与硬件配置]
+ * 上下板每路CAN用途不同，需按板卡角色集中定义模式、仲裁段/数据段时序、容量及过滤器数量，
+ * 并同步CubeMX/.ioc或生成后配置流程；不能仅在应用层换句柄，外设仍使用另一块板的固定初始化。
+ * DM和板间消息共线的那一路应支持真正FD帧（按实际选择BRS），保留其他DJI经典总线的原模式。
+ * 当前FDCAN1/2是经典模式，FDCAN3是FD+BRS；这不是最终上下板接线表，不据此自动决定DM接哪路。
+ *
+ * TODO[CANFD-02 最大容量与Message RAM]
+ * 共享路发送元素改为最大64字节；接收板间长帧的FIFO元素也须能容纳64，电机专用FIFO可按需保留8。
+ * “元素容量64”不等于所有帧都发64：每个Tx帧DLC仍由实际8/64字节决定。
+ * 若使用独立Rx Buffer，同样按可能命中的最长帧配置容量；软件接收数组也必须在启用长帧前完成扩容。
+ * 三路FDCAN共用Message RAM，扩大元素后需重算所有区域及MessageRAMOffset，检查不重叠且总量不越界，
+ * 不能只把某路DATA_BYTES_8替换成64就保留旧偏移。过滤器总数同时覆盖DM及板间各ID。
+ * 两块板与同路所有FD设备的波特率/BRS需匹配，物理收发器也必须支持选定的数据段速率。
+ */
+
 /* USER CODE END 0 */
 
 FDCAN_HandleTypeDef hfdcan1;
@@ -36,6 +51,9 @@ void MX_FDCAN1_Init(void)
 	/* USER CODE END FDCAN1_Init 0 */
 
 	/* USER CODE BEGIN FDCAN1_Init 1 */
+	/* TODO[CANFD-02 FDCAN1]：若本板角色把此路用于DM+板间，联动下方FrameFormat、时序、
+	 * TxElmtSize及接收长帧FIFO容量，并重新核对三路Message RAM布局；若仍为DJI经典路则不升级。
+	 * 本段位于HAL_FDCAN_Init前，可用于板卡配置策略；须与工程生成配置保持一致。 */
 
 	/* USER CODE END FDCAN1_Init 1 */
 	hfdcan1.Instance                  = FDCAN1;
@@ -83,6 +101,8 @@ void MX_FDCAN2_Init(void)
 	/* USER CODE END FDCAN2_Init 0 */
 
 	/* USER CODE BEGIN FDCAN2_Init 1 */
+	/* TODO[CANFD-02 FDCAN2]：按本板实际总线用途决定是否升级FD及64字节，不与FDCAN1强行相同。
+	 * 改容量时核对下方MessageRAMOffset和后续FDCAN3起始位置，不能覆盖相邻控制器的RAM区域。 */
 
 	/* USER CODE END FDCAN2_Init 1 */
 	hfdcan2.Instance                  = FDCAN2;
@@ -130,6 +150,8 @@ void MX_FDCAN3_Init(void)
 	/* USER CODE END FDCAN3_Init 0 */
 
 	/* USER CODE BEGIN FDCAN3_Init 1 */
+	/* TODO[CANFD-02 FDCAN3]：此路已有FD+BRS，但下方Tx/Rx元素仍为8字节；板间长帧尚不能直接启用。
+	 * 若共线DM+板间，按上述总说明扩大所需元素并重算RAM布局；最终时序以两端设备配置为准。 */
 
 	/* USER CODE END FDCAN3_Init 1 */
 	hfdcan3.Instance                  = FDCAN3;

@@ -100,9 +100,15 @@ namespace canConfig
 	//-------------FDCAN配置-------------
 	struct Fdcan
 	{
+		// TODO[CANFD-03 容量与帧长]：同路混发DM 8字节与板间64字节时，将FD收发容量扩为64，
+		// 同时配套硬件元素大小和所有HAL接收缓冲区；classicCan仍保留8，不要一起改成64。
+		// DATA_SIZE只是最大存储容量；DM每帧仍用tx_len=8，板间帧按本帧实际DLC发送。
+		// 扩容后DM的Pack(std::array<uint8_t,8>&)不能直接接收此处64字节数组，见dmmotor.cpp。
 		static constexpr uint8_t  DATA_SIZE         = 8;//不能用64字节模式一次性控制多个达妙电机
 		static constexpr uint8_t  MAX_FILTER_AMOUNT = 12;
 		static constexpr bool     IS_CLASSIC        = false;
+		// TODO[CANFD-03 真正FD帧]：此处改为FDCAN_FD_CAN，并同步外设模式、DM初始化检查与电机端配置。
+		// 仅把类型起名Fdcan或IS_CLASSIC设false，并不会使当前经典帧自动变成CAN FD。
 		static constexpr uint32_t FD_FORMAT         = FDCAN_CLASSIC_CAN;
 
 		//发送

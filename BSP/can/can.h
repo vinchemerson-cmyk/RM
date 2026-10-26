@@ -10,7 +10,7 @@
  *      整个 FDCAN 控制器绑定给一个回调, HAL 回调优先派发给它,
  *      不占用过滤器表, 由该模块自行取空 FIFO。
  *
- * 模板按 classicCan (8 字节经典帧) 与 Fdcan (64 字节可变帧) 两个
+ * 模板按 classicCan 与 Fdcan 两个后端（实际容量由canConfig.h决定）
  * traits 各实例化一份静态注册表; 显式实例化在 can.cpp。控制器首次
  * 注册时启动 FDCAN, 后续注册只追加过滤器。注册表与实例缓冲区均为
  * 静态存储, 中断与任务共享, 注册只允许在启动阶段进行。
@@ -31,6 +31,9 @@
 #include "main.h"
 
 // 双板通信等模块可以独占一条 FDCAN 控制器，并直接处理其接收 FIFO。
+// TODO[CANFD-05 共线接收]：DM与板间通信共用一条CAN时，板间链路不能继续独占整路接收。
+// 建议二者都注册到同一路CAN_<Fdcan>，通过不同CAN ID/过滤器路由；每帧只从硬件FIFO取出一次。
+// 若采用FIFO0电机、FIFO1板间的替代设计，独占机制也必须细化到FIFO，不能仍按整个句柄拦截。
 using CanDedicatedRxHandler = void (*)(FDCAN_HandleTypeDef*, uint32_t);
 /** @brief 注册专用接收处理器；传入空指针可清除绑定。 */
 void CAN_SetDedicatedRxHandler(FDCAN_HandleTypeDef* handle, CanDedicatedRxHandler handler);
@@ -84,6 +87,9 @@ class CAN_
 		static inline std::array<uint8_t, 3>                           _can_instance_amount{}; // 每路 CAN 已注册实例数.
 		// 每路 CAN 已占用的过滤器个数; 与实例数分开, 因为同一过滤器可以命中多个实例.
 		static inline std::array<uint8_t, 3>                           _can_filter_amount{};
+		// TODO[CANFD-05 过滤器归属]：硬件过滤器属于物理控制器，不属于某个模块或模板。
+		// 共享总线上由同一注册路径分配DM和板间过滤器，禁止interboard自行再占用FilterIndex=0。
+		// 若保留两种模板同时注册同一物理控制器，还须统一过滤器分配/路由；目前两套计数互不相通。
 
 		/**
      * @brief 将实际字节长度转换成合法 DLC 编码.
@@ -92,6 +98,9 @@ class CAN_
      */
 		static uint32_t _dlcDataLengthToCode(const uint8_t data_length)
 		{
+			// TODO[CANFD-04 长度边界]：此函数已有FD非线性长度换算，继续复用，不能将64直接写入DLC字段。
+			// 9..64中的非标准长度会向上补到12/16/20/24/32/48/64；发送区要有足够容量并清零填充字节，
+			// 接收应用应使用协议内真实负载长度，不能把DLC补齐字节当成业务数据。
 			// Classic CAN 的 0 至 8 字节长度与 HAL DLC 编码数值相同.
 			if (data_length <= 8)
 				return data_length;
@@ -208,6 +217,8 @@ class CAN_
          */
 		static Instance* Register(const canConfigType& config_instance)
 		{
+			// TODO[CANFD-05 共享生命周期]：由总线层统一管理过滤器/全局过滤/中断/启动，
+			// 板间模块只注册自己的ID和回调，不另行Start/Stop整条已有电机使用的控制器。
 			// CAN 句柄和上层回调是收发分发的必要依赖.
 			if (config_instance.can_handle == nullptr || config_instance.can_callback_func == nullptr)
 				Error_Handler();
@@ -332,6 +343,8 @@ class CAN_
 			instance.tx_header.TxFrameType         = FDCAN_DATA_FRAME;
 			instance.tx_header.DataLength          = _dlcDataLengthToCode(input_instance.tx_len);
 			instance.tx_header.ErrorStateIndicator = FDCAN_ESI_ACTIVE;
+			// TODO[CANFD-04 BRS]：按经典/FD及本板总线配置决定，经典帧应OFF；
+			// FD变速帧才ON，FD不变速帧OFF。不要对全部模板固定开启，也不要按8/64字节决定BRS。
 			instance.tx_header.BitRateSwitch       = FDCAN_BRS_ON;
 			instance.tx_header.FDFormat            = canType::FD_FORMAT;
 			instance.tx_header.TxEventFifoControl  = FDCAN_NO_TX_EVENTS;
@@ -351,6 +364,7 @@ class CAN_
          */
 		static void fifoxCallBack(bspCanHandleTypeDef* can_handle_instance, const uint32_t fifox)
 		{
+			// TODO[CANFD-05 帧路由]：同一FD后端支持8/64字节，按过滤器/ID定位模块，不按长度判断电机或板间。
 			std::array<Instance, canType::MAX_FILTER_AMOUNT>* instance_table{};
 			uint8_t                                           instance_amount{};
 
@@ -371,6 +385,9 @@ class CAN_
 				return;
 
 			// 接收缓冲区仅在本函数内使用. HAL 会先将硬件 Message RAM 数据复制到这里.
+			// TODO[CANFD-03 接收安全]：FD接收本地数组须先支持最大64字节，再允许64字节帧进入FIFO。
+			// HAL_FDCAN_GetRxMessage会按收到的DLC复制数据；下面的rx_len校验发生在复制之后，
+			// 因此“先接收到8字节数组，再检查长度”不能防止64字节写越界。
 			std::array<uint8_t, canType::DATA_SIZE> rx_data_buffer{};
 			bspCanRxHeaderTypeDef                   can_rx_header_instance{};
 
@@ -386,6 +403,8 @@ class CAN_
 				return;
 
 			auto&         instance = (*instance_table)[filter_index];
+			// TODO[CANFD-05 格式校验]：分发前同时核对预期标准ID、FD帧格式、实际长度和实例身份，
+			// 确保电机8字节解析器不会收到板间长帧；异常帧按策略丢弃并记录，不误投递回调。
 			const uint8_t rx_len   = _dlcCodeToDataLength(can_rx_header_instance.DataLength);
 
 			// 防止帧格式和模板类型不匹配时向 Output 缓冲区越界复制.

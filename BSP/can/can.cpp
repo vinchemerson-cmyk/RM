@@ -53,9 +53,13 @@ extern "C" {
 	{
 		if ((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) == 0)
 			return;
+		// TODO[CANFD-05 取消整路独占]：共享DM与板间消息时，不可让DedicatedRx提前吃掉整路FIFO。
+		// 应使用统一接收注册表分发给各模块，或先实现严格的按FIFO专用路由；不可让两条路径重复取帧。
 		if (CAN_DispatchDedicatedRx(hfdcan, FDCAN_RX_FIFO0))
 			return;
 
+		// TODO[CANFD-01 后端一致]：FD模式的本路DM和板间实例统一注册Fdcan表，classic模式统一注册classicCan表。
+		// 同一FD表里的tx_len/rx_len可以分别为8或64，无需按帧长切换模板或调用两个DrainFifo。
 		// 经典CAN
 		if (hfdcan->Init.FrameFormat == FDCAN_FRAME_CLASSIC)
 			DrainFifo<canConfig::classicCan>(hfdcan, FDCAN_RX_FIFO0);
@@ -74,6 +78,8 @@ extern "C" {
 	{
 		if ((RxFifo1ITs & FDCAN_IT_RX_FIFO1_NEW_MESSAGE) == 0)
 			return;
+		// TODO[CANFD-05 FIFO1]：若将板间消息路由到FIFO1，必须同步调整DedicatedRx的拦截范围，
+		// 目前DedicatedRx按整路句柄判断，不能以为换FIFO后自然就不影响电机反馈。
 		if (CAN_DispatchDedicatedRx(hfdcan, FDCAN_RX_FIFO1))
 			return;
 
