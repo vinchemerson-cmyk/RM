@@ -5,7 +5,7 @@
 #include "motor/motor_common.h"
 
 // MIT通过FDCAN外设的经典CAN模式收发，与BSP接收分发表保持一致。
-using DmCan                            = CAN_<canConfig::classicCan>;
+using DmCan                            = CAN_<canConfig::Fdcan>;//todo:dm电机用canfd
 using DmCanInstance                    = DmCan::Instance;
 inline constexpr uint8_t DM_MOTOR_CNT  = 6U;
 inline constexpr uint8_t DM_TASK_CYCLE = 2U; // 上层1ms调用，2次分频。
@@ -48,9 +48,9 @@ struct MIT_Controller_s
 
 struct MIT_Init_Config_s
 {
-	MIT_Controller_Init_s controller_param_init_config{};
+	MIT_Controller_Init_s controller_param_init_config{};//mit控制器参数初始化
 	Motor_Reverse_Flag_e  motor_reverse_flag{MOTOR_DIRECTION_NORMAL};
-	classicCanConfigType  can_init_config{}; // master_id发送指令ID，can_id反馈CAN ID。
+	FdcanConfigType  can_init_config{}; // master_id发送指令ID，can_id反馈CAN ID。
 	dmProtocol::Limits    protocol_limits{}; // 必须与对应电机的调试助手量程一致。
 	uint32_t              feedback_timeout_ms{100U};
 };

@@ -10,7 +10,7 @@ namespace
 	DMMotorInstance motors[DM_MOTOR_CNT]{};
 	uint8_t         count{}, cycle{};
 
-	HAL_StatusTypeDef Send(DMMotorInstance& motor, const classicCan::Input& input)
+	HAL_StatusTypeDef Send(DMMotorInstance& motor, const Fdcan::Input& input)
 	{
 		if (motor.motor_can_instance == nullptr) return HAL_ERROR;
 		++motor.tx_enqueue_attempts;
@@ -21,7 +21,7 @@ namespace
 
 	HAL_StatusTypeDef SendMode(DMMotorInstance& motor, DMMotor_Mode_e command)
 	{
-		classicCan::Input input{};
+		Fdcan::Input input{};
 		input.tx_len = 8U;
 		input.tx_buffer.fill(0xFFU);
 		input.tx_buffer[7] = static_cast<uint8_t>(command);
@@ -45,7 +45,7 @@ namespace
 				.torque   = sign * motor.MIT_controller.ref_torque, .kp = motor.MIT_controller.Kp, .kd = motor.MIT_controller.Kd
 			};
 		}
-		classicCan::Input input{};
+		Fdcan::Input input{};
 		input.tx_len     = 8U;
 		const bool valid = dmProtocol::Pack(command, motor.protocol_limits, input.tx_buffer);
 		if (!valid)
@@ -56,7 +56,7 @@ namespace
 		return Send(motor, input) == HAL_OK && valid;
 	}
 
-	void DecodeFeedback(classicCanType* attribute)
+	void DecodeFeedback(FdcanType* attribute)
 	{
 		if (attribute == nullptr || attribute->module_handle == nullptr) return;
 		auto& motor = *static_cast<DMMotorInstance*>(attribute->module_handle);
