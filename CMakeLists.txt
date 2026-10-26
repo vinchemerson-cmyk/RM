@@ -24,6 +24,21 @@ set(CMAKE_PROJECT_NAME infantry_H723)
 # Enable compile command to ease indexing with e.g. clangd
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
+# One source tree, two board profiles; C peripheral initialization and C++ modules see the same role.
+set(INFANTRY_BOARD_GIMBAL "1" CACHE STRING "Board role: 1=gimbal, 0=chassis")
+set_property(CACHE INFANTRY_BOARD_GIMBAL PROPERTY STRINGS 1 0)
+if(NOT INFANTRY_BOARD_GIMBAL MATCHES "^[01]$")
+    message(FATAL_ERROR "INFANTRY_BOARD_GIMBAL must be 0 or 1")
+endif()
+
+# CubeMX regeneration must not silently remove the board-profile overrides before HAL initialization.
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/fdcan.c" _board_can_hooks
+    REGEX "ApplyBoardCanConfiguration\\(&hfdcan[123], [012]U\\)")
+list(LENGTH _board_can_hooks _board_can_hook_count)
+if(NOT _board_can_hook_count EQUAL 3)
+    message(FATAL_ERROR "Restore ApplyBoardCanConfiguration calls for CAN1/2/3 after CubeMX regeneration")
+endif()
+
 # Core project settings
 project(${CMAKE_PROJECT_NAME})
 message("Build type: " ${CMAKE_BUILD_TYPE})
@@ -47,6 +62,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         BSP/can/can.cpp
         BSP/can/can.h
         BSP/can/canConfig.h
+        BSP/can/can_frame.h
+        Core/Inc/board_can_config.h
         Application/gimbal/gimbal.cpp
         Application/gimbal/gimbal.h
         Application/gimbal/GimbalConfig.hpp
@@ -74,6 +91,7 @@ add_executable(${CMAKE_PROJECT_NAME}
         Modules/communication/encoder_telemetry.h
         Modules/communication/interboard.cpp
         Modules/communication/interboard.h
+        Modules/communication/interboard_wire.h
         Modules/rc/rc.cpp
         Modules/rc/rc.h
         Modules/safety/safety.cpp
@@ -99,6 +117,7 @@ add_executable(${CMAKE_PROJECT_NAME}
 
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
+target_compile_definitions(stm32cubemx INTERFACE INFANTRY_BOARD_GIMBAL=${INFANTRY_BOARD_GIMBAL})
 
 # Link directories setup
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE

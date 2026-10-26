@@ -21,26 +21,17 @@
 #pragma once
 #ifndef ROBOTINIT_HPP
 #define ROBOTINIT_HPP
+#include "board_can_config.h"
 
-// 烧录云台板设为 1，烧录底盘板设为 0；两块板必须使用相反的值。
-// TODO[CANFD-01 双板总线表]：按此角色分别列出FDCAN1/2/3的用途、经典/FD模式、波特率和收发容量。
-// 将总线映射同时用于外设初始化及DM/板间等模块配置，不能只用该宏切换板间收发ID。
-#define INFANTRY_BOARD_GIMBAL 1
-
-// 双板链路独占的 FDCAN 控制器。当前默认 PB5/PB6 (FDCAN2)。
-// TODO[CANFD-05 非独占链路]：DM+板间共线后，此项表示链路所在的共享FD总线，不再代表独占控制器。
-// DM与板间应使用同后端的普通ID注册，共享过滤器分配；不要仅修改这里的数字就直接开启两模块。
-#define INFANTRY_INTERBOARD_FDCAN 2
+// 板卡角色由CMake的INFANTRY_BOARD_GIMBAL(1/0)统一提供给C/C++。
+// 每板CAN1/2/3的模式、时序和板间所在控制器在board_can_config.h独立配置；默认接线映射保持不变。
 
 namespace InfantryInitialization
 {
 	// ---------- 通信与调试 ----------
 	inline constexpr bool ENABLE_USB_SERIAL    = true;  // USB CDC 虚拟串口发送 Roll/Pitch/Yaw
 	inline constexpr bool ENABLE_IMU           = true;  // BMI088 六轴采样与姿态解算
-	inline constexpr bool ENABLE_INTERBOARD    = false; // 双板 CAN 通信 (interboard::Start, 独占上方选定的 FDCAN)
-	// TODO[CANFD-09 启用前验证]：先完成上述硬件/缓冲区/打包/分发/协议联动，再开启共线板间任务。
-	// 分别验证上下板配置：DM 8字节FD控制/反馈、板间64字节、混合高频收发、队列满/断链、过滤器不覆盖。
-	// CAN注册统一在调度器启动前完成；顺序变化不能造成HAL重复启动或全局过滤器被覆盖。
+	inline constexpr bool ENABLE_INTERBOARD    = false; // 共享总线消息桥接；未确认接线/两端时序前保持关闭。
 	inline constexpr bool ENABLE_ENCODER_UART7 = true;  // UART7 TX-only pitch目标/实际位置与电流FireWater三通道，每50ms一行。
 
 	// ---------- 输入与安全 ----------
@@ -57,8 +48,7 @@ namespace InfantryInitialization
 				  "Gimbal requires remote control and output safety");
 	static_assert(!ENABLE_SHOOT || (ENABLE_RC && ENABLE_SAFETY),
 				  "Shooter requires remote control and output safety");
-	static_assert(!ENABLE_INTERBOARD || !ENABLE_SHOOT || INFANTRY_INTERBOARD_FDCAN != 2,
-				  "FDCAN2 is occupied by friction wheels; interboard cannot share it");
+	// 板间模块不再独占总线，是否可共享由后端模式、唯一ID、过滤器数与总线带宽决定。
 }
 
 #endif

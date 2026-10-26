@@ -54,7 +54,7 @@ void InfantryInit(void)
 	if (InfantryInitialization::ENABLE_IMU)
 		imu::CreateTask();
 
-	// 双板链路独占指定 FDCAN，须先于同一路 CAN 上的其他模块注册。
+	// 双板链路与同路设备统一注册；各模块都须在调度器启动前完成装配，不独占或重启总线。
 	if (InfantryInitialization::ENABLE_INTERBOARD && !interboard::Start())
 		Error_Handler();
 

@@ -6,37 +6,36 @@
 #pragma once
 
 #include <cstdint>
+#include "interboard_wire.h"
 
 namespace interboard
 {
-	//消息最大长度
-	// TODO[CANFD-07 有效负载]：区分“业务消息长度”与“CAN FD帧最大64字节”。
-	// 当前最大48字节消息可继续保留并改成单FD帧；若保留2字节协议头，64字节帧最多承载62字节业务。
-	// 不能只把kMaxPayload改成64而仍附加2字节头；更大消息需另设计分片或调整协议头放置方式。
-	constexpr uint8_t kMaxPayload = 48;
+	// FD最大64字节帧 = 4字节头 + 最多60字节业务；两板须使用相同协议版本。
+	constexpr uint8_t kMaxPayload = wire::kMaxPayload;
 
 	/** @brief 双板链路的最近接收时间、计数及在线标志。 */
 	struct LinkStatus
 	{
-		uint32_t last_rx_tick;//上一次发送时刻
+		uint32_t last_rx_tick;//最近有效链路接收tick；不是另一块板的时钟。
 		uint16_t rx_frames;//接收帧计数
 		uint16_t tx_frames;//发送帧计数
-		bool  online;//在线
+		bool  online;//在线；应用仍须检查自己的命令新鲜度，不以心跳替代命令有效性。
+		uint32_t rx_dropped{}; // ISR队列满或过期帧数量。
+		uint32_t tx_failures{}; // 累计发送入队失败，不表示电调执行失败。
 	};
 
 	/**
-	 * @brief 配置并启动专用CAN链路与工作任务.
+	 * @brief 注册共享CAN链路与工作任务，不独占、不停止同路其他模块。
 	 * @return 启用过滤器、中断、CAN总线以及任务后，该值为真.
 	 */
 	bool Start();
-	// TODO[CANFD-05 共享启动]：Start应成为共享FD总线的普通模块注册，不再独占控制器或自行Start/Stop。
-	// 后端过滤器、帧路由和生命周期统一管理，避免影响同路DM电机；函数成功仍不代表链路已在线。
+	// 调度器启动前调用；成功仅表示本地注册完成，不代表另一块板已经在线。
 
 	/**
 	 * @brief 将本地消息中心主题中的新值发送至另一块板卡.
 	 * @param id 共享主题ID，取值范围1~255；0保留用于心跳信号.
 	 * @param name 本地消息中心主题名称；注册期间必须保持有效.
-	 * @param length 固定消息长度，1至48字节.
+	 * @param length 固定业务消息长度，1至60字节；经典后端分片，FD后端单帧。
 	 * @return 如果该主题在调度器启动前已注册，则为true.
 	 */
 	bool RegisterTxTopic(uint8_t id, char* name, uint8_t length);

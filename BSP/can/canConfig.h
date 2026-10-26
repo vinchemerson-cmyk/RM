@@ -72,6 +72,7 @@ namespace canConfig
 
 			void (*can_callback_func)(Attribute*){};
 			void*  module_handle{};
+			uint8_t tx_reserved_slots{}; // 发此实例时留给其他模块的TX FIFO余量，电机默认0。
 		};
 
 		//CAN底层依赖
@@ -94,22 +95,18 @@ namespace canConfig
 
 			// 本实例的反馈帧进入哪个 RX FIFO; 默认 FIFO0.
 			fifo use_fifo{fifo::CAN_RX_FIFO};
+			uint8_t tx_reserved_slots{};
 		};
 	};
 
 	//-------------FDCAN配置-------------
 	struct Fdcan
 	{
-		// TODO[CANFD-03 容量与帧长]：同路混发DM 8字节与板间64字节时，将FD收发容量扩为64，
-		// 同时配套硬件元素大小和所有HAL接收缓冲区；classicCan仍保留8，不要一起改成64。
-		// DATA_SIZE只是最大存储容量；DM每帧仍用tx_len=8，板间帧按本帧实际DLC发送。
-		// 扩容后DM的Pack(std::array<uint8_t,8>&)不能直接接收此处64字节数组，见dmmotor.cpp。
-		static constexpr uint8_t  DATA_SIZE         = 8;//不能用64字节模式一次性控制多个达妙电机
+		// 最大容量64，不是固定帧长；DM的实际tx_len仍为8，板间长帧可用至64。
+		static constexpr uint8_t  DATA_SIZE         = 64;
 		static constexpr uint8_t  MAX_FILTER_AMOUNT = 12;
 		static constexpr bool     IS_CLASSIC        = false;
-		// TODO[CANFD-03 真正FD帧]：此处改为FDCAN_FD_CAN，并同步外设模式、DM初始化检查与电机端配置。
-		// 仅把类型起名Fdcan或IS_CLASSIC设false，并不会使当前经典帧自动变成CAN FD。
-		static constexpr uint32_t FD_FORMAT         = FDCAN_CLASSIC_CAN;
+		static constexpr uint32_t FD_FORMAT         = FDCAN_FD_CAN;
 
 		//发送
 		struct Input
@@ -134,6 +131,7 @@ namespace canConfig
 
 			void (*can_callback_func)(Attribute*){};
 			void*  module_handle{};
+			uint8_t tx_reserved_slots{};
 		};
 
 		//底层依赖
@@ -155,6 +153,7 @@ namespace canConfig
 			void*  module_handle{};
 
 			fifo use_fifo{};
+			uint8_t tx_reserved_slots{};
 		};
 	};
 }

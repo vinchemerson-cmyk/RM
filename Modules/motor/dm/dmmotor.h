@@ -4,11 +4,8 @@
 #include "can/can.h"
 #include "motor/motor_common.h"
 
-// MIT通过FDCAN外设的经典CAN模式收发，与BSP接收分发表保持一致。
-// TODO[CANFD-06 目标模式]：本次目标是DM真正使用CAN FD；下方Fdcan类型可保留，但还须同步
-// canConfig.h的FD_FORMAT、物理外设模式及MITMotorInit校验。当前旧“经典模式”说明并不代表已完成迁移。
-// 共享后端容量可为64，DM协议自身仍一帧8字节，不把多台电机MIT命令直接拼成一个64字节帧。
-using DmCan                            = CAN_<canConfig::Fdcan>;//todo:dm电机用canfd
+// 真正CAN FD帧，MIT自身仍为8字节；可与同后端的板间长帧共享控制器。
+using DmCan                            = CAN_<canConfig::Fdcan>;
 using DmCanInstance                    = DmCan::Instance;
 inline constexpr uint8_t DM_MOTOR_CNT  = 6U;
 inline constexpr uint8_t DM_TASK_CYCLE = 2U; // 上层1ms调用，2次分频。
@@ -51,8 +48,7 @@ struct MIT_Controller_s
 
 struct MIT_Init_Config_s
 {
-	// TODO[CANFD-01 板卡映射]：can_init_config.can_handle由上下板各自的总线分配配置提供，
-	// 驱动不写死hfdcan1/2/3；同板该控制器若共用板间消息，双方都走同一个FD注册后端。
+	// 应用按本板接线传入句柄，驱动不写死总线；同路板间通信也走FD后端。
 	MIT_Controller_Init_s controller_param_init_config{};//mit控制器参数初始化
 	Motor_Reverse_Flag_e  motor_reverse_flag{MOTOR_DIRECTION_NORMAL};
 	FdcanConfigType  can_init_config{}; // master_id发送指令ID，can_id反馈CAN ID。
