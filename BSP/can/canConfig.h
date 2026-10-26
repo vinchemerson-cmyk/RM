@@ -159,7 +159,6 @@ using classicCanConfigType = canConfig::classicCan::Config;
 
 using Fdcan           = canConfig::Fdcan;
 using FdcanType       = canConfig::Fdcan::Attribute;
-
 //FDCAN注册配置
 using FdcanConfigType = canConfig::Fdcan::Config;
 
