@@ -3,10 +3,18 @@
 
 namespace
 {
-    void DrainFifo(FDCAN_HandleTypeDef* handle, uint32_t fifo)
+	/**
+	 * @brief 中断排空fifo
+	 * @param handle
+	 * @param fifo
+	 */
+	void DrainFifo(FDCAN_HandleTypeDef* handle, uint32_t fifo)
     {
-        // 仅处理进入中断时已经排队的帧，限制ISR工作量，避免持续来帧导致中断不退出。
+        // 获取当前排队的帧数
         uint32_t pending = HAL_FDCAN_GetRxFifoFillLevel(handle, fifo);
+
+		//倒计数循环.假设 pending 进来时是 3，循环体会执行 3 次，直到 pending 递减到 0 退出
+		//这个循环的次数是固定的，只处理进入中断那一刻已经存在的帧
         while (pending-- != 0U)
         {
             if (handle->Init.FrameFormat == FDCAN_FRAME_CLASSIC)

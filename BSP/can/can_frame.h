@@ -9,7 +9,7 @@ namespace canFrame
     inline constexpr uint8_t kInvalidDlc = 0xFFU;
     constexpr uint8_t DlcForLength(unsigned length)
     {
-        for (uint8_t i = 0; i < kLengths.size(); ++i)
+    	for (size_t i = 0; i < kLengths.size(); ++i)
             if (length <= kLengths[i]) return i;
         return kInvalidDlc;
     }
