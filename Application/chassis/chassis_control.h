@@ -4,9 +4,9 @@
 
 #ifndef INFANTRY_H723_CHASSIS_CONTROL_H
 #define INFANTRY_H723_CHASSIS_CONTROL_H
-#include <cstdint>
 #include <array>
 #include <cmath>
+#include <cstdint>
 
 namespace chassis
 {
@@ -40,9 +40,10 @@ namespace chassis
 	/** @brief 单个全向轮的固定机械参数，不是机器人在场地中的实时位置。 */
 	struct WheelGeometry
 	{
-		float x_m = {}, y_m = {};     // 轮心相对底盘运动学中心的前后/左右坐标，单位m；前正、左正。
+		float x_m = {};               //轮心相对底盘运动学中心的前后坐标
+		float y_m = {};               // 轮心相对底盘运动学中心的左右坐标，单位m；前正、左正。
 		float drive_direction_deg{};  // 逻辑正轮速对应的主动滚动方向相对+x的角度，逆时针为正。
-		                             // 左前方向为+45°，但左前轮不一定填45°；须结合安装及电机reverse配置。
+		// 左前方向为+45°，但左前轮不一定填45°；须结合安装及电机reverse配置。
 		float radius_m{};             // 实际车轮有效滚动半径，单位m，不是电机转子或齿轮的半径。
 		float max_output_speed_dps{}; // 本轮输出轴最大角速度绝对值，单位°/s；转子速度换算在驱动边界进行。
 	};
@@ -92,35 +93,36 @@ namespace chassis
 			bool Configure(const std::array<WheelGeometry, kWheelCount>& geometry, const MotionLimits& limits)
 			{
 				configured_ = false; // 先撤销旧配置的有效标志，避免本次配置失败后仍按旧配置输出。
-				Reset(); // 清零车体速度斜坡的历史目标，不是清除机械参数或电机PI。
+				Reset();             // 清零车体速度斜坡的历史目标，不是清除机械参数或电机PI。
 				// 所有能力上限都必须为有限正数；NaN/无穷大不能作为“不限幅”的配置方式。
-				for (float value : {
-						 limits.max_translation_mps, limits.max_yaw_dps,
-						 limits.translation_acceleration_mps2, limits.yaw_acceleration_dps2
-					 })
-					if (!std::isfinite(value) || value <= 0.0F) return false; //运动限制参数校验
+				// for (float value : {
+				// 		 limits.max_translation_mps, limits.max_yaw_dps,
+				// 		 limits.translation_acceleration_mps2, limits.yaw_acceleration_dps2
+				// 	 })
+				// 	if (!std::isfinite(value) || value <= 0.0F) return false; //运动限制参数校验
 				float reference = 0.0F;
-				for (const auto& w : geometry)
+				for (const auto& [x_m, y_m, drive_direction_deg, radius_m, max_output_speed_dps] : geometry)
 				{
 					// 安装坐标和方向允许为负数或零；车轮半径与最大轮速则必须严格大于零。
-					if (!std::isfinite(w.x_m) || !std::isfinite(w.y_m) ||
-						!std::isfinite(w.drive_direction_deg) || !std::isfinite(w.radius_m) ||
-						!std::isfinite(w.max_output_speed_dps) || w.radius_m <= 0.0F ||
-						w.max_output_speed_dps <= 0.0F)
+					if (!std::isfinite(x_m) || !std::isfinite(y_m) ||
+						!std::isfinite(drive_direction_deg) || !std::isfinite(radius_m) ||
+						!std::isfinite(max_output_speed_dps) || radius_m <= 0.0F ||
+						max_output_speed_dps <= 0.0F)
 						return false;
-					reference = std::fmax(reference, std::hypot(w.x_m, w.y_m)); //每个轮子安装位置到机器人底盘坐标原点的距离，
+
+					reference = std::fmax(reference, std::hypot(x_m, y_m)); //每个轮子安装位置到机器人底盘坐标原点的距离，
 					//最终取所有轮子中最大的安装半径
 				}
 				if (!std::isfinite(reference) || reference <= 0.0F) return false; //轮子几何参数校验
 				// Gram矩阵G=A^T*A，初始全零；A的每一行对应一个轮子的运动学约束。
 				// 这里仅用G检查几何是否能表达三自由度，不是在求动力学模型或控制增益。
 				float gram[3][3]{};
-				for (unsigned i = 0; i < kWheelCount; ++i)//遍历所有轮子
+				for (unsigned i = 0; i < kWheelCount; ++i) //遍历所有轮子
 				{
-					const auto& w      = geometry[i];//取出当前轮子的几何参数
+					const auto& w      = geometry[i]; //取出当前轮子的几何参数
 					// 先将角度折回一圈附近，再由deg转rad，因为cos/sin的输入单位是弧度。
 					const float theta  = std::remainder(w.drive_direction_deg, 360.0F) * kDegToRad;
-					const float tx     = std::cos(theta), ty = std::sin(theta);//得到轮子的单位驱动方向
+					const float tx     = std::cos(theta), ty = std::sin(theta); //得到轮子的单位驱动方向
 					// 轮心速度=(vx-omega*y, vy+omega*x)，沿(tx,ty)投影后，
 					// 旋转项系数为(-y*tx+x*ty)，单位m；这是速度耦合系数，不是实际转矩。
 					const float moment = -w.y_m * tx + w.x_m * ty;
@@ -174,8 +176,8 @@ namespace chassis
 					vx *= limits_.max_translation_mps / norm;
 					vy *= limits_.max_translation_mps / norm;
 				}
-				yaw                 = Limit(yaw, limits_.max_yaw_dps); // 独立限制车体旋转速度，保留左右转符号。
-				const float delta   = std::hypot(vx - vx_, vy - vy_);  // 新目标相对上次已执行目标的速度矢量差，m/s。
+				yaw                 = Limit(yaw, limits_.max_yaw_dps);            // 独立限制车体旋转速度，保留左右转符号。
+				const float delta   = std::hypot(vx - vx_, vy - vy_);             // 新目标相对上次已执行目标的速度矢量差，m/s。
 				const float step    = limits_.translation_acceleration_mps2 * dt; // 本周期允许的平移速度变化量，m/s。
 				const float yawStep = limits_.yaw_acceleration_dps2 * dt;         // 本周期允许的偏航速度变化量，°/s。
 				// 输入虽有限，乘法/减法仍可能溢出；中间值异常时立即撤销本次目标。
@@ -188,7 +190,7 @@ namespace chassis
 					vy = vy_ + (vy - vy_) * step / delta;
 				}
 				yaw         = yaw_ + Limit(yaw - yaw_, yawStep); // 旋转斜坡：在上次目标上叠加受限的变化量。
-				float scale = 1.0F; // 四轮共用缩放系数，1表示当前无需进一步限速。
+				float scale = 1.0F;                              // 四轮共用缩放系数，1表示当前无需进一步限速。
 				for (unsigned i = 0; i < kWheelCount; ++i)
 				{
 					const auto& row = rows_[i];
@@ -218,7 +220,10 @@ namespace chassis
 		private:
 			static constexpr float kDegToRad = 0.017453292519943295F; // pi/180，度到弧度的换算系数。
 			// 对称限幅到[-limit,+limit]；limit来自已校验的上限或本周期允许变化量。
-			static float           Limit(float v, float limit) { return std::fmax(-limit, std::fmin(limit, v)); }
+			static float           Limit(float v, float limit)
+			{
+				return std::fmax(-limit, std::fmin(limit, v));
+			}
 
 			// 统一失败出口：清目标和斜坡，但保留已配置参数；硬件禁用/零电流仍由Task执行。
 			bool Fail(std::array<float, kWheelCount>& output)
@@ -228,11 +233,11 @@ namespace chassis
 				return false;
 			}
 
-			std::array<WheelGeometry, kWheelCount>        geometry_{}; // 四轮机械参数的本地副本。
-			std::array<std::array<float, 3>, kWheelCount> rows_{};     // 各轮[tx,ty,moment]，初始化时计算。
-			MotionLimits                                  limits_{}; // 当前有效的车体运动限制。
+			std::array<WheelGeometry, kWheelCount>        geometry_{};          // 四轮机械参数的本地副本。
+			std::array<std::array<float, 3>, kWheelCount> rows_{};              // 各轮[tx,ty,moment]，初始化时计算。
+			MotionLimits                                  limits_{};            // 当前有效的车体运动限制。
 			float                                         vx_{}, vy_{}, yaw_{}; // 上周期限幅后的目标：m/s、m/s、°/s。
-			bool                                          configured_{}; // 成功配置后为true；Reset不会将其清零。
+			bool                                          configured_{};        // 成功配置后为true；Reset不会将其清零。
 	};
 }
 

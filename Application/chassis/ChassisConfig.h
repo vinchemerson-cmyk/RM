@@ -58,29 +58,29 @@ kChassisGeometry{
 		{ // 左前 FL
 			.x_m                  = +0.236F,
 			.y_m                  = +0.236F,
-			.drive_direction_deg  = kFLDirectionDeg,
-			.radius_m             = kWheelRadiusM,
+			.drive_direction_deg  = -45,
+			.radius_m             = 0.072,
 			.max_output_speed_dps = kWheelMaxSpeedDps,
 		},
 		{ // 右前 FR
 			.x_m                  = +0.236F,
 			.y_m                  = -0.236F,
-			.drive_direction_deg  = kFRDirectionDeg,
-			.radius_m             = kWheelRadiusM,
+			.drive_direction_deg  = 45,
+			.radius_m             = 0.072,
 			.max_output_speed_dps = kWheelMaxSpeedDps,
 		},
 		{ // 左后 BL
 			.x_m                  = -0.236F,
 			.y_m                  = +0.236F,
-			.drive_direction_deg  = kBLDirectionDeg,
-			.radius_m             = kWheelRadiusM,
+			.drive_direction_deg  = -45,
+			.radius_m             = 0.072,
 			.max_output_speed_dps = kWheelMaxSpeedDps,
 		},
 		{ // 右后 BR
 			.x_m                  = -0.236F,
 			.y_m                  = -0.236F,
-			.drive_direction_deg  = kBRDirectionDeg,
-			.radius_m             = kWheelRadiusM,
+			.drive_direction_deg  = 45,
+			.radius_m             = 0.072,
 			.max_output_speed_dps = kWheelMaxSpeedDps,
 		},
 	}
@@ -91,12 +91,12 @@ kChassisMotionLimits{
 	//todo:电机的限制
 };
 
-//todo:底盘运动映射到摇杆通道
-// 通道索引与rc::RC_Data_s.channels对应；当前定义被注释，不能认为Task已经有可用映射。
-// 恢复时逐项实测：前后、左右平移、左右旋转各自使用哪个物理摇杆轴。
-// inline constexpr unsigned kChassisForwardChannel    = 1U;
-// inline constexpr unsigned kChassisLeftChannel       = 0U;
-// inline constexpr unsigned kChassisYawChannel        = 2U;
+// todo:底盘运动映射到摇杆通道
+//  通道索引与rc::RC_Data_s.channels对应；当前定义被注释，不能认为Task已经有可用映射。
+//  恢复时逐项实测：前后、左右平移、左右旋转各自使用哪个物理摇杆轴。
+ inline constexpr unsigned kChassisForwardChannel    = 1U;
+ inline constexpr unsigned kChassisLeftChannel       = 0U;
+ inline constexpr unsigned kChassisYawChannel        = 2U;
 
 // 右手系规定目标vx前正、vy左正、yaw逆时针正；下面的Sign只修正遥控输入方向。
 // 三个系数相互独立，+1保留通道符号，-1反转；不能用它们补偿单轮电机安装错误。
