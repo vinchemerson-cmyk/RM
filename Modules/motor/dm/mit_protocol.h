@@ -8,15 +8,23 @@ namespace dmProtocol
 {
 	struct Limits
 	{
-		// 沿用原工程量程，必须与对应电机调试助手一致，不能按型号名猜测。
-		float position_min{-3.14159265358979F}, position_max{3.14159265358979F};
-		float velocity_max{45.0F},              torque_max{54.0F};
-		float kp_max{500.0F},                   kd_max{5.0F};
+		// 达妙调试助手「参数设置」页的出厂预设值。
+		//todo: 说明书明确要求: 发送控制命令时必须与驱动器内设定值一致, 否则命令会被等比例缩放。
+		//   见 DM-J4340-2EC V1.1 减速电机使用说明书 V1.3 第 14~15 页:
+		//   "Pos、Vel、Torque 分别预设为 ±12.5、±30、±10; KP、KD 默认 0.0~500.0、0.0~5.0"。
+		// 若在调试助手里改过范围, 必须同步修改本结构, 否则力矩/位置指令会按比例失真。
+		float position_min{-12.5F}, position_max{12.5F};
+		float velocity_max{30.0F},  torque_max{10.0F};
+		float kp_max{500.0F},       kd_max{5.0F};
 	};
 
 	struct Command
 	{
-		float position{}, velocity{}, torque{}, kp{}, kd{};
+		float position{};
+		float velocity{};
+		float torque{};
+		float kp{};
+		float kd{};
 	};
 
 	struct Feedback
@@ -52,6 +60,7 @@ namespace dmProtocol
 									  (1U << bits) - 1U));
 	}
 
+	//打包命令帧
 	inline bool Pack(const Command& cmd, const Limits& limits, std::array<uint8_t, 8>& bytes)
 	{
 		if (!Valid(limits) || !std::isfinite(cmd.position) || !std::isfinite(cmd.velocity) ||

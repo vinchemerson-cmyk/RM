@@ -9,17 +9,25 @@
 namespace
 {
 	DMMotorInstance motors[DM_MOTOR_CNT]{};
-	uint8_t         count{}, cycle{};
+	uint8_t         motorcount{}; //电机数量
+	uint8_t         cycle{};      //分频系数
 
 	HAL_StatusTypeDef Send(DMMotorInstance& motor, const Fdcan::Input& input)
 	{
-		if (motor.motor_can_instance == nullptr) return HAL_ERROR;
+		if (motor.motor_can_instance == nullptr)
+			return HAL_ERROR;
 		++motor.tx_enqueue_attempts;
 		const auto status = motor.motor_can_instance->Transmit(input);
 		if (status != HAL_OK) ++motor.tx_enqueue_failures;
 		return status;
 	}
 
+	/**
+	 * @brief 发送命令
+	 * @param motor
+	 * @param command
+	 * @return
+	 */
 	HAL_StatusTypeDef SendMode(DMMotorInstance& motor, DMMotor_Mode_e command)
 	{
 		// 容量64不改变模式帧：只发8字节，第7字节为命令。
@@ -31,7 +39,7 @@ namespace
 	}
 
 	/**
-	 * @brief 发送控制帧,DM电机每帧只控制一个电机
+	 * @brief 发送控制帧
 	 * @param motor 控制对象
 	 * @param active 是否允许控制
 	 * @return 正常情况下是HAL_OK
@@ -41,23 +49,27 @@ namespace
 		dmProtocol::Command command{};
 		if (active)
 		{
-			const float sign = motor.motor_reverse_flag == MOTOR_DIRECTION_REVERSE ? -1.0F : 1.0F;
+			const float sign = motor.motor_reverse_flag == MOTOR_DIRECTION_REVERSE ? -1.0F : 1.0F;//<-反转标志
 			command          = {
-				.position = sign * motor.MIT_controller.ref_angle, .velocity = sign * motor.MIT_controller.ref_speed,
-				.torque   = sign * motor.MIT_controller.ref_torque, .kp = motor.MIT_controller.Kp, .kd = motor.MIT_controller.Kd
+				.position = sign * motor.MIT_controller.ref_angle,
+				.velocity = sign * motor.MIT_controller.ref_speed,
+				.torque   = sign * motor.MIT_controller.ref_torque,
+				.kp      = motor.MIT_controller.Kp,
+				.kd       = motor.MIT_controller.Kd
 			};
 		}
 		Fdcan::Input input{};
-		input.tx_len     = 8U;
-		std::array<uint8_t, 8> mitFrame{}; // MIT仍是8字节协议，与通用FD缓冲区容量解耦。
-		const bool valid = dmProtocol::Pack(command, motor.protocol_limits, mitFrame);
+		input.tx_len = 8U;
+		std::array<uint8_t, 8> mitFrame{}; //<- MIT仍是8字节协议，与通用FD缓冲区容量解耦。
+		const bool             valid = dmProtocol::Pack(command, motor.protocol_limits, mitFrame);
 		if (!valid)
 		{
 			motor.stop_flag = MOTOR_STOP;
-			if (!dmProtocol::Pack({}, motor.protocol_limits, mitFrame)) return false;
+			if (!dmProtocol::Pack({}, motor.protocol_limits, mitFrame))
+				return false;
 		}
 		std::copy(mitFrame.begin(), mitFrame.end(), input.tx_buffer.begin());
-		return Send(motor, input) == HAL_OK && valid;
+		return Send(motor, input) == HAL_OK && valid;//<-发送
 	}
 
 	void DecodeFeedback(FdcanType* attribute)
@@ -66,14 +78,14 @@ namespace
 		if (attribute == nullptr || attribute->module_handle == nullptr) return;
 		auto& motor = *static_cast<DMMotorInstance*>(attribute->module_handle);
 		if (motor.motor_can_instance == nullptr) return;
-		const auto&          rx = motor.motor_can_instance->output;
+		const auto&          [rx_len, rx_buffer] = motor.motor_can_instance->output;
 		dmProtocol::Feedback raw{};
-		if (!dmProtocol::Unpack(rx.rx_buffer.data(), rx.rx_len, motor.protocol_limits, raw) ||
-			raw.motor_id != attribute->master_id)
+		if (!dmProtocol::Unpack(rx_buffer.data(), rx_len, motor.protocol_limits, raw) ||
+			raw.motor_id != attribute->master_id)//解析反馈帧
 			return;
 
-		const float sign       = motor.motor_reverse_flag == MOTOR_DIRECTION_REVERSE ? -1.0F : 1.0F;
-		const float position   = sign * raw.position;
+		const auto sign       = motor.motor_reverse_flag == MOTOR_DIRECTION_REVERSE ? -1.0F : 1.0F;//反转标志
+		const auto position   = sign * raw.position;
 		auto&       feedback   = motor.measure;
 		feedback.last_position = motor.rx_init_flag != 0 ? feedback.position : position;
 		const float span       = motor.protocol_limits.position_max - motor.protocol_limits.position_min;
@@ -91,14 +103,14 @@ namespace
 		feedback.last_update_tick = osKernelGetTickCount();
 		motor.rx_init_flag        = 1;
 		++motor.feedback_sequence;
-		motor.cycles_since_feedback                     = 0;
+		motor.cycles_since_feedback             = 0;
 		motor.motor_can_instance->feedback_tick = feedback.last_update_tick;
 	}
 }
 
 DMMotorInstance* MITMotorInit(const MIT_Init_Config_s* config)
 {
-	if (config == nullptr || count >= DM_MOTOR_CNT || config->can_init_config.can_handle == nullptr ||
+	if (config == nullptr || motorcount >= DM_MOTOR_CNT || config->can_init_config.can_handle == nullptr ||
 		(config->can_init_config.can_handle->Init.FrameFormat != FDCAN_FRAME_FD_NO_BRS &&
 		 config->can_init_config.can_handle->Init.FrameFormat != FDCAN_FRAME_FD_BRS) ||
 		config->can_init_config.master_id == 0U || config->can_init_config.master_id > 0xFU ||
@@ -114,13 +126,13 @@ DMMotorInstance* MITMotorInit(const MIT_Init_Config_s* config)
 																									kd_max ||
 		(config->motor_reverse_flag != MOTOR_DIRECTION_NORMAL && config->motor_reverse_flag != MOTOR_DIRECTION_REVERSE))
 		return nullptr;
-	for (uint8_t i = 0U; i < count; ++i)
+	for (uint8_t i = 0U; i < motorcount; ++i)
 		if (motors[i].motor_can_instance->dependency.hcan == config->can_init_config.can_handle &&
 			(motors[i].motor_can_instance->attribute.can_id == config->can_init_config.can_id ||
 			 motors[i].motor_can_instance->attribute.master_id == config->can_init_config.master_id))
 			return nullptr;
 
-	auto& motor                  = motors[count];
+	auto& motor                  = motors[motorcount];
 	motor                        = {};
 	motor.motor_reverse_flag     = config->motor_reverse_flag;
 	motor.protocol_limits        = config->protocol_limits;
@@ -132,13 +144,14 @@ DMMotorInstance* MITMotorInit(const MIT_Init_Config_s* config)
 	can_config.module_handle     = &motor;
 	motor.motor_can_instance     = DmCan::Register(can_config);
 	if (motor.motor_can_instance == nullptr) return nullptr;
-	++count;
+	++motorcount;
 	return &motor;
 }
 
 void DMMotorEnable(DMMotorInstance* motor)
 {
-	if (motor == nullptr) return;
+	if (motor == nullptr)
+		return;
 	taskENTER_CRITICAL();
 	motor->enable_sequence = motor->feedback_sequence;
 	taskEXIT_CRITICAL();
@@ -182,40 +195,41 @@ void DMMotorCaliEncoder(DMMotorInstance* motor)
 	}
 }
 
-void DMMotorSetMITAngle(DMMotorInstance* motor, float value)
+void DMMotorSetMITAngle(DMMotorInstance* motor, float angle_rad)
 {
-	if (motor != nullptr) motor->MIT_controller.ref_angle = value;
+	if (motor != nullptr) motor->MIT_controller.ref_angle = angle_rad;
 }
 
-void DMMotorSetMITSpeed(DMMotorInstance* motor, float value)
+void DMMotorSetMITSpeed(DMMotorInstance* motor, float speed_rad_s)
 {
-	if (motor != nullptr) motor->MIT_controller.ref_speed = value;
+	if (motor != nullptr) motor->MIT_controller.ref_speed = speed_rad_s;
 }
 
-void DMMotorSetMITTorque(DMMotorInstance* motor, float value)
+void DMMotorSetMITTorque(DMMotorInstance* motor, float torque_nm)
 {
-	if (motor != nullptr) motor->MIT_controller.ref_torque = value;
+	if (motor != nullptr) motor->MIT_controller.ref_torque = torque_nm;
 }
 
 void DMMotorTask()
 {
-	if (count == 0U)
+	if (motorcount == 0U)
 	{
 		cycle = 0U;
 		return;
 	}
-	if (++cycle < DM_TASK_CYCLE)
+	if (++cycle < DM_TASK_CYCLE) //电机控制分频
 		return;
 	cycle              = 0U;
 	const uint32_t now = osKernelGetTickCount();
-	for (uint8_t i = 0U; i < count; ++i)
+	for (uint8_t i = 0U; i < motorcount; ++i)
 	{
 		auto& motor = motors[i];
 		taskENTER_CRITICAL();
 		const auto     feedback          = motor.measure;
 		const bool     seen              = motor.rx_init_flag != 0;
 		const uint32_t feedback_sequence = motor.feedback_sequence;
-		if (motor.cycles_since_feedback < std::numeric_limits<int>::max()) ++motor.cycles_since_feedback;
+		if (motor.cycles_since_feedback < std::numeric_limits<int>::max())
+			++motor.cycles_since_feedback;
 		taskEXIT_CRITICAL();
 		const bool fresh = seen && now - feedback.last_update_tick <= motor.feedback_timeout_ms;
 		if (motor.enable_pending)
@@ -232,7 +246,7 @@ void DMMotorTask()
 			motor.stop_flag = MOTOR_STOP;
 		const bool active = motor.stop_flag == MOTOR_ENABLE && !motor.enable_pending && fresh && feedback.state ==
 							DM_STATE_ENABLE;
-		// 未见有效反馈时发送零转矩，故障不自动清错或恢复。
+		// ,发送控制帧,未见有效反馈时发送零转矩，故障不自动清错或恢复。
 		if (!SendControl(motor, active)) motor.stop_flag = MOTOR_STOP;
 	}
 }
