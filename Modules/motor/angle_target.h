@@ -147,7 +147,7 @@ class MotorAngleTarget
 		}
 
 		[[nodiscard]] bool     Ready() const { return ready_; }
-		[[nodiscard]] uint32_t Epoch() const { return epoch_; }
+		[[nodiscard]] uint32_t Epoch() const { return epoch_; }//时间戳
 		[[nodiscard]] float    Target() const { return target_deg_; }
 
 	private:
