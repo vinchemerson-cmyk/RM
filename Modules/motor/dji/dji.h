@@ -1,21 +1,23 @@
 /**
  * @file dji.h
- * @brief DJI GM6020、M3508 和 M2006 的电机初始化配置。
+ * @brief DJI M3508 和 M2006 的电机初始化配置。
  *
  * 支持型号与总线资源 (与 dji.cpp 中的 kMotorSpecs 表保持一致):
  *   型号    指令帧                    反馈 ID         16 位输出范围
- *   GM6020  0x1FE (ID1-4) / 0x2FE (ID5-7)  0x205..0x20B  ±16384 (转矩电流 ±3A)
  *   M3508   0x200 (ID1-4) / 0x1FF (ID5-8)  0x201..0x208  ±16384 (电流)
  *   M2006   0x200 (ID1-4) / 0x1FF (ID5-8)  0x201..0x208  ±10000 (电流)
+ *
+ * @note GM6020 已从本驱动移除: 云台改用达妙 DM 电机 (见 Modules/motor/dm, MIT 协议)。
+ *       GM6020 的 0x1FE/0x2FE 帧与 0x205..0x20B 反馈区间不再被使用;
+ *       且 0x205..0x208 与 C620 ID5-8 的反馈区间重叠, 移除后不再有歧义。
  *
  * 反馈帧格式 (DLC 为 8 字节, 数值字段为大端):
  *   [0:1] 机械角 13 位有效, 0..8191 对应 0..360°;
  *   [2:3] 转速 (RPM, 转子轴);
  *   [4:5] 电流/转矩指令码 (C620: 1 LSB = 20A/32768);
- *   [6]   GM6020/C620 的温度 (°C); C610 的保留字节;
+ *   [6]   C620 的温度 (°C); C610 为保留字节;
  *   [7]   保留字节。
  * 驱动内部由相邻反馈解卷绕出连续角度 total_angle, 供角度环使用。
- * @note GM6020 电机参数必须开启电流环；软件速度环输出电流指令码，电机内部闭合电流环。
  *
  * 典型用法:
  *   1. Init 阶段: 用 Motor_Init_Config_s 描述型号/PID/闭环组合/CAN 反馈 ID,
@@ -33,8 +35,6 @@
 #include "can/can.h"
 #include "can/canConfig.h"
 #include "motor/motor_common.h"
-
-inline constexpr float k6020CommandUnitsPerAmp = 5461.333 ;
 
 namespace DJI
 {

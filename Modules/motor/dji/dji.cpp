@@ -1,6 +1,6 @@
 /**
  * @file dji.cpp
- * @brief DJI M3508、GM6020 与 M2006 的反馈解析、闭环计算和指令打包。
+ * @brief DJI M3508 与 M2006 的反馈解析、闭环计算和指令打包。
  *
  * 职责划分:
  *   - 反馈路径: FDCAN 中断 -> CAN_ 模板按 FilterIndex 投递 ->
@@ -8,7 +8,7 @@
  *     转速、连续角度 total_angle 与掉线时间戳。回调只做解析与标量
  *     赋值, 绝不阻塞。
  *   - 控制路径: 上层任务每个周期调 DJI_Motor_Control(), 按物理总线和指令帧分组
- *     计算各电机 16 位输出并打包进对应电流指令帧 (GM6020: 0x1FE/0x2FE，C610/C620: 0x200/0x1FF)。
+ *     计算各电机 16 位输出并打包进对应电流指令帧 (C610/C620: 0x200/0x1FF)。
  *     同帧最多 4 台电机, 输出槽位由反馈 ID 决定。
  *
  * 连续角度与重锚 (angle_epoch):
@@ -37,13 +37,12 @@
 
 namespace
 {
-	/** @brief GM6020、C620 和 C610 的反馈帧 DLC 均为 8 字节。 */
+	/** @brief C620 和 C610 的反馈帧 DLC 均为 8 字节。 */
 	constexpr uint8_t kFeedbackLength = 8U;
 
 	/** @brief M3508 与 M2006 (C620/C610 电调) 的电流指令范围. */
-	constexpr float kC620CurrentLimit        = 16384.0F;
-	constexpr float kC610CurrentLimit        = 10000.0F;
-	constexpr float k6020CurrentCommandLimit = 16384.0F;
+	constexpr float kC620CurrentLimit = 16384.0F;
+	constexpr float kC610CurrentLimit = 10000.0F;
 
 	/** @brief 每个型号的指令帧 ID 起点、反馈 ID 起点和输出上限. */
 	struct MotorTypeSpec
@@ -60,15 +59,11 @@ namespace
 	};
 
 	/**
-	* @brief DJI 两类电调的指令帧与反馈 ID 分配.
-	* @note GM6020 使用 0x1FE/0x2FE 电流指令与反馈 0x205 起，其余型号的电流协议不变。
+	* @brief C620/C610 电调的指令帧与反馈 ID 分配.
+	* @note 当前只支持 M3508 与 M2006: 二者共用 0x200 (ID1-4) / 0x1FF (ID5-8) 电流帧,
+	*       反馈 ID 为 0x201..0x208。GM6020 已移除, 云台改用达妙 DM 电机 (MIT 协议)。
 	*/
 	constexpr MotorTypeSpec kMotorSpecs[] = {
-
-		{
-			.type = DJI::GM6020, .output_limit = k6020CurrentCommandLimit
-		},
-
 		{
 			.type = DJI::M3508, .output_limit = kC620CurrentLimit
 		},
@@ -78,15 +73,21 @@ namespace
 		},
 	};
 
-	//fixme只有3508和2006
-	bool DjiResolveCommand(bool gm6020, uint32_t feedback_id, DjiCommandAddress& address)
+	/**
+	 * @brief 由反馈 ID 反推该电机的指令帧 ID 与槽位.
+	 * @param feedback_id 电机反馈帧的 CAN ID, 取值 0x201..0x208.
+	 * @param address 输出: 指令帧 ID 与该电机在帧内的槽位.
+	 * @return 反馈 ID 超出 0x201..0x208 时返回 false.
+	 * @note ID1-4 走 0x200, ID5-8 走 0x1FF; 槽位为 (id - 0x201) % 4.
+	 */
+	bool DjiResolveCommand(uint32_t feedback_id, DjiCommandAddress& address)
 	{
-		const uint32_t first = gm6020 ? 0x205U : 0x201U;
-		const uint32_t count = gm6020 ? 7U : 8U;
+		constexpr uint32_t     first = 0x201U;
+		constexpr uint32_t		count = 8U;
 		if (feedback_id < first || feedback_id >= first + count)
 			return false;
 		const uint32_t offset = feedback_id - first;
-		address.frame_id      = offset < 4U ? (gm6020 ? 0x1FEU : 0x200U) : (gm6020 ? 0x2FEU : 0x1FFU);
+		address.frame_id      = (offset < 4U) ? 0x200U : 0x1FFU;
 		address.slot          = static_cast<uint8_t>(offset % 4U);
 		return true;
 	}
@@ -169,13 +170,12 @@ namespace
 
 		const bool reverse = motor->motor_settings.motor_reverse_flag == MOTOR_DIRECTION_REVERSE;
 
-		// 单圈机械角: 取 13 位计数值换算到 [0, 360) 度; GM6020 的完整 16 位原值保留在 raw 字段.
+		// 单圈机械角: 取 13 位计数值换算到 [0, 360) 度; 完整 16 位原值保留在 raw 字段.
 		const float angle_deg = static_cast<float>(static_cast<uint16_t>(raw_angle) & 0x1FFFU) / 8192.0F * 360.0F;
 		// RPM 换算为度每秒.
 		const float speed_dps = static_cast<float>(raw_speed) * 6.0F;
-		// GM6020 按电流模式 ±16384 对应 ±3A；C610/C620 保留原有换算。
-		const float current_a = static_cast<float>(raw_current) *
-								(motor->motor_type == DJI::GM6020 ? 3.0F / k6020CurrentCommandLimit : 20.0F / 32768.0F);
+		// C620/C610 的反馈电流均为 1 LSB = 20A/32768.
+		const float current_a = static_cast<float>(raw_current) * (20.0F / 32768.0F);
 
 		const uint32_t    tick     = osKernelGetTickCount();
 		Motor_Feedback_s& feedback = motor->feedback;
@@ -204,7 +204,7 @@ namespace
 		feedback.temperature = motor->motor_type == DJI::M2006
 								   ? 0.0F
 								   : static_cast<float>(data[6]);
-		// DATA[7] 不参与解析；C620/GM6020 的温度仍从 DATA[6] 读取。
+		// DATA[7] 不参与解析；C620 的温度从 DATA[6] 读取, M2006 无温度反馈。
 		feedback.last_update_tick = tick;
 
 		instance.feedback_tick = tick;
@@ -284,8 +284,7 @@ DJI_Motor_s* DJI_Motor_Init(const DJI::Motor_Init_Config_s& config_instance)
 		return nullptr;
 
 	DjiCommandAddress address{};
-	if (!DjiResolveCommand(config_instance.motor_type == DJI::GM6020,
-						   config_instance.can_init_config.can_id, address) ||
+	if (!DjiResolveCommand(config_instance.can_init_config.can_id, address) ||
 		config_instance.can_init_config.can_handle->Init.FrameFormat != FDCAN_FRAME_CLASSIC)
 		return nullptr;
 
@@ -412,8 +411,7 @@ void DJI_Motor_Control(DJI_Motor_s** motor_list, const uint8_t count, const floa
 		const MotorTypeSpec* spec = FindSpec(motor->motor_type);//查找规格
 		DjiCommandAddress    address{};
 
-		if (spec == nullptr || !DjiResolveCommand(motor->motor_type == DJI::M2006,//fixme:DjiResolveCommand有问题
-												  motor->can_instance->attribute.can_id, address))
+		if (spec == nullptr || !DjiResolveCommand(motor->can_instance->attribute.can_id, address))
 			continue;
 
 		//合并帧
@@ -466,8 +464,7 @@ void DJI_Motor_Control(DJI_Motor_s** motor_list, const uint8_t count, const floa
 			DjiCommandAddress address{};             //准备地址结构
 			if (motor == nullptr || motor->can_instance == nullptr ||
 				motor->can_instance->dependency.hcan != frames[i].bus ||
-				!DjiResolveCommand(motor->motor_type == DJI::M3508,
-								   motor->can_instance->attribute.can_id, address) ||
+				!DjiResolveCommand(motor->can_instance->attribute.can_id, address) ||
 				address.frame_id != frames[i].id) //电机空指针;CAN示例空指针；CAN总线不匹配；地址解析失败；帧ID不匹配
 				continue;
 			++motor->tx_enqueue_attempts;
