@@ -9,31 +9,45 @@
 #error "INFANTRY_BOARD_GIMBAL must be 0 or 1"
 #endif
 
-enum { BOARD_CAN_CLASSIC = 0, BOARD_CAN_FD = 1, BOARD_CAN_FD_BRS = 2 };
+enum
+{
+	BOARD_CAN_CLASSIC = 0,
+	BOARD_CAN_FD = 1,
+	BOARD_CAN_FD_BRS = 2
+};
 typedef struct
 {
-    uint32_t mode, standard_filters;
-    uint32_t nominal_prescaler, nominal_sjw, nominal_seg1, nominal_seg2;
-    uint32_t data_prescaler, data_sjw, data_seg1, data_seg2;
+    uint32_t mode;//工作模式
+	uint32_t standard_filters;//标准ID过滤器数量
+
+    uint32_t nominal_prescaler;//
+	uint32_t nominal_sjw;
+	uint32_t nominal_seg1;
+	uint32_t nominal_seg2;
+    uint32_t data_prescaler;
+	uint32_t data_sjw;
+	 uint32_t data_seg1;
+	uint32_t data_seg2;
 } BoardCanConfig;
 
 /* 两张表独立填写。暂保留原模式/时序：CAN1/2经典，CAN3 FD+BRS；不是已确认的实物接线表。
  * 时序基于实际FDCAN时钟计算：bitrate=clock/(prescaler*(1+seg1+seg2))，不得只看分频猜波特率。
- * DM与板间共线时，将该板对应总线设为FD/FD_BRS，双方电机/控制板均须配置相同总线时序。 */
+ * DM与板间共线时，将该板对应总线设为FD/FD_BRS，双方电机/控制板均须配置相同总线时序。
+ */
 #if INFANTRY_BOARD_GIMBAL
 static const BoardCanConfig kBoardCanConfig[3] = {
-    {BOARD_CAN_CLASSIC, 8, 1,20,59,20, 1,2,13,2},
+    {BOARD_CAN_FD, 8, 1,20,59,20, 1,2,13,2},
     {BOARD_CAN_CLASSIC, 4, 1,20,59,20, 1,2,13,2},
-    {BOARD_CAN_FD_BRS,  4, 1,20,59,20, 1,2,13,2},
+    {BOARD_CAN_FD,  4, 1,20,59,20, 1,2,13,2},
 };
 #ifndef INFANTRY_INTERBOARD_FDCAN
-#define INFANTRY_INTERBOARD_FDCAN 2
+#define INFANTRY_INTERBOARD_FDCAN 1
 #endif
 #else
 static const BoardCanConfig kBoardCanConfig[3] = {
     {BOARD_CAN_CLASSIC, 8, 1,20,59,20, 1,2,13,2},
-    {BOARD_CAN_CLASSIC, 4, 1,20,59,20, 1,2,13,2},
-    {BOARD_CAN_FD_BRS,  4, 1,20,59,20, 1,2,13,2},
+    {BOARD_CAN_FD, 4, 1,20,59,20, 1,2,13,2},
+    {BOARD_CAN_CLASSIC,  4, 1,20,59,20, 1,2,13,2},
 };
 #ifndef INFANTRY_INTERBOARD_FDCAN
 #define INFANTRY_INTERBOARD_FDCAN 2
@@ -57,5 +71,5 @@ static inline uint32_t BoardCanRamOffset(unsigned index)
     for (unsigned i = 0U; i < index; ++i) result += BoardCanRamWords(i);
     return result;
 }
-static inline uint32_t BoardCanTotalRamWords(void)
+static inline uint32_t BoardCanTotalRamWords()
 { return BoardCanRamOffset(3U); }
