@@ -5,10 +5,11 @@
 #include <cstring>
 #include "can/can_frame.h"
 
+//todo:完善板间通信协议
 namespace interboard::wire
 {
-    inline constexpr uint8_t kFdHeaderSize = 4U;
-    inline constexpr uint8_t kMaxPayload = 64U - kFdHeaderSize;
+    inline constexpr uint8_t kFdHeaderSize = 4U;//FD帧帧头大小
+    inline constexpr uint8_t kMaxPayload = 64U - kFdHeaderSize;//最大可用负载
     inline constexpr uint8_t kClassicChunk = 6U;
     inline constexpr uint8_t kVersion = 0xA1U;
     struct Frame
@@ -97,7 +98,12 @@ namespace interboard::wire
             if (complete) assembling = false;
             return true;
         }
-    private:
-        bool Reject() { assembling = false; return false; }
-    };
+
+		private:
+			bool Reject()
+			{
+				assembling = false;
+				return false;
+			}
+	};
 }
