@@ -1,5 +1,6 @@
 /** @file encoder_telemetry.h @brief 电机快照和 UART7 FireWater 文本格式；无 HAL 依赖。 */
 #pragma once
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -50,6 +51,22 @@ namespace serialTasks
 	};
 
 	using EncoderProvider = EncoderSnapshot (*)();//PublishYawControlSnapshot()
+
+	/** @brief 单轮 UART7 遥测值；不含时间戳，避免大 tick 被 decimal() 截断。 */
+	struct WheelTelemetrySample
+	{
+		float target_speed_dps{};
+		float actual_speed_dps{};
+		float feedback_current_a{};
+	};
+
+	/** @brief 底盘四轮快照，轮序固定为 FL/FR/BL/BR，与 chassis::Wheel 一致。 */
+	struct ChassisSnapshot
+	{
+		std::array<WheelTelemetrySample, 4U> wheels{};
+	};
+
+	using ChassisProvider = ChassisSnapshot (*)();
 
 
 	const auto decimal = [](float value, char (&text)[24])
@@ -115,6 +132,34 @@ namespace serialTasks
 		const int count = std::snprintf(buffer, capacity,
 										"%s,%s,%s,%s,%s,%s,%s,%s\n",
 										v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7]);
+		if (count <= 0 || static_cast<size_t>(count) >= capacity)
+		{
+			buffer[0] = '\0';
+			return 0U;
+		}
+		return static_cast<size_t>(count);
+	}
+
+
+	/** @brief 底盘四轮十二通道：FL/FR/BL/BR × 目标轮速、实际轮速、反馈电流。 */
+	inline size_t FormatChassisTelemetryLine(char*                  buffer, size_t capacity,
+											  const ChassisSnapshot& sps, uint32_t /*now*/)
+	{
+		if (buffer == nullptr || capacity == 0U) return 0U;
+
+		char        v[12][24]{};
+		const float values[]{
+			sps.wheels[0].target_speed_dps, sps.wheels[0].actual_speed_dps, sps.wheels[0].feedback_current_a,
+			sps.wheels[1].target_speed_dps, sps.wheels[1].actual_speed_dps, sps.wheels[1].feedback_current_a,
+			sps.wheels[2].target_speed_dps, sps.wheels[2].actual_speed_dps, sps.wheels[2].feedback_current_a,
+			sps.wheels[3].target_speed_dps, sps.wheels[3].actual_speed_dps, sps.wheels[3].feedback_current_a
+		};
+		static_assert(sizeof(values) / sizeof(values[0]) == 12U, "Chassis telemetry requires 12 channels");
+		for (size_t i = 0; i < 12U; ++i) decimal(values[i], v[i]);
+		const int count = std::snprintf(buffer, capacity,
+										"%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
+										v[0], v[1], v[2], v[3], v[4], v[5],
+										v[6], v[7], v[8], v[9], v[10], v[11]);
 		if (count <= 0 || static_cast<size_t>(count) >= capacity)
 		{
 			buffer[0] = '\0';

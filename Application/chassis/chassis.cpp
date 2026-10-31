@@ -295,3 +295,19 @@ chassis::WheelControlSnapshot chassis::GetWheelControlSnapshot(Wheel wheel)
     taskEXIT_CRITICAL();
     return snapshot;
 }
+
+serialTasks::ChassisSnapshot chassis::GetTelemetrySnapshot()
+{
+    serialTasks::ChassisSnapshot snapshot{};
+    constexpr Wheel kTelemetryOrder[kWheelCount]{
+        Wheel::FrontLeft, Wheel::FrontRight, Wheel::BackLeft, Wheel::BackRight,
+    };
+    for (unsigned i = 0; i < kWheelCount; ++i)
+    {
+        const WheelControlSnapshot wheel = GetWheelControlSnapshot(kTelemetryOrder[i]);
+        snapshot.wheels[i].target_speed_dps   = wheel.target_speed_dps;
+        snapshot.wheels[i].actual_speed_dps   = wheel.actual_speed_dps;
+        snapshot.wheels[i].feedback_current_a = wheel.feedback_current_a;
+    }
+    return snapshot;
+}

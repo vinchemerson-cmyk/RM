@@ -3,6 +3,7 @@
 //
 #pragma once
 #include <cstdint>
+#include "communication/encoder_telemetry.h"
 
 namespace chassis
 {
@@ -20,12 +21,14 @@ namespace chassis
     };
 
     // RTOS已初始化但调度器尚未启动时显式调用；成功表示四轮已注册且任务已创建，不表示电机已运动。
-    // 当前不由Robot.cpp调用；部分注册或任务创建失败后不自动重试，已经占用的驱动池不会自动回收。
-    // 注意：chassis.cpp中的配置校验入口当前被注释，不能再假定硬件确认开关会阻止注册。
+    // Robot.cpp 按 ENABLE_CHASSIS 装配本模块；硬件未确认时返回 false，调用方记录日志后继续启动。
+    // 部分注册或任务创建失败后不自动重试，已经占用的驱动池不会自动回收。
     bool Init();
     // 任务上下文读取；临界区拷贝完整结构，无效轮号返回零快照，不自动发送串口或消息中心。
     // 使用者应结合feedback_seen及feedback_tick自行判断数据有效性，不长期持有内部数据引用。
     WheelControlSnapshot GetWheelControlSnapshot(Wheel wheel);
+    // 供 UART7 遥测读取的四轮快照（FL/FR/BL/BR × 目标/实际/反馈电流）；未初始化时返回全零。
+    serialTasks::ChassisSnapshot GetTelemetrySnapshot();
 }
 
 
