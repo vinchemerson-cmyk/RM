@@ -18,9 +18,9 @@ namespace chassis
 	 */
 	struct Command
 	{
-		std::int16_t  vx_mmps{};
-		std::int16_t  vy_mmps{};
-		std::int16_t  yaw_ddps{};
+		std::int16_t  com_vx_mmps{};
+		std::int16_t  com_vy_mmps{};
+		std::int16_t  com_yaw_ddps{};
 		std::uint16_t sequence{};
 	};
 	static_assert(sizeof(Command) == 8U, "Chassis command layout must stay 8 bytes");
@@ -32,6 +32,17 @@ namespace chassis
 
 namespace gimbal
 {
+	struct Command
+	{
+		std::int16_t  vx_mmps{};
+		std::int16_t  vy_mmps{};
+		std::int16_t  yaw_ddps{};
+		std::uint16_t sequence{};
 
+		std:: uint8_t poweroff{};     //失能
+		std:: uint8_t NoFollow{};     //不跟随
+		std:: uint8_t FollowGimbal{}; //跟随
+		std:: uint8_t Spin{};         //小陀螺
+	};
 }
 #endif //INFANTRY_H723_ROBOTCOMMAND_HPP

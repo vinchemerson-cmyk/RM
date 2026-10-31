@@ -13,22 +13,6 @@ namespace chassis
 	// 明确采用右手系：x前、y左、z上，逆时针yaw为正；与参考代码y右约定不同。
 	// 下列模式/坐标系枚举是应用层接口定义；WheelVelocityPlanner 不负责模式切换，
 	// 也不会自动执行云台跟随或坐标旋转，调用方须先生成底盘坐标系中的 vx/vy/yaw。
-	enum class Mode : uint8_t
-	{
-		Disabled,     //失能
-		NoFollow,     //不跟随
-		FollowGimbal, //跟随
-		Spin,         //小陀螺
-		Direct
-	};
-
-	enum class chassis_mode : uint8_t
-	{
-		CHASSIS_NO_FOLLOW,         // 底盘不旋转,但维持全向机动,一般用于调整云台姿态
-		CHASSIS_FOLLOW_GIMBAL_YAW, // 跟随云台,不单独设置pid,以误差角度平方为速度输出
-		CHASSIS_ROTATE,            //自旋,同时保持全向机动;当前wz维持定值,todo后续增加不规则的变速策略
-		poweroff
-	};
 
 	enum class CommandFrame : uint8_t
 	{
