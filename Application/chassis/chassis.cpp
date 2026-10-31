@@ -161,7 +161,8 @@ namespace
             const bool remoteValid = remote.received && Fresh(now, remote.last_update_tick, rc::OFFLINE_TIMEOUT_MS);
             const bool runRequested = remote.switch_left == kChassisRunSwitch; // 当前按左拨杆决定是否请求底盘运行。
             // 发送故障须先离开运行拨杆位置再进入，不在故障后自动续转。
-            if (remoteValid && !runRequested) txFault = false;
+            if (remoteValid && !runRequested)
+            	txFault = false;
             // 任一条件不满足都停整组；安全许可不等于已有可靠轮速反馈，二者分别检查。
             bool allowed = timingValid && remoteValid && runRequested && !txFault &&
                            safety::ShouldOutput() && FeedbackReady(now);
@@ -192,14 +193,13 @@ namespace
             // 发送前记录累计失败计数，发送后比较是否变化，用于判断“本次”是否发生入队失败。
             uint32_t failures[chassis::kWheelCount]{};
             for (unsigned i = 0; i < chassis::kWheelCount; ++i) failures[i] = motors[i]->tx_enqueue_failures;
-            // 停止也发送零指令；所有同组电机在一次调用中提交。
-            // 正常周期传实际dt；异常周期电机已禁用，仅用标称dt完成零帧打包，不继续做有效闭环运动。
+        	//发送控制帧
             DJI_Motor_Control(motors, chassis::kWheelCount, timingValid ? dt : kChassisControlPeriodS);
             for (unsigned i = 0; i < chassis::kWheelCount; ++i)
                 if (motors[i]->tx_enqueue_failures != failures[i]) txFault = true;
             if (txFault)
             {
-                StopWheels();
+                StopWheels();//电机电流归零
                 // 最多补发一次零指令，不无限重试；不能撤回已入队的旧帧，也不能保证总线故障时成功送达。
                 DJI_Motor_Control(motors, chassis::kWheelCount, kChassisControlPeriodS);
             }
@@ -213,56 +213,55 @@ namespace
     // 原职责：确认硬件开关/CAN模式、计算periodTicks、检查摇杆映射和PI、核对四轮ID/减速比，
     // 最后调用planner.Configure缓存几何。校验并非只检查参数，还承担这些必要的初始化副作用。
     // 注意：当前没有执行此函数，periodTicks仍为0，planner也未配置；不能据此状态直接上板运行。
-    // bool ValidateConfiguration()
-    // {
-    //     if (!kChassisHardwareConfirmed || kChassisCanHandle == nullptr ||
-    //         kChassisCanHandle->Init.FrameFormat != FDCAN_FRAME_CLASSIC ||
-    //         !chassis::ControlPeriodTicks(kChassisControlPeriodS, osKernelGetTickFreq(), periodTicks) ||
-    //         !std::isfinite(kChassisMaxDtS) || kChassisMaxDtS < kChassisControlPeriodS ||
-    //         kChassisFeedbackTimeoutMs == 0U || kChassisFeedbackTimeoutMs >= 0x80000000U ||
-    //         kChassisForwardChannel >= rc::CHANNEL_COUNT || kChassisLeftChannel >= rc::CHANNEL_COUNT ||
-    //         kChassisYawChannel >= rc::CHANNEL_COUNT ||
-    //         !std::isfinite(kChassisStickDeadband) || kChassisStickDeadband < 0.0F || kChassisStickDeadband >= 1.0F)
-    //         return false;
-    //     for (float sign : {kChassisForwardSign, kChassisLeftSign, kChassisYawSign})
-    //         if (sign != 1.0F && sign != -1.0F) return false;
-    //     if (kChassisRunSwitch != rc::Right_Switch_e::UP && kChassisRunSwitch != rc::Right_Switch_e::MIDDLE)
-    //         return false;
-    //     PIDInstance pi;
-    //     if (!pi.Configure(kChassisWheelSpeedPi) || kChassisWheelSpeedPi.kd != 0.0F ||
-    //         kChassisWheelSpeedPi.kp <= 0.0F || kChassisWheelSpeedPi.ki < 0.0F) return false;
-    //     for (unsigned i = 0; i < chassis::kWheelCount; ++i)
-    //     {
-    //         const auto& hardware = kChassisWheels[i];
-    //         if ((hardware.type != DJI::M3508 && hardware.type != DJI::M2006) ||
-    //             hardware.feedback_id < 0x201U || hardware.feedback_id > 0x208U ||
-    //             !std::isfinite(hardware.gear_ratio) || hardware.gear_ratio <= 0.0F) return false;
-    //         const float peakRotorSpeed = hardware.gear_ratio * kChassisGeometry[i].max_output_speed_dps;
-    //         if (!std::isfinite(peakRotorSpeed) || peakRotorSpeed > std::numeric_limits<int16_t>::max() * 6.0F)
-    //             return false;
-    //         const float commandLimit = hardware.type == DJI::M3508 ? 16384.0F : 10000.0F;
-    //         if (kChassisWheelSpeedPi.output_max > commandLimit || kChassisWheelSpeedPi.output_min < -commandLimit)
-    //             return false;
-    //         for (unsigned j = 0; j < i; ++j)
-    //             if (hardware.feedback_id == kChassisWheels[j].feedback_id) return false;
-    //     }
-    //     return planner.Configure(kChassisGeometry, kChassisMotionLimits);
-    // }
+    bool ValidateConfiguration()
+    {
+        if (!kChassisHardwareConfirmed || kChassisCanHandle == nullptr ||
+            kChassisCanHandle->Init.FrameFormat != FDCAN_FRAME_CLASSIC ||
+            !chassis::ControlPeriodTicks(kChassisControlPeriodS, osKernelGetTickFreq(), periodTicks) ||
+            !std::isfinite(kChassisMaxDtS) || kChassisMaxDtS < kChassisControlPeriodS ||
+            kChassisFeedbackTimeoutMs == 0U || kChassisFeedbackTimeoutMs >= 0x80000000U ||
+            kChassisForwardChannel >= rc::CHANNEL_COUNT || kChassisLeftChannel >= rc::CHANNEL_COUNT ||
+            kChassisYawChannel >= rc::CHANNEL_COUNT ||
+            !std::isfinite(kChassisStickDeadband) || kChassisStickDeadband < 0.0F || kChassisStickDeadband >= 1.0F)
+            return false;
+        for (float sign : {kChassisForwardSign, kChassisLeftSign, kChassisYawSign})
+            if (sign != 1.0F && sign != -1.0F) return false;
+        PIDInstance pi;
+        if (!pi.Configure(kChassisWheelSpeedPi) || kChassisWheelSpeedPi.kd != 0.0F ||
+            kChassisWheelSpeedPi.kp <= 0.0F || kChassisWheelSpeedPi.ki < 0.0F) return false;
+        for (unsigned i = 0; i < chassis::kWheelCount; ++i)
+        {
+            const auto& hardware = kChassisWheels[i];
+            if ((hardware.type != DJI::M3508 && hardware.type != DJI::M2006) ||
+                hardware.feedback_id < 0x201U || hardware.feedback_id > 0x208U ||
+                !std::isfinite(hardware.gear_ratio) || hardware.gear_ratio <= 0.0F) return false;
+            const float peakRotorSpeed = hardware.gear_ratio * kChassisGeometry[i].max_output_speed_dps;
+            if (!std::isfinite(peakRotorSpeed) || peakRotorSpeed > std::numeric_limits<int16_t>::max() * 6.0F)
+                return false;
+            const float commandLimit = hardware.type == DJI::M3508 ? 16384.0F : 10000.0F;
+            if (kChassisWheelSpeedPi.output_max > commandLimit || kChassisWheelSpeedPi.output_min < -commandLimit)
+                return false;
+            for (unsigned j = 0; j < i; ++j)
+                if (hardware.feedback_id == kChassisWheels[j].feedback_id) return false;
+        }
+        return planner.Configure(kChassisGeometry, kChassisMotionLimits);
+    }
 }
 
 bool chassis::Init()
 {
-    if (taskHandle != nullptr) return true; // 幂等：任务已创建时直接成功，不重复注册或创建任务。
+    if (taskHandle != nullptr)
+    	return true; // 幂等：任务已创建时直接成功，不重复注册或创建任务。
     // 必须在RTOS初始化完成、调度器启动前调用；注册失败后也不自动重试，避免重复占用静态池。
     if (registrationAttempted || osKernelGetState() != osKernelReady)
         return false;
     // 注意：配置校验入口当前被注释，kChassisHardwareConfirmed=false不会在这里阻止注册。
     // 因而Init不再具备“硬件未确认就零注册”的原保证；本次注释工作不改变你的该处代码状态。
-    // if (!ValidateConfiguration())
-    // {
-    //     LOGERROR("[chassis] hardware/configuration incomplete; no motors registered");
-    //     return false;
-    // }
+    if (!ValidateConfiguration())
+    {
+        LOGERROR("[chassis] hardware/configuration incomplete; no motors registered");
+        return false;
+    }
     registrationAttempted = true; // 在首次注册前置位，后续任何部分失败均不允许重复尝试。
     for (unsigned i = 0; i < kWheelCount; ++i)
     {
@@ -288,7 +287,8 @@ bool chassis::Init()
 chassis::WheelControlSnapshot chassis::GetWheelControlSnapshot(Wheel wheel)
 {
     const auto index = static_cast<unsigned>(wheel);
-    if (index >= kWheelCount) return {}; // 非法枚举值返回全零结构，不访问越界数组。
+    if (index >= kWheelCount)
+    	return {}; // 非法枚举值返回全零结构，不访问越界数组。
     // 返回值拷贝，不暴露内部快照地址；读取与写入使用相同临界区，保证快照整体一致。
     taskENTER_CRITICAL();
     const auto snapshot = wheels[index].snapshot;

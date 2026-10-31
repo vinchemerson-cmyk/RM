@@ -61,18 +61,18 @@ namespace chassis
 	// 原设计：seconds为秒、frequency为每秒tick数，ticks通过引用返回整数调度周期。
 	// seconds*frequency应接近整数；0.001 tick容差用于接受浮点表示误差，
 	// 不是允许把任意小数周期四舍五入。上界2^31用于保留无符号tick差的半周期判定范围。
-	// inline bool ControlPeriodTicks(float seconds, uint32_t frequency, uint32_t& ticks)
-	// {
-	// 	ticks              = 0U;
-	// 	const double value = static_cast<double>(seconds) * frequency;
-	// 	if (!std::isfinite(value) || value < 0.5 || value >= 2147483648.0)
-	// 		return false;
-	// 	const double rounded = std::round(value);
-	// 	if (std::fabs(value - rounded) > 0.001)
-	// 		return false;
-	// 	ticks = static_cast<uint32_t>(rounded);
-	// 	return true;
-	// }
+	inline bool ControlPeriodTicks(float seconds, uint32_t frequency, uint32_t& ticks)
+	{
+		ticks              = 0U;
+		const double value = static_cast<double>(seconds) * frequency;
+		if (!std::isfinite(value) || value < 0.5 || value >= 2147483648.0)
+			return false;
+		const double rounded = std::round(value);
+		if (std::fabs(value - rounded) > 0.001)
+			return false;
+		ticks = static_cast<uint32_t>(rounded);
+		return true;
+	}
 
 	/**
 	 * @brief 将车体三自由度目标速度转换为四个全向轮的输出轴目标角速度。
@@ -94,23 +94,11 @@ namespace chassis
 			{
 				configured_ = false; // 先撤销旧配置的有效标志，避免本次配置失败后仍按旧配置输出。
 				Reset();             // 清零车体速度斜坡的历史目标，不是清除机械参数或电机PI。
-				// 所有能力上限都必须为有限正数；NaN/无穷大不能作为“不限幅”的配置方式。
-				// for (float value : {
-				// 		 limits.max_translation_mps, limits.max_yaw_dps,
-				// 		 limits.translation_acceleration_mps2, limits.yaw_acceleration_dps2
-				// 	 })
-				// 	if (!std::isfinite(value) || value <= 0.0F) return false; //运动限制参数校验
 				float reference = 0.0F;
 				for (const auto& [x_m, y_m, drive_direction_deg, radius_m, max_output_speed_dps] : geometry)
 				{
-					// 安装坐标和方向允许为负数或零；车轮半径与最大轮速则必须严格大于零。
-					if (!std::isfinite(x_m) || !std::isfinite(y_m) ||
-						!std::isfinite(drive_direction_deg) || !std::isfinite(radius_m) ||
-						!std::isfinite(max_output_speed_dps) || radius_m <= 0.0F ||
-						max_output_speed_dps <= 0.0F)
-						return false;
-
-					reference = std::fmax(reference, std::hypot(x_m, y_m)); //每个轮子安装位置到机器人底盘坐标原点的距离，
+					//每个轮子安装位置到机器人底盘坐标原点的距离，
+					reference = std::fmax(reference, std::hypot(x_m, y_m));
 					//最终取所有轮子中最大的安装半径
 				}
 				if (!std::isfinite(reference) || reference <= 0.0F) return false; //轮子几何参数校验
@@ -120,9 +108,11 @@ namespace chassis
 				for (unsigned i = 0; i < kWheelCount; ++i) //遍历所有轮子
 				{
 					const auto& w      = geometry[i]; //取出当前轮子的几何参数
-					// 先将角度折回一圈附近，再由deg转rad，因为cos/sin的输入单位是弧度。
+
+					//把轮子的安装角度转化为二维平面上的单位方向向量（X和Y的分量）
 					const float theta  = std::remainder(w.drive_direction_deg, 360.0F) * kDegToRad;
-					const float tx     = std::cos(theta), ty = std::sin(theta); //得到轮子的单位驱动方向
+					const float tx     = std::cos(theta), ty = std::sin(theta);
+					//得到轮子的单位驱动方向
 					// 轮心速度=(vx-omega*y, vy+omega*x)，沿(tx,ty)投影后，
 					// 旋转项系数为(-y*tx+x*ty)，单位m；这是速度耦合系数，不是实际转矩。
 					const float moment = -w.y_m * tx + w.x_m * ty;
@@ -134,7 +124,8 @@ namespace chassis
 					// 单轮行向量a的外积a^T*a累加到G；r、c是三自由度列的索引，不是轮子编号。
 					for (unsigned r = 0; r < 3; ++r)
 						for (unsigned c = 0; c < 3; ++c) gram[r][c] += normalized[r] * normalized[c];
-				} //构建运动学矩阵与Gram矩阵
+				}
+				//构建运动学矩阵与Gram矩阵
 				// 三自由度必须满秩：A三列线性独立，G的行列式才为正。
 				// 退化例子：所有轮子的驱动方向都平行，无法独立产生任意方向的平移。
 				// 1e-5是数值判定阈值，也会拒绝部分接近退化的机构，并非精确的条件数评估。
@@ -149,7 +140,10 @@ namespace chassis
 			}
 
 			/** @brief 清零斜坡目标，使下次从静止起步；保留已验证的几何配置，不直接停硬件。 */
-			void Reset() { vx_ = vy_ = yaw_ = 0.0F; }
+			void Reset()
+			{
+				vx_ = vy_ = yaw_ = 0.0F;
+			}
 
 			/**
 			 * @brief 按本周期实际时间计算四轮目标；调用前须成功Configure。
