@@ -44,7 +44,7 @@ namespace InfantryInitialization
 	inline constexpr bool ENABLE_USB_SERIAL    = true;  // USB CDC 虚拟串口
 	inline constexpr bool ENABLE_IMU           = true;  // BMI088 六轴采样与姿态解算
 	inline constexpr bool ENABLE_SAFETY        = true;  // 本地输出总闸门
-	inline constexpr bool ENABLE_INTERBOARD    = false; // 板间业务本阶段关闭
+	inline constexpr bool ENABLE_INTERBOARD    = true; // 板间业务本阶段关闭
 	inline constexpr bool ENABLE_ENCODER_UART7 = true;  // 云台 pitch / 底盘四轮遥测
 	inline constexpr bool ENABLE_BUZZER        = false; // 两板共享开关
 

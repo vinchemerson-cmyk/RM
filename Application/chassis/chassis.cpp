@@ -1,10 +1,14 @@
 /** @file chassis.cpp @brief 四全向轮控制与快照接口；当前被注释的初始化校验见Init说明。 */
 #include "chassis.h"
 #include "bsp_log.h"
+#include "RobotCommand.hpp"
 #include "ChassisConfig.h"
 #include "cmsis_os2.h"
 #include "FreeRTOS.h"
 #include "task.h"
+#include "communication/interboard.h"
+#include "message_center/message_center.h"
+#include "RobotConfig.hpp"
 #include "safety/safety.h"
 
 namespace
@@ -20,6 +24,7 @@ namespace
     chassis::WheelVelocityPlanner planner{}; // 车体斜坡、全向轮逆解及统一轮速限幅。
     osThreadId_t taskHandle{}; // RTOS任务句柄，不是电机指针；非空表示创建任务成功。
     bool registrationAttempted{}; // 记录是否开始占用驱动静态池；部分失败后禁止自动重复注册。
+    Subscriber_t* commandSubscriber{}; // 底盘速度指令订阅者；仅启用板间通信且注册成功时非空。
     uint32_t periodTicks{}; // 绝对调度周期，单位tick；原设计由ValidateConfiguration赋值。
     constexpr osThreadAttr_t taskAttrs{
         .name = "ChassisTask", .stack_size = 2048U, .priority = osPriorityHigh, // 栈大小单位为字节。
@@ -263,6 +268,23 @@ bool chassis::Init()
         return false;
     }
     registrationAttempted = true; // 在首次注册前置位，后续任何部分失败均不允许重复尝试。
+    if constexpr (InfantryInitialization::ENABLE_INTERBOARD)
+    {
+        // RegisterRxTopic 要求 interboard::Start() 已成功且调度器尚未启动；
+        // 长度必须与发送侧共享的 chassis::Command 完全一致。
+        if (!interboard::RegisterRxTopic(chassis::kCommandTopicId, chassis::kCommandTopicName,
+                                         sizeof(chassis::Command)))
+        {
+            LOGERROR("[chassis] command RX topic registration failed");
+            return false;
+        }
+        commandSubscriber = SubRegister(chassis::kCommandTopicName, sizeof(chassis::Command));
+        if (commandSubscriber == nullptr)
+        {
+            LOGERROR("[chassis] command subscriber registration failed");
+            return false;
+        }
+    }
     for (unsigned i = 0; i < kWheelCount; ++i)
     {
         // 先为每轮生成独立配置，再交给驱动注册；成功返回的电机实例初始保持禁用。
