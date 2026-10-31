@@ -11,6 +11,9 @@ cmake_minimum_required(VERSION 3.22)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS ON)
 
 
 # Define the build type
@@ -114,11 +117,23 @@ add_executable(${CMAKE_PROJECT_NAME}
         Modules/motor/speed_target.h
         Application/chassis/ChassisConfig.h
         Application/RobotCommand.hpp
+        Modules/algorithm/KalmanFilter/kalmanFilter.hpp
 )
 
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
 target_compile_definitions(stm32cubemx INTERFACE INFANTRY_BOARD_GIMBAL=${INFANTRY_BOARD_GIMBAL})
+
+# CMSIS-DSP 1.18.0 source tree, vendored under the project.
+set(INFANTRY_CMSIS_DSP_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/CMSIS-DSP-1.18.0"
+    CACHE PATH "CMSIS-DSP 1.18.0 source tree")
+set(CMSISCORE "${CMAKE_CURRENT_SOURCE_DIR}/Drivers/CMSIS")
+if(NOT EXISTS "${INFANTRY_CMSIS_DSP_PATH}/Source/CMakeLists.txt")
+    message(FATAL_ERROR "CMSIS-DSP not found at ${INFANTRY_CMSIS_DSP_PATH}; set -DINFANTRY_CMSIS_DSP_PATH=<path>")
+endif()
+set(CMSISDSP_INSTALL OFF CACHE BOOL "Install CMSIS-DSP package" FORCE)
+add_subdirectory("${INFANTRY_CMSIS_DSP_PATH}/Source" "${CMAKE_BINARY_DIR}/cmsis-dsp")
+message(STATUS "CMSIS-DSP source: ${INFANTRY_CMSIS_DSP_PATH}")
 
 # Link directories setup
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
@@ -152,6 +167,7 @@ list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
 # Add linked libraries
 target_link_libraries(${CMAKE_PROJECT_NAME}
         stm32cubemx
+        CMSISDSP
 
         # Add user defined libraries
 )
