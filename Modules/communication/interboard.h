@@ -16,10 +16,10 @@ namespace interboard
 	/** @brief 双板链路的最近接收时间、计数及在线标志。 */
 	struct LinkStatus
 	{
-		uint32_t last_rx_tick;//最近有效链路接收tick；不是另一块板的时钟。
-		uint16_t rx_frames;//接收帧计数
-		uint16_t tx_frames;//发送帧计数
-		bool  online;//在线；应用仍须检查自己的命令新鲜度，不以心跳替代命令有效性。
+		uint32_t last_rx_tick{};//最近有效链路接收tick；不是另一块板的时钟。
+		uint16_t rx_frames{};//接收帧计数
+		uint16_t tx_frames{};//发送帧计数
+		bool  online{};//在线；应用仍须检查自己的命令新鲜度，不以心跳替代命令有效性。
 		uint32_t rx_dropped{}; // ISR队列满或过期帧数量。
 		uint32_t tx_failures{}; // 累计发送入队失败，不表示电调执行失败。
 	};

@@ -441,7 +441,8 @@ void DJI_Motor_Control(DJI_Motor_s** motor_list, const uint8_t count, const floa
 		const bool positionLoop = motor->motor_settings.close_loop_type == ANGLE_AND_SPEED_LOOP ||
 								  motor->motor_settings.close_loop_type == ALL_THERE_LOOP;
 		const bool targetFresh = !positionLoop || motor->motor_settings.angle_epoch == feedback.angle_epoch;
-		// 测试模式不等待首帧，也不因反馈超时置零；无反馈时按零初始化值闭环
+
+		//计算输出
 		if (motor->enabled && targetFresh)
 			output = ComputeOutput(*motor, feedback, dt_s);
 
@@ -457,7 +458,7 @@ void DJI_Motor_Control(DJI_Motor_s** motor_list, const uint8_t count, const floa
 		input.tx_len      = classicCan::DATA_SIZE;
 		input.tx_buffer   = frames[i].payload;
 		// FIFO 满时本周期不阻塞，下个控制周期重新发送最新值。canConfig::classicCan::Attribute
-		const auto result = frames[i].sender->Transmit(input);
+		const auto result = frames[i].sender->Transmit(input);//发送控制帧
 		for (uint8_t j = 0; j < count; ++j)
 		{
 			auto*             motor = motor_list[j]; //遍历电机

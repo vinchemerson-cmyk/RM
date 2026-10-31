@@ -132,8 +132,13 @@ namespace
         if (frame.fd)
         {
             wire::PayloadView payload{};
-            if (!wire::DecodeFd(frame, payload)) return;
-            if (payload.topic == 0) { MarkOnline(frame.received_tick, true); return; }
+            if (!wire::DecodeFd(frame, payload))
+            	return;
+            if (payload.topic == 0)
+            {
+            	MarkOnline(frame.received_tick, true);
+            	return;
+            }
             for (size_t i = 0; i < rxCount; ++i)
             {
                 auto& topic = rxTopics[i];

@@ -49,7 +49,7 @@ namespace interboard::wire
             (frame.data[0] == 0 ? (length != 0 || frame.data[1] != 0) : length == 0)) return false;
         for (unsigned i = kFdHeaderSize + length; i < frame.length; ++i)
             if (frame.data[i] != 0) return false;
-        payload = {frame.data[0], frame.data[1], length, frame.data.data() + kFdHeaderSize};
+        payload = {.topic = frame.data[0], .sequence = frame.data[1], .length = length, .bytes = frame.data.data() + kFdHeaderSize};
         return true;
     }
 
