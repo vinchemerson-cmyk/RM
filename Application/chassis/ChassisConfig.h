@@ -72,14 +72,14 @@ kChassisGeometry{
 		{ // 左后 BL
 			.x_m                  = -0.236F,
 			.y_m                  = +0.236F,
-			.drive_direction_deg  = -45,
+			.drive_direction_deg  = 45,
 			.radius_m             = 0.072,
 			.max_output_speed_dps = kWheelMaxSpeedDps,
 		},
 		{ // 右后 BR
 			.x_m                  = -0.236F,
 			.y_m                  = -0.236F,
-			.drive_direction_deg  = 45,
+			.drive_direction_deg  = -45,
 			.radius_m             = 0.072,
 			.max_output_speed_dps = kWheelMaxSpeedDps,
 		},
