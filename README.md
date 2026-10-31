@@ -53,25 +53,33 @@
 ### 命令
 
 ```bash
-# 配置 + 构建 (CMakePresets.json 提供 Debug/Release 两个预设)
-cmake --preset Debug
-cmake --build build/Debug
+# 配置 + 构建 (CMakePresets.json 提供云台板/底盘板四个角色预设)
+cmake --preset Debug-Gimbal
+cmake --build build/Debug-Gimbal
 
-# 产物: build/Debug/infantry_H723.elf
+# 底盘板
+cmake --preset Debug-Chassis
+cmake --build build/Debug-Chassis
+
+# 产物: build/Debug-Gimbal/infantry_H723.elf
+#       build/Debug-Chassis/infantry_H723.elf
 ```
 
 ### 烧录与调试
 
 ```bash
 # OpenOCD 烧录 (DAPLink/CMSIS-DAP)
-openocd -f stm32h7_daplink.cfg -c "program build/Debug/infantry_H723.elf verify reset exit"
+# 云台板
+openocd -f stm32h7_daplink.cfg -c "program build/Debug-Gimbal/infantry_H723.elf verify reset exit"
+
+# 底盘板：把路径替换为 build/Debug-Chassis/infantry_H723.elf
 ```
 
 - 调试日志走 SEGGER RTT (`BSP/log/`), 在 J-Link RTT Viewer 或支持 RTT 的上位机中读取, 不占用串口。
 - 首次上电前核对 `Application/RobotConfig.hpp`: 板卡角色 (`INFANTRY_BOARD_GIMBAL`) 与 FDCAN 分配; 云台参数核对清单见
   `Application/gimbal/GimbalConfig.hpp` 的注释。
 -
-当前四电机测试：FDCAN1的pitch/yaw均为位置模式，pitch使用配置的软件行程，yaw连续旋转；FDCAN2双摩擦轮不变。UART7输出pitch目标/实际位置及反馈电流，保留遥控失联与双DOWN急停。操作见 [测试说明](Application/shoot/README.md)。
+当前四电机测试：FDCAN1的pitch/yaw均为位置模式，pitch使用配置的软件行程，yaw连续旋转；FDCAN2双摩擦轮不变。云台板UART7输出pitch目标/实际位置及反馈电流，保留遥控失联与双DOWN急停；底盘板UART7输出四轮十二通道，底盘未初始化时为0。操作见 [测试说明](Application/shoot/README.md)。
 
 ### 宿主机单元测试
 

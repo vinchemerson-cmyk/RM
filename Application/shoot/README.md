@@ -113,8 +113,8 @@ ID 不同应改 `../gimbal/GimbalConfig.hpp` 的 `kPitchMotorFeedbackId` 和 `Sh
 ## 验证
 
 ```powershell
-cmake --build --preset Debug --parallel
-cmake --build --preset Release --parallel
+cmake --build --preset Debug-Gimbal --parallel
+cmake --build --preset Release-Gimbal --parallel
 cmake --build build/host-tests --parallel
 ctest --test-dir build/host-tests --output-on-failure
 ```

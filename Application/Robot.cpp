@@ -51,47 +51,68 @@ void InfantryInit(void)
 	}
 	BSPLogInit();
 
-	if (InfantryInitialization::ENABLE_USB_SERIAL)
+	if constexpr (InfantryInitialization::ENABLE_USB_SERIAL)
 	{
 		serialTasks::CreateUsbSerialTask();
 	}
-	if (InfantryInitialization::ENABLE_IMU)
+	if constexpr (InfantryInitialization::ENABLE_IMU)
 	{
 		imu::CreateTask();
 	}
 	// 双板链路与同路设备统一注册；各模块都须在调度器启动前完成装配，不独占或重启总线。
-	if (InfantryInitialization::ENABLE_INTERBOARD && !interboard::Start())
+	if constexpr (InfantryInitialization::ENABLE_INTERBOARD)
 	{
-		Error_Handler();
+		if (!interboard::Start())
+		{
+			Error_Handler();
+		}
 	}
 
-	if (InfantryInitialization::ENABLE_BUZZER)
+	if constexpr (InfantryInitialization::ENABLE_BUZZER)
+	{
 		appTasks::CreateBuzzerTask();
+	}
 
-	if (InfantryInitialization::ENABLE_RC)
+	if constexpr (InfantryInitialization::ENABLE_RC)
+	{
 		rc::Init();
+	}
 
-	if (InfantryInitialization::ENABLE_SAFETY)
+	if constexpr (InfantryInitialization::ENABLE_SAFETY)
+	{
 		safety::Init();
+	}
 
 	// 云台任务运行时每周期查询遥控和急停状态。
-	if (InfantryInitialization::ENABLE_GIMBAL)
-		gimbal::Init();
-
-	if (InfantryInitialization::ENABLE_CHASSIS)
+	if constexpr (InfantryInitialization::ENABLE_GIMBAL)
 	{
-		chassis::Init();
+		gimbal::Init();
 	}
 
-	if (InfantryInitialization::ENABLE_SHOOT)
+	if constexpr (InfantryInitialization::ENABLE_CHASSIS)
+	{
+		// 底盘硬件未确认时 Init() 返回 false；底盘板仍须启动 IMU/UART7/USB，不能整板停机。
+		if (!chassis::Init())
+		{
+			LOGERROR("[robot] chassis not assembled; hardware/configuration incomplete");
+		}
+	}
+
+	if constexpr (InfantryInitialization::ENABLE_SHOOT)
 	{
 		shoot::Init();
 	}
 
-	if (InfantryInitialization::ENABLE_ENCODER_UART7)
+	if constexpr (InfantryInitialization::ENABLE_ENCODER_UART7)
 	{
-		//serialTasks::CreateEncoderSerialTask(gimbal::GetYawControlSnapshot);
-		serialTasks::CreateEncoderSerialTask(gimbal::GetPitchControlSnapshot);
+		if constexpr (InfantryInitialization::kBoardRole == InfantryInitialization::BoardRole::Gimbal)
+		{
+			serialTasks::CreateEncoderSerialTask(gimbal::GetPitchControlSnapshot);
+		}
+		else
+		{
+			serialTasks::CreateChassisSerialTask(chassis::GetTelemetrySnapshot);
+		}
 	}
 
 
