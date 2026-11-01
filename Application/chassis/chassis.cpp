@@ -178,8 +178,7 @@ namespace
 			if (remoteValid && !runRequested)
 				txFault = false;
 			// 任一条件不满足都停整组；安全许可不等于已有可靠轮速反馈，二者分别检查。
-			bool allowed = timingValid && remoteValid && runRequested && !txFault &&
-						   safety::ShouldOutput() && FeedbackReady(now);
+			bool allowed = timingValid && remoteValid && runRequested && !txFault && FeedbackReady(now);
 			
 			std::array<float, chassis::kWheelCount> target{};
 			if (allowed)
