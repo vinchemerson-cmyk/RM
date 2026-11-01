@@ -18,7 +18,8 @@ namespace
     constexpr uint32_t kHeartbeatMs = 100U, kOfflineMs = 300U, kAssemblyTimeoutMs = 50U;
     constexpr uint32_t kPollMs = 2U;
     constexpr size_t kTopicCapacity = 8U;
-    constexpr unsigned kTxBudget = 2U, kMotorReservedSlots = 2U;
+    constexpr unsigned kTxBudget = 2U;
+	constexpr unsigned kMotorReservedSlots = 4U;//始终为fifo保留4个槽位给电机控制
 #if INFANTRY_INTERBOARD_FDCAN == 1
     FDCAN_HandleTypeDef* const canHandle = &hfdcan1;
 #elif INFANTRY_INTERBOARD_FDCAN == 2
@@ -41,10 +42,10 @@ namespace
     bool fdMode{}, startAttempted{};
     osThreadId_t taskHandle{};
     osMessageQueueId_t rxQueue{};
-    volatile uint32_t rxDrops{};
+    volatile uint32_t rxDrops{};//接收丢帧计数
     uint32_t staleDrops{}; // 仅任务写入，与ISR队列溢出计数分开，避免跨上下文自增丢失。
     LinkStatus status{};
-    Publisher_t* statusPublisher{};
+    Publisher_t* statusPublisher{};//发布板间通信状态
     char statusTopicName[] = "interboard/link";
     constexpr osThreadAttr_t taskAttrs{
         .name = "InterboardTask", .stack_size = 2048U, .priority = osPriorityAboveNormal,
@@ -66,48 +67,65 @@ namespace
 
     uint32_t Ticks(uint32_t milliseconds)
     {
-        return static_cast<uint32_t>((static_cast<uint64_t>(milliseconds) * osKernelGetTickFreq() + 999U) / 1000U);
+
+    	return static_cast<uint32_t>((static_cast<uint64_t>(milliseconds) * osKernelGetTickFreq() + 999U) / 1000U);
     }
+
     bool Expired(uint32_t now, uint32_t sample, uint32_t milliseconds)
-    { return now - sample >= Ticks(milliseconds); }
+    {
+	    return now - sample >= Ticks(milliseconds);
+    }
 
     /** @brief ISR只复制并排队，不操作消息中心；统一CAN后端已完成取帧、ID及帧格式校验。 */
     template <class Instance> void QueueRx(Instance* instance, bool fd)
     {
-        if (instance == nullptr || rxQueue == nullptr || instance->output.rx_len > 64U) return;
-        wire::Frame frame{};
-        frame.fd = fd;
-        frame.length = instance->output.rx_len;
-        frame.received_tick = osKernelGetTickCount();
-        std::copy_n(instance->output.rx_buffer.begin(), frame.length, frame.data.begin());
-        if (osMessageQueuePut(rxQueue, &frame, 0U, 0U) != osOK) ++rxDrops;
-    }
-    void OnClassicRx(classicCanType*) { QueueRx(classicInstance, false); }
-    void OnFdRx(FdcanType*) { QueueRx(fdInstance, true); }
+	    if (instance == nullptr || rxQueue == nullptr || instance->output.rx_len > 64U) return;
+    	wire::Frame frame{};
+    	frame.fd = fd;
+    	frame.length = instance->output.rx_len;
+    	frame.received_tick = osKernelGetTickCount();
+    	std::copy_n(instance->output.rx_buffer.begin(), frame.length, frame.data.begin());
+    	if (osMessageQueuePut(rxQueue, &frame, 0U, 0U) != osOK)
 
+    	{
+    		taskENTER_CRITICAL();
+    		rxDrops = rxDrops + 1;
+    		taskEXIT_CRITICAL();
+    	}
+    }
+    void OnClassicRx(classicCanType*)
+    {
+	    QueueRx(classicInstance, false);
+    }
+    void OnFdRx(FdcanType*)
+    {
+	    QueueRx(fdInstance, true);
+    }
+// 限制板间突发，并保留FIFO余量给电机；不代表具备硬实时带宽或比赛功率保证。
     bool CanSend()
     {
-        // 限制板间突发，并保留FIFO余量给电机；不代表具备硬实时带宽或比赛功率保证。
+        //读取寄存器获得剩余fifo空位,与kMotorReservedSlots比较,返回布尔值
         return HAL_FDCAN_GetTxFifoFreeLevel(canHandle) > kMotorReservedSlots;
     }
 
     bool Send(const wire::Frame& frame)
     {
-        if (!CanSend()) return false;
+        if (!CanSend())
+        	return false;
         HAL_StatusTypeDef result = HAL_ERROR;
         if (fdMode && fdInstance != nullptr && frame.fd)
         {
             Fdcan::Input input{};
             input.tx_len = frame.length;
             std::copy_n(frame.data.begin(), frame.length, input.tx_buffer.begin());
-            result = fdInstance->Transmit(input);
+            result = fdInstance->Transmit(input);//发送fd数据包input
         }
         else if (!fdMode && classicInstance != nullptr && !frame.fd && frame.length <= 8U)
         {
             classicCan::Input input{};
             input.tx_len = frame.length;
             std::copy_n(frame.data.begin(), frame.length, input.tx_buffer.begin());
-            result = classicInstance->Transmit(input);
+            result = classicInstance->Transmit(input);//发送classic数据包input
         }
         if (result != HAL_OK) { ++status.tx_failures; return false; }
         ++status.tx_frames;
@@ -121,14 +139,19 @@ namespace
         status.online = true;
         status.rx_dropped = rxDrops + staleDrops;
         ++status.rx_frames;
-        if (wasOffline || heartbeat) PubPushMessage(statusPublisher, &status);
+        if (wasOffline || heartbeat)
+        	PubPushMessage(statusPublisher, &status);
     }
 
     void Process(const wire::Frame& frame)
     {
         const uint32_t now = osKernelGetTickCount();
         // 不让任务队列中积压的旧帧刷新在线状态；使用ISR到达时刻，而不是处理时刻。
-        if (frame.fd != fdMode || Expired(now, frame.received_tick, kOfflineMs)) { ++staleDrops; return; }
+        if (frame.fd != fdMode || Expired(now, frame.received_tick, kOfflineMs))
+        {
+	        ++staleDrops; return;
+        }
+
         if (frame.fd)
         {
             wire::PayloadView payload{};
@@ -191,11 +214,17 @@ namespace
                     ? wire::EncodeFd(topic.id, topic.pending_sequence, topic.pending_value.data(), count, frame)
                     : wire::EncodeClassic(topic.id, topic.pending_sequence, topic.pending_offset / wire::kClassicChunk,
                                           topic.pending_value.data() + topic.pending_offset, count, frame);
-                if (!encoded) { topic.pending = false; break; }
+                if (!encoded)
+                {
+	                topic.pending = false;
+                	break;
+                }
                 --budget;
-                if (!Send(frame)) break; // 保留本片，短期重试；超过pending超时后丢弃，不无限追逐旧值。
+                if (!Send(frame))
+                	break; // 保留本片，短期重试；超过pending超时后丢弃，不无限追逐旧值。
                 topic.pending_offset += count;
-                if (topic.pending_offset == topic.length) topic.pending = false;
+                if (topic.pending_offset == topic.length)
+                	topic.pending = false;
             }
         }
     }
@@ -255,21 +284,29 @@ bool Start()
         canHandle->Init.TxFifoQueueElmtsNbr <= kMotorReservedSlots)
         return false;
     startAttempted = true; // 失败后不重复分配任务/消息中心资源；不自动停掉共享控制器。
-    rxQueue = osMessageQueueNew(16U, sizeof(wire::Frame), nullptr);
-    if (rxQueue == nullptr) return false;
-    statusPublisher = PubRegister(statusTopicName, sizeof(LinkStatus));
+    rxQueue = osMessageQueueNew(16U, sizeof(wire::Frame), nullptr);//创建接收消息队列
+    if (rxQueue == nullptr)
+    	return false;
+    statusPublisher = PubRegister(statusTopicName, sizeof(LinkStatus));//发布板间通信状态主题
     if (statusPublisher == nullptr)
-    { osMessageQueueDelete(rxQueue); rxQueue = nullptr; return false; }
+    {
+	    osMessageQueueDelete(rxQueue); rxQueue = nullptr; return false;//如果没发布成功就取消队列
+    }
     fdMode = canHandle->Init.FrameFormat != FDCAN_FRAME_CLASSIC;
     if (fdMode)
     {
         FdcanConfigType config{};
-        config.can_handle = canHandle; config.master_id = kTxId; config.can_id = kRxId;
+        config.can_handle = canHandle;
+    	config.master_id = kTxId;
+    	config.can_id = kRxId;
         config.can_callback_func = OnFdRx;
         config.tx_reserved_slots = kMotorReservedSlots;
         fdInstance = FdBus::Register(config);
         if (fdInstance == nullptr)
-        { osMessageQueueDelete(rxQueue); rxQueue = nullptr; return false; }
+        {
+	        osMessageQueueDelete(rxQueue); rxQueue = nullptr;
+        	return false;
+        }
     }
     else
     {
