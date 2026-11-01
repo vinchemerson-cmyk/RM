@@ -31,21 +31,6 @@ namespace rc
 		{
 			return static_cast<uint16_t>(p[0] | (p[1] << 8U));
 		};
-		// decoded.mouse.x            = static_cast<int16_t>(read16(bytes + 6U));
-		// decoded.mouse.y            = static_cast<int16_t>(read16(bytes + 8U));
-		// decoded.mouse.z            = static_cast<int16_t>(read16(bytes + 10U));
-		// decoded.mouse.left         = bytes[12] != 0U;
-		// decoded.mouse.right        = bytes[13] != 0U;
-		// const uint16_t keys        = read16(bytes + 14U);
-		// decoded.keyboard_mouse_raw = keys;
-		// decoded.keyboard.w         = (keys & (1U << 0U)) != 0U;
-		// decoded.keyboard.s         = (keys & (1U << 1U)) != 0U;
-		// decoded.keyboard.a         = (keys & (1U << 2U)) != 0U;
-		// decoded.keyboard.d         = (keys & (1U << 3U)) != 0U;
-		// decoded.keyboard.q         = (keys & (1U << 4U)) != 0U;
-		// decoded.keyboard.e         = (keys & (1U << 5U)) != 0U;
-		// decoded.keyboard.shift     = (keys & (1U << 6U)) != 0U;
-		// decoded.keyboard.ctrl      = (keys & (1U << 7U)) != 0U;
 		decoded.wheel_raw          = read16(bytes + 16U);
 		decoded.received           = true;
 		result                     = decoded;

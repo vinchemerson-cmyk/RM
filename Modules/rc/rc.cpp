@@ -95,9 +95,11 @@ void rc::Init()
 	if (uartInstance == nullptr)
 	{
 		constexpr usartConfig::Config config = {
-			.usart_handle        = &huart5, .tx_mode = usartConfig::NO_TRANSFER,
+			.usart_handle        = &huart5,
+			.tx_mode = usartConfig::NO_TRANSFER,
 			.rx_data_len         = usartConfig::RX_BUF_SIZE,
-			.usart_callback_func = OnReceive, .module_instance = &uartInstance,
+			.usart_callback_func = OnReceive,
+			.module_instance = &uartInstance,
 		};
 		uartInstance = usart::Register(config);
 	}
