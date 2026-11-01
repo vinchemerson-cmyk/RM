@@ -539,12 +539,22 @@ serialTasks::EncoderSnapshot gimbal::GetYawControlSnapshot() //若要打印电�
 	return snapshot;
 }
 
-serialTasks::EncoderSnapshot gimbal::GetPitchControlSnapshot() //或者这个
+serialTasks::EncoderSnapshot gimbal::GetAimPitchControlSnapshot() //或者这个
 {
 	taskENTER_CRITICAL();
-	const auto snapshot = aim_pitchControlSnapshot;
+	const auto aimpitchsnapshot = aim_pitchControlSnapshot;
+	// const auto snapshot = folding_pitchControlSnapshot;
 	taskEXIT_CRITICAL();
-	return snapshot;
+	return aimpitchsnapshot;
+}
+
+serialTasks::EncoderSnapshot gimbal::GetFoldingPitchMotorFeedbackSnapshot() //或者这个
+{
+	taskENTER_CRITICAL();
+	const auto aimpitchsnapshot = folding_pitchControlSnapshot;
+	// const auto snapshot = folding_pitchControlSnapshot;
+	taskEXIT_CRITICAL();
+	return aimpitchsnapshot;
 }
 
 void gimbal::Init()

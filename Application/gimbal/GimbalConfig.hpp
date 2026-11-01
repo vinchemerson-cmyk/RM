@@ -42,7 +42,7 @@ static_assert(static_cast<uint64_t>(kYawRemoteCommandTestConfig.initial_hold_ms)
  */
 
 /** @brief 云台使用的 FDCAN 控制器。 */
-inline FDCAN_HandleTypeDef* const kGimbalCanHandle = &hfdcan1;//todo:根据接线图应该为can2
+inline FDCAN_HandleTypeDef* const kGimbalCanHandle = &hfdcan3;
 
 /** @brief 两轴 LQI 运动使能；pitch 保留行程方向保护。 */
 inline constexpr bool kEnableYaw   = true;
@@ -58,6 +58,7 @@ inline constexpr bool kReadYawEncoder = true;
 // TODO: 暂按原 yaw=ID2、pitch=ID1 的记录填写，须与达妙调试助手一致。
 inline constexpr uint32_t kYawMotorMasterId      = 2U;
 inline constexpr uint32_t kAimPitchMotorMasterId = 1U;
+inline constexpr uint32_t kFoldingPitchMotorMasterId = 3U;
 inline constexpr uint32_t kYawMotorFeedbackId      = 0x206U; // TODO: 原 DJI 记录，待核对 DM 配置。
 inline constexpr uint32_t kAimPitchMotorFeedbackId = 0x205U; // TODO: 原 DJI 记录，待核对 DM 配置。
 inline constexpr uint32_t kFoldingPitchMotorFeedbackId = 0x206U;
