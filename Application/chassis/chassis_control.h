@@ -145,6 +145,7 @@ namespace chassis
 				if (!configured_ || !std::isfinite(vx) || !std::isfinite(vy) ||
 					!std::isfinite(yaw) || !std::isfinite(dt) || dt <= 0.0F)
 					return Fail(output);
+
 				const float norm = std::hypot(vx, vy); // 平移合速度sqrt(vx²+vy²)，单位m/s。
 				if (!std::isfinite(norm)) return Fail(output);
 				if (norm > limits_.max_translation_mps)

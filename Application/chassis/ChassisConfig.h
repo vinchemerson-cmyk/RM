@@ -17,7 +17,7 @@ inline FDCAN_HandleTypeDef* const kChassisCanHandle = &hfdcan1;
 
 // 原设计为实物参数确认开关；当前chassis.cpp把校验入口注释了，因此此值暂不参与运行拦截。
 // 它与电机enabled不同：硬件确认是配置条件，enabled是某个控制周期的软件输出状态。
-inline constexpr bool kChassisHardwareConfirmed = false;
+inline constexpr bool kChassisHardwareConfirmed = true;
 /** @brief 单轮电机及传动配置；与下方几何参数数组使用相同轮序。 */
 struct ChassisWheelHardware
 {
@@ -35,15 +35,31 @@ kChassisWheels{
 
 		{
 			//FL
+			.type        = DJI::M3508,
+			.feedback_id = 0x201,
+			.reverse     = true,
+			.gear_ratio  = 17
 		},
 		{
 			//FR
+			.type        = DJI::M3508,
+			.feedback_id = 0x202,
+			.reverse     = true,
+			.gear_ratio  = 17
 		},
 		{
 			//BL
+			.type        = DJI::M3508,
+			.feedback_id = 0x203,
+			.reverse     = true,
+			.gear_ratio  = 17
 		},
 		{
 			//BR
+			.type        = DJI::M3508,
+			.feedback_id = 0x204,
+			.reverse     = true,
+			.gear_ratio  = 17
 		}
 	},
 };
@@ -60,28 +76,28 @@ kChassisGeometry{
 			.y_m                  = +0.236F,
 			.drive_direction_deg  = -45,
 			.radius_m             = 0.072,
-			.max_output_speed_dps = kWheelMaxSpeedDps,
+			.max_output_speed_dps = 50,
 		},
 		{ // 右前 FR
 			.x_m                  = +0.236F,
 			.y_m                  = -0.236F,
 			.drive_direction_deg  = 45,
 			.radius_m             = 0.072,
-			.max_output_speed_dps = kWheelMaxSpeedDps,
+			.max_output_speed_dps = 50,
 		},
 		{ // 左后 BL
 			.x_m                  = -0.236F,
 			.y_m                  = +0.236F,
 			.drive_direction_deg  = 45,
 			.radius_m             = 0.072,
-			.max_output_speed_dps = kWheelMaxSpeedDps,
+			.max_output_speed_dps = 50,
 		},
 		{ // 右后 BR
 			.x_m                  = -0.236F,
 			.y_m                  = -0.236F,
 			.drive_direction_deg  = -45,
 			.radius_m             = 0.072,
-			.max_output_speed_dps = kWheelMaxSpeedDps,
+			.max_output_speed_dps = 50,
 		},
 	}
 };
@@ -89,6 +105,10 @@ kChassisGeometry{
 inline constexpr chassis::MotionLimits
 kChassisMotionLimits{
 	//todo:电机的限制
+	.max_translation_mps           = 5,
+	.max_yaw_dps                   = 90,
+	.translation_acceleration_mps2 = 3,
+	.yaw_acceleration_dps2         = 45
 };
 
 // todo:底盘运动映射到摇杆通道
