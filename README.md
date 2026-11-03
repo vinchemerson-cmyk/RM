@@ -26,21 +26,21 @@
 
 分层文档: [Application/README.md](Application/README.md) · [Modules/README.md](Modules/README.md) · [BSP/README.md](BSP/README.md)
 
-## 当前状态 (2026-09)
+## 当前状态 (2026-11)
 
-| 子系统                                                    | 状态            | 说明                                                                                                |
-|-----------------------------------------------------------|-----------------|-----------------------------------------------------------------------------------------------------|
-| 云台 (pitch/yaw GM6020, FDCAN1)                           | ✅ 两轴位置模式 | pitch位置目标受软件行程限制，yaw连续位置控制；参数以`GimbalConfig.hpp`为准，未完成实车整定          |
-| UART7 pitch 调试输出                                      | ✅ 已启用       | PE8 TX，921600/8N1，每50ms输出FireWater三通道：目标位置、实际位置（相对水平零位，°）、反馈电流（A） |
-| 遥控 (DT7/DR16, UART5 DBUS)                               | ✅ 已启用       | 18 字节 DBUS、跨回调残帧重组、100ms 掉线判定                                                        |
-| 急停 (双拨杆 DOWN + 失联保护)                             | ✅ 已启用       | 上电/失联后须摇杆居中、双 DOWN 解锁；所有输出经过门控                                               |
-| 双板 CAN 链路 (0x301/0x302)                               | 测试关闭        | FDCAN2 当前接双摩擦轮，禁止链路同时占用                                                             |
-| DJI 电机驱动 (GM6020/M3508/M2006)                         | ✅ 已实现       | 按物理总线/指令帧打包；测试阶段电机反馈超时不停机                                                   |
-| PID / 角度目标 (可宿主机单测)                             | ✅ 已实现       | 测量微分 + 条件积分抗饱和                                                                           |
-| BMI088 六轴姿态 CDC 输出、UART 回环自测、RTT 日志、蜂鸣器 | ✅ 已实现       | 源码与编译验证，姿态轴向待实测                                                                      |
-| IMU 加热控制                                              | 🔶 部分         | 温控代码已有，尚未接入整车初始化                                                                    |
-| 底盘 (chassis)                                            | ⬜ 占位         | 模块边界已约定, 见 Application/README.md                                                            |
-| 摩擦轮 (M3508 ×2, FDCAN2)                                 | ✅ 测试启用     | 双轮共同启停/爬升到 1000RPM；拨弹不注册，实车 ID、方向、PID 待核对                                  |
+| 子系统 | 状态 | 说明 |
+|---|---|---|
+| 云台 (DM4310, FDCAN3) | 🔶 配置完成 | aim pitch/yaw LQI 位置控制；folding pitch 禁用；参数未实车整定 |
+| 底盘 (M3508×4, FDCAN1) | 🔶 已实现 | 板间命令驱动；电机 ID/减速比/限幅已填，方向与 PI 待上板核对 |
+| 板间链路 | ✅ 已启用 | 云台板 CAN1 / 底盘板 CAN2；命令 topic 1（10B）与安全 topic 2（4B），100ms 超时 |
+| UART7 | ✅ 已启用 | 云台板折叠 pitch 快照（折叠禁用时输出 0）；底盘板四轮 12 通道；10ms 周期 |
+| 遥控 | ✅ 已启用 | DBUS；掉线判定 1000ms |
+| 安全 | 🔶 跨板 | 云台板产生 SafetyState；底盘板不运行本地安全任务，100ms 超时停机 |
+| 发射 | 🔶 摩擦轮 | 双摩擦轮；拨弹盘 0x201 与左轮重复，`kEnableFeeder=true` 时启动会停机 |
+| DJI 驱动 | ✅ 已实现 | M3508/M2006；GM6020 已移除 |
+| PID / LQI | ✅ 已实现 | 条件积分抗饱和；云台 LQI 手填增益 |
+| IMU / USB / RTT | ✅ 已实现 | BMI088、USB CDC、RTT；IMU 加热尚未接入整车 |
+| CMSIS-DSP / Kalman | ✅ 编译接入 | C++20；Kalman 头文件已加入，尚未用于控制 |
 
 ## 构建与烧录
 
@@ -79,7 +79,9 @@ openocd -f stm32h7_daplink.cfg -c "program build/Debug-Gimbal/infantry_H723.elf 
 - 首次上电前核对 `Application/RobotConfig.hpp`: 板卡角色 (`INFANTRY_BOARD_GIMBAL`) 与 FDCAN 分配; 云台参数核对清单见
   `Application/gimbal/GimbalConfig.hpp` 的注释。
 -
-当前四电机测试：FDCAN1的pitch/yaw均为位置模式，pitch使用配置的软件行程，yaw连续旋转；FDCAN2双摩擦轮不变。云台板UART7输出pitch目标/实际位置及反馈电流，保留遥控失联与双DOWN急停；底盘板UART7输出四轮十二通道，底盘未初始化时为0。操作见 [测试说明](Application/shoot/README.md)。
+当前双板状态：云台板 FDCAN3 控制 DM yaw/aim pitch，FDCAN1 为板间链路，FDCAN2 接双摩擦轮；云台板每 10ms 发布 `chassis/command` 与 `chassis/safety`。底盘板 FDCAN1 控制四轮 M3508，FDCAN2 接收板间命令/安全状态，100ms 超时即停机。云台板 UART7 当前取折叠 pitch 快照（折叠 pitch 禁用，输出为 0）；底盘板 UART7 输出四轮十二通道。
+
+已知启动风险：`ShootConfig.hpp` 中 `kEnableFeeder=true`，拨弹盘反馈 ID `0x201` 与左摩擦轮重复，`shoot::Init()` 会在调度器启动前调用 `Error_Handler()`；上板前必须确认 ID 或关闭拨弹盘。操作见 [测试说明](Application/shoot/README.md)。
 
 ### 宿主机单元测试
 

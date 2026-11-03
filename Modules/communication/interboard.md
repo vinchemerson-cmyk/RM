@@ -10,9 +10,10 @@
 - CMake：`-DINFANTRY_BOARD_GIMBAL=1` 为云台板，`=0` 为底盘板，应用与外设初始化使用同一个角色。
 - `INFANTRY_INTERBOARD_FDCAN` 在各板分支内选择本地 CAN 控制器；两端本地控制器编号可以不同，
   但必须连接到同一物理总线，并匹配帧格式、仲裁/数据波特率和 BRS。
-- 默认映射保持原状：CAN1/2 经典、CAN3 FD+BRS，板间端口为 CAN2，`ENABLE_INTERBOARD=false`。
-  这不是实物接线确认，不自动注册 DM、不启用任何电机。要让 DM 与板间共线，须先把选定的本板总线配置为 FD，
-  并向 DM 初始化配置传入同一控制器句柄；确认后才开启板间模块。
+- `ENABLE_INTERBOARD=true`（两板）。当前角色映射：
+  - 云台板：CAN1 FD 板间，CAN2 Classic 摩擦轮，CAN3 FD 云台 DM；
+  - 底盘板：CAN1 Classic 底盘 M3508，CAN2 FD 板间，CAN3 Classic 空闲。
+- 板间两端控制器编号不同（云台 1 / 底盘 2），必须接同一物理总线；DM 已迁到云台板 CAN3，不再与板间共线。
 - FD 后端容量为 64；DM 仍明确设置 `tx_len=8`，MIT 编解码量程仍需与电机固件匹配。
 - 经典总线仅使用 classicCan 后端。FD 总线统一使用 Fdcan 后端；不支持在同一物理控制器上混用两套注册表。
 - 队列、过滤器不足或注册 ID 重复时返回失败；应用必须检查 Init/Start 返回值。
@@ -55,13 +56,46 @@ FD 实际帧长采用合法的 0..8/12/16/20/24/32/48/64 编码，接收端校�
 接收端仅发布完整、连续、相邻分片间隔小于 50ms 的消息，错误片会丢弃当前重组。
 新增长度超过48字节时，旧版本接收端不能直接使用，须同步升级。
 
+## 当前业务主题
+
+### topic 1：`chassis/command`（10 字节）
+
+| 字段 | 类型 | 单位/含义 |
+|---|---|---|
+| `com_vx_mmps` | int16 | 车体前向速度，mm/s（m/s × 1000） |
+| `com_vy_mmps` | int16 | 车体左向速度，mm/s |
+| `com_yaw_ddps` | int16 | 偏航角速度，0.1 °/s（°/s × 10） |
+| `mode` | uint8 | `chassis::Mode` |
+| `reserved` | uint8 | 发送方置 0 |
+| `sequence` | uint16 | 发送侧递增 |
+
+`chassis::Mode`：`Disabled=0`、`NoFollow=1`、`FollowGimbal=2`、`Spin=3`、`Direct=4`。
+命令超时 100ms；底盘只接受 `NoFollow/Direct/Spin`，`FollowGimbal` 尚未实现，`Disabled` 直接停机。
+
+### topic 2：`chassis/safety`（4 字节）
+
+| 字段 | 类型 | 含义 |
+|---|---|---|
+| `flags` | uint16 | 安全状态位 |
+| `sequence` | uint16 | 发送侧递增 |
+
+| 位 | 名称 | 含义 |
+|---|---|---|
+| bit0 | `kSafetyOutputEnabled` | 云台板 `safety::ShouldOutput()` |
+| bit1 | `kSafetyRcOnline` | 云台板 RC 在线 |
+| bit2 | `kSafetyEStopped` | 急停 |
+| bit3 | `kSafetyBothDown` | 双拨杆 DOWN |
+| bit4 | `kSafetyRunRequested` | 底盘运行拨杆请求 |
+
+安全状态超时 100ms；底盘要求 `OutputEnabled|RcOnline|RunRequested` 全部置位，且 `EStopped|BothDown` 全部清零。
+
 ## 时序、负载与失联
 
 每100ms尝试发送心跳，300ms无有效对端链路帧即离线；时间按实际RTOS频率换算。
 收到的数据用 ISR 到达 tick 标记，队列积压的过期帧不会刷新在线状态。未知主题或协议错误帧不续命。
 心跳在线不等于某条底盘指令还有效；业务消息应携带源时间/序号，执行层单独检查超时并停机。
 
-每2ms轮询，单轮最多发送2帧（含心跳），发送时至少保留2个TX FIFO槽给电机；
+每2ms轮询，单轮最多发送2帧（含心跳），发送时至少保留4个TX FIFO槽给电机；
 限制在实际入队临界区内复核，不是仅在任务外观察队列。
 按主题轮转，经典长消息可跨多轮发送；50ms仍未发完则丢弃待发旧消息，不无限重试。
 该策略不是硬实时带宽承诺，也不是总线功率管理：64字节帧开始发送后不能被高优先级电机帧中途抢占，
@@ -75,8 +109,9 @@ RX队列溢出/过期丢帧累计和TX入队失败累计；帧计数为16位，�
 
 在调度器启动前先 `interboard::Start()`，再在两板注册相同主题号和固定长度，方向相反。
 发送侧通过 `PubRegister/PubPushMessage` 发布，接收侧通过 `SubRegister/SubGetMessage` 读取。
-例如两板共用3个float组成的12字节底盘命令，必须明确字段单位、字节序和结构布局，不直接依赖编译器填充。
-消息中心是最新值邮箱，不提供可靠事件确认；单发等一次性事件需另有应用级确认/去重。
+当前云台板注册 TX：`chassis/command`（10 字节）与 `chassis/safety`（4 字节）；底盘板注册对应的 RX 主题。
+布局定义在 `Application/RobotCommand.hpp`，字段单位、字节序和静态断言必须两板一致，不依赖编译器填充。
+消息中心是最新值邮箱，不提供可靠事件确认；执行层必须用 100ms 超时独立判断命令/安全状态是否仍然有效。
 
 ## 验证边界
 
@@ -86,4 +121,4 @@ RX队列溢出/过期丢帧累计和TX入队失败累计；帧计数为16位，�
 临时验证代码不加入固件或正式tests目录。
 
 未烧录或验证实物：电机固件CAN FD设置、收发器能力、实际接线/波特率、实时抖动和总线负载仍需上板确认。
-当前整工程另有底盘占位参数/通道定义缺失，通信目标文件编译通过不等于整车固件已可运行。
+当前两套角色镜像可编译链接；底盘硬件参数已填写，但轮速方向、PI、UART7 接线和 DR16 行为仍需上板核对。

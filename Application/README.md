@@ -1,8 +1,12 @@
 # Application 层文档
 
-UART7 当前使用 yaw **8 通道同步控制诊断**
-：目标位置、实际位置、目标速度、实际速度、位置项电流、速度项电流、指令电流、反馈电流。目标速度是摇杆给定的位置目标变化率（满杆±120°/s、松杆0），不参与电流计算。每10ms输出最新控制快照，单位及限制见
-`shoot/README.md` 的 UART7 章节。时间、序号、dt、反馈年龄、使能及CAN入队失败计数仍在内部保留，但不打印。本文其余旧六通道描述仅用于历史记录对照。
+## 当前双板状态（2026-11）
+
+- 角色装配由 `RobotConfig.hpp` 的 `BoardRole` 决定，`Robot.cpp` 使用 `if constexpr`。
+- 云台板：RC、SAFETY、GIMBAL、SHOOT；底盘板：CHASSIS、IMU、UART7、USB；两板都启用 interboard。
+- 云台板每 10ms 发布 `chassis/command`（10 字节）与 `chassis/safety`（4 字节）；底盘板订阅并检查 100ms 超时。
+- 云台板 UART7 当前取折叠 pitch 快照（折叠 pitch 禁用，输出 0）；底盘板 UART7 输出四轮 12 通道。
+- 本文以下历史章节中的 GM6020、六通道等旧描述已过时；当前架构以 [docs/dual-board-isolation.md](../docs/dual-board-isolation.md) 为准。
 
 Application 层是"整车业务"层: 决定 **这台机器人要做什么**。它向下调用 `Modules/` 提供的驱动与算法, 通过 `BSP/` 访问硬件,
 自身不直接操作寄存器。与 CubeMX 生成代码 (`Core/`) 的唯一边界是 `Robot.h` 暴露的 C 接口 `InfantryInit()`。
@@ -21,27 +25,28 @@ Core/Src/main.c        外设初始化 (CubeMX 生成)
 | `Robot.h` / `Robot.cpp` | 整车初始化入口, 装配各模块任务              | 已实现                             |
 | `RobotConfig.hpp`       | 板卡角色、FDCAN 分配、模块启停开关 (编译期) | 已实现                             |
 | `gimbal/`               | 云台控制及编码器快照                        | 两轴 LQI，当前手填 K，可选上电求解 |
-| `chassis/`              | 底盘控制规划，见目录内 README               | 尚未实现                           |
-| `shoot/`                | 两台 M3508 摩擦轮；拨弹代码保留但不注册电机 | 双轮测试启用，拨弹关闭             |
+| `chassis/`              | 四轮 M3508 控制与板间命令/安全状态消费      | 已实现，硬件参数待实测             |
+| `shoot/`                | 摩擦轮 + 拨弹盘                             | 摩擦轮启用；拨弹盘 ID 冲突未确认   |
 
 ## RobotConfig.hpp — 编译期配置
 
-烧录前必须核对的两件事:
+烧录前必须核对的三件事:
 
-1. **板卡角色**: `INFANTRY_BOARD_GIMBAL` — 云台板为 `1`, 底盘板为 `0`, 两块板必须相反, 否则双板链路永远离线
-   (互相收不到心跳)。
-2. **FDCAN 分配** (H723 共 3 路):
+1. **板卡角色**: `INFANTRY_BOARD_GIMBAL` — 云台板为 `1`, 底盘板为 `0`, 两块板必须相反。
+2. **安全来源**: `ENABLE_SAFETY` 只在云台板为 true；底盘板消费转发到 `chassis/safety` 的状态，不再运行本地安全任务。
+3. **FDCAN 分配**:
 
-| 控制器 | 用途                                                              | 配置位置                        |
-|--------|-------------------------------------------------------------------|---------------------------------|
-| FDCAN1 | pitch=0x205 (ID1)、yaw=0x206 (ID2)均为位置控制；Classic CAN 1Mbps | `GimbalConfig.hpp`              |
-| FDCAN2 | 左摩擦=0x201/右摩擦=0x202 (用户确认 ID1/ID2)，Classic CAN 1Mbps   | `ShootConfig.hpp`；双板通信关闭 |
-| FDCAN3 | 空闲, 留给底盘/发射/裁判系统                                      | —                               |
+| 板卡 | 控制器 | 用途 | 配置位置 |
+|---|---|---|---|
+| 云台板 | FDCAN1 | FD，板间链路 | `board_can_config.h` / `interboard.cpp` |
+| 云台板 | FDCAN2 | Classic，双摩擦轮/拨弹盘 | `ShootConfig.hpp` |
+| 云台板 | FDCAN3 | FD，yaw/aim pitch DM | `GimbalConfig.hpp` |
+| 底盘板 | FDCAN1 | Classic，四轮 M3508 | `ChassisConfig.h` |
+| 底盘板 | FDCAN2 | FD，板间链路 | `board_can_config.h` / `interboard.cpp` |
+| 底盘板 | FDCAN3 | Classic，空闲 | — |
 
-`ENABLE_ENCODER_UART7=true`启用100Hz串口 yaw FireWater 六通道诊断：目标速度、实际连续角度、实际速度、逻辑指令电流、反馈年龄、反馈转矩电流（未收到为-1，过期数据不隐藏）。
-`ENABLE_UART_SERIAL=false`关闭回环。`kEncoderCalibrationOnly=false`、`kEnableYaw=true`、`kEnablePitch=true`允许两轴运动；
-`kReadYawEncoder=true`保留编码器采集。FDCAN1使用两个标准过滤器、FDCAN2使用两个；RTOS堆32KB。pitch零位/限位已写入，yaw经用户确认可连续旋转。操作见
-`shoot/README.md`。
+`ENABLE_INTERBOARD=true` 两板都启动板间任务。云台板注册 TX 主题 `chassis/command`（10B）与 `chassis/safety`（4B）；底盘板注册对应 RX 主题并在 100ms 超时后停机。
+`ENABLE_ENCODER_UART7=true`：云台板输出折叠 pitch 快照（折叠禁用时为 0），底盘板输出四轮十二通道。RC 掉线判定为 1000ms。
 
 ## gimbal — 云台控制 (已实现)
 
@@ -179,16 +184,18 @@ pitch零位893、当前代码配置上顶点120、下顶点1490；位置目标�
 启动求解在调度器启动前使用 MSP；Debug 栈用量报告显示求解调用链超过原 1KB 预留，因此链接脚本与 CubeMX 的主栈配置同步增加至
 4KB。GimbalTask 的 2KB 任务栈不承担 Riccati 求解。
 
-## chassis — 底盘 (规划中)
+## chassis — 底盘 (已实现)
 
-规划见 [chassis/README.md](chassis/README.md)。落地时应按实车接线核对电机 ID，并在双板链路及安全模块初始化后接入控制任务。
+见 [chassis/README.md](chassis/README.md)。底盘板使用 FDCAN1 控制四轮 M3508；通过 `chassis/command` 接收速度/模式，通过 `chassis/safety` 接收云台板安全状态。命令或安全状态超过 100ms 未刷新即停机；`FollowGimbal` 尚未实现。硬件方向、轮速与 PI 仍需实车核对。
 
 ## shoot — 发射机构
 
 操作、硬件默认值及堵转处理见 [shoot/README.md](shoot/README.md)。已实现摩擦轮、单发、连发及有限堵转反转，裁判热量管理尚未接入。
 
+注意：当前 `kEnableFeeder=true`，但拨弹盘反馈 ID `0x201` 与左摩擦轮重复；`shoot::Init()` 会在调度器启动前 `Error_Handler()`。上板前必须确认拨弹盘实际 ID 或关闭拨弹盘。
+
 ## 约定
 
-- 所有执行器输出必须以 `safety::ShouldOutput()` 为总开关, 不得绕过;
+- 云台板本地执行器仍以 `safety::ShouldOutput()` 为总开关；底盘板以转发的 `chassis::SafetyState` + 100ms 超时为总闸门，不得绕过;
 - "必须与实车一致"的硬件事实 (CAN ID、转向、行程、PID) 一律集中在各 `*Config.hpp`, 禁止散落在逻辑代码中;
 - 应用层每个模块一个 FreeRTOS 任务, 任务内禁止长时间阻塞, 共享数据的读写遵循各模块头注释声明的线程模型。
