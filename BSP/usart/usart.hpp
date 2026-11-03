@@ -35,9 +35,9 @@ class usart
 		Instance _instance{}; // 当前 USART 逻辑实例的持久运行对象.
 
 		/**
-	 * @brief 启动 DMA+Idle 接收, 清标志, 关 DMA 半传输中断.
-	 * @param usart_instance 需要启动的串口实例.
-	 */
+		* @brief 启动 DMA+Idle 接收, 清标志, 关 DMA 半传输中断.
+		* @param usart_instance 需要启动的串口实例.
+		*/
 		static void _enable(usart* usart_instance)
 		{
 			auto* usart_handle = usart_instance->_instance.dependency.usart_handle;
@@ -50,8 +50,10 @@ class usart
 								  UART_CLEAR_FEF |
 								  UART_CLEAR_PEF);
 
+			//刷新硬件FIFO
 			__HAL_UART_SEND_REQ(usart_handle, UART_RXDATA_FLUSH_REQUEST);
 
+			//存入rx_buffer
 			HAL_UARTEx_ReceiveToIdle_DMA(usart_handle,
 										 usart_instance->_instance.output.rx_buffer.data(),
 										 usart_instance->_instance.output.rx_len);
@@ -68,11 +70,11 @@ class usart
 		~usart() = default;
 
 		/**
-	 * @brief   注册一个 USART 实例, 填入注册表并启动 DMA 接收.
-	 * @param   config_instance 用户配置, 包含 handle, tx_mode, rx_len, 回调和 module_instance.
-	 * @return  指向已注册 usart 实例的指针.
-	 * @note    模块实例不可重复注册, 注册即启动 DMA+Idle 接收.
-	 */
+		* @brief   注册一个 USART 实例, 填入注册表并启动 DMA 接收.
+		* @param   config_instance 用户配置, 包含 handle, tx_mode, rx_len, 回调和 module_instance.
+		* @return  指向已注册 usart 实例的指针.
+		* @note    模块实例不可重复注册, 注册即启动 DMA+Idle 接收.
+		*/
 		static usart* Register(const usartConfigType& config_instance)
 		{
 			// UART 句柄和上层模块实例是注册及 ISR 回调分发的必要依赖.
@@ -113,13 +115,13 @@ class usart
 		}
 
 		/**
-	 * @brief   使用本次 Input 发送一帧 USART 数据.
-	 * @param   input_instance 本次发送的外部数据输入.
-	 * @return  HAL_OK, HAL_BUSY 或 HAL_ERROR.
-	 *
-	 * @note    阻塞发送直接使用 Input 缓冲区.
-	 * @note    IT 和 DMA 发送会复制到实例长期输入.
-	 */
+		* @brief   使用本次 Input 发送一帧 USART 数据.
+		* @param   input_instance 本次发送的外部数据输入.
+		* @return  HAL_OK, HAL_BUSY 或 HAL_ERROR.
+		*
+		* @note    阻塞发送直接使用 Input 缓冲区.
+		* @note    IT 和 DMA 发送会复制到实例长期输入.
+		*/
 		HAL_StatusTypeDef Transmit(const usartInputType& input_instance)
 		{
 			if (input_instance.tx_len == 0 ||
@@ -171,26 +173,26 @@ class usart
 		}
 
 		/**
-	 * @brief 获取当前 USART 实例的接收输出.
-	 * @return 最近一次 DMA 接收数据和注册接收长度.
-	 */
+		* @brief 获取当前 USART 实例的接收输出.
+		* @return 最近一次 DMA 接收数据和注册接收长度.
+		*/
 		[[nodiscard]] const usartOutputType& Receive() const
 		{
 			return _instance.output;
 		}
 
 		/**
-	 * @brief 用于获得上层模块实例指针.
-	 * @return 上层模块实例指针.
-	 */
+		* @brief 用于获得上层模块实例指针.
+		* @return 上层模块实例指针.
+		*/
 		[[nodiscard]] void* getModuleInstance() const
 		{
 			return _instance.attribute.module_instance;
 		}
 
 		/**
-	 * @brief 用于当和使用串口通信的设备掉线后重启 DMA 接收, 先 Abort 再重新启动.
-	 */
+		* @brief 用于当和使用串口通信的设备掉线后重启 DMA 接收, 先 Abort 再重新启动.
+		*/
 		void restartRx()
 		{
 			// 先中止当前 UART 收发状态, 确保后续 DMA 接收可以重新启动.
@@ -217,17 +219,17 @@ class usart
 		}
 
 		/**
-	 * @brief 每次 dma 或 idle 中断发生时, 都会调用此函数.
-	 *        对于每个 UART 实例会调用对应的回调进行进一步处理.
-	 *        例如, 视觉协议解析, 遥控器解析, 裁判系统解析.
-	 *
-	 * @note  通过 __HAL_DMA_DISABLE_IT(huart->hdmarx, DMA_IT_HT) 关闭 dma half transfer 中断.
-	 *        这是 HAL 库的一个设计失误, 发生 DMA 传输完成, 半完成以及串口 IDLE 中断都会触发 HAL_UARTEx_RxEventCallback().
-	 *        我们只希望处理第一种和第三种情况, 因此直接关闭 DMA 半传输中断.
-	 *
-	 * @param huart 发生中断的串口.
-	 * @param size 此次接收到的总数据量.
-	 */
+		* @brief 每次 dma 或 idle 中断发生时, 都会调用此函数.
+		*        对于每个 UART 实例会调用对应的回调进行进一步处理.
+		*        例如, 视觉协议解析, 遥控器解析, 裁判系统解析.
+		*
+		 * @note  通过 __HAL_DMA_DISABLE_IT(huart->hdmarx, DMA_IT_HT) 关闭 dma half transfer 中断.
+		 *        这是 HAL 库的一个设计失误, 发生 DMA 传输完成, 半完成以及串口 IDLE 中断都会触发 HAL_UARTEx_RxEventCallback().
+		 *        我们只希望处理第一种和第三种情况, 因此直接关闭 DMA 半传输中断.
+		 *
+		 * @param huart 发生中断的串口.
+		 * @param size 此次接收到的总数据量.
+		 */
 		static void isrHandler(bspUsartHandleTypeDef* huart, uint16_t size)
 		{
 			// 仅遍历已注册实例, 避免访问未初始化的注册表项.
@@ -265,10 +267,10 @@ class usart
 		}
 
 		/**
-	 * @brief 当串口发送或接收出现错误时, 会调用此函数, 此时需要重新启动接收.
-	 * @note 最常见的错误, 奇偶校验, 溢出, 帧错误.
-	 * @param huart 发生错误的串口.
-	 */
+		 * @brief 当串口发送或接收出现错误时, 会调用此函数, 此时需要重新启动接收.
+		 * @note 最常见的错误, 奇偶校验, 溢出, 帧错误.
+		 * @param huart 发生错误的串口.
+		 */
 		static void errorHandler(bspUsartHandleTypeDef* huart)
 		{
 			for (uint8_t i = 0; i < _usart_instance_amount; i++)

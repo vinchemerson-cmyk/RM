@@ -26,7 +26,10 @@ struct Bmi088MotionSample
  */
 HAL_StatusTypeDef BMI088_Init();
 
-/** @brief 配置加速度计 ±3 g/800 Hz 和陀螺仪 ±2000 °/s/1000 Hz。 */
+/**
+ * @brief 检查重复配置，初始化并使能加热器，切换陀螺仪到正常工作模式，配置加速度计和陀螺仪。
+ * @note 加速度计 ±3 g/800 Hz，陀螺仪 ±2000 °/s/1000 Hz。
+ */
 HAL_StatusTypeDef BMI088_ConfigureMotion();
 
 /** @brief 连续读取加速度和角速度三轴；必须先完成 ConfigureMotion。 */

@@ -73,7 +73,7 @@ namespace
 	}
 
 	/** @brief 注册 UART7 并依次回传接收队列中的数据包。 */
-	void Task(void* argument)
+	void Task(const void* argument)
 	{
 		(void)argument;
 		const usartConfig::Config config = {

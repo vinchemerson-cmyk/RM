@@ -42,9 +42,16 @@ namespace rc
 	{
 		public:
 			/** @brief 清除断线前的残帧。 */
-			void Reset() { used_ = 0U; }
+			void Reset()
+			{
+				used_ = 0U;
+			}
 
-			/** @brief 加入 DMA 数据，返回合法帧数，result 保存最后一帧。 */
+			/** @brief 加入 DMA 数据，返回合法帧数，result 保存最后一帧。
+			 * @param bytes 数据包
+			 * @param size 数据长度
+			 * @param result 解析结果
+			 */
 			size_t Push(const uint8_t* bytes, size_t size, RC_Data_s& result)
 			{
 				if (bytes == nullptr)
