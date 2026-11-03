@@ -38,7 +38,10 @@ namespace
 				return armed_;
 			}
 
-			[[nodiscard]] bool Armed() const { return armed_; }
+			[[nodiscard]] bool Armed() const
+			{
+				return armed_;
+			}
 
 		private:
 			bool    armed_{};
@@ -103,7 +106,8 @@ namespace
 
 bool safety::ShouldOutput()
 {
-	// 安全任务完成首次在线判定前保持关闭；掉线也立即失效。
+	// 安全任务完成首次在线判定前保持关闭；掉线也立即失效,主要检测
+	//todo:底盘不能用offline
 	return armed && !offline && !e_stopped && !RawBothDown() && rc::IsOnline();
 }
 

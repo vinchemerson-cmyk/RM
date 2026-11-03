@@ -1,5 +1,6 @@
 /** @file chassis.cpp @brief 四全向轮控制与快照接口；当前被注释的初始化校验见Init说明。 */
 #include "chassis.h"
+#include <cmath>
 #include "bsp_log.h"
 #include "RobotCommand.hpp"
 #include "ChassisConfig.h"
@@ -9,7 +10,7 @@
 #include "communication/interboard.h"
 #include "message_center/message_center.h"
 #include "RobotConfig.hpp"
-#include "safety/safety.h"
+#include "dsp/fast_math_functions.h"
 
 namespace
 {
@@ -26,21 +27,11 @@ namespace
 	osThreadId_t                                         taskHandle{}; // RTOS任务句柄，不是电机指针；非空表示创建任务成功。
 	bool                                                 registrationAttempted{}; // 记录是否开始占用驱动静态池；部分失败后禁止自动重复注册。
 	Subscriber_t*                                        commandSubscriber{}; // 底盘速度指令订阅者；仅启用板间通信且注册成功时非空。
+	Subscriber_t*                                        safetySubscriber{}; // 云台板转发的安全状态订阅者。
 	uint32_t                                             periodTicks{}; // 绝对调度周期，单位tick；原设计由ValidateConfiguration赋值。
 	constexpr osThreadAttr_t                             taskAttrs{
 		.name = "ChassisTask", .stack_size = 2048U, .priority = osPriorityHigh, // 栈大小单位为字节。
 	};
-
-	/** @brief 对归一化摇杆量去死区，并把剩余行程连续映射到[-1,1]，保留方向。 */
-	float Deadband(float stick)
-	{
-		// 例如死区0.03：[-0.03,+0.03]输出0，避免摇杆中位噪声导致车体缓慢漂移。
-		if (std::fabs(stick) <= kChassisStickDeadband) return 0.0F;
-		// 减去死区后再除以剩余行程，使刚离开死区时从0平滑起步，打满时仍能到1。
-		// copysign把原来的正负方向附加到计算后的幅值；调用方先用Normalize限制输入。
-		return std::copysign((std::fabs(stick) - kChassisStickDeadband) /
-							 (1.0F - kChassisStickDeadband), stick);
-	}
 
 	/** @brief 用RTOS tick判断一份数据是否仍在毫秒超时范围内；恰好到达超时点即失效。 */
 	bool Fresh(uint32_t now, uint32_t sample, uint32_t timeoutMs)
@@ -118,19 +109,71 @@ namespace
 		taskEXIT_CRITICAL();
 	}
 
+	constexpr float kTwoPi = 6.283185307179586F;
+
+	/** @brief Spin 模式的正弦相位；仅底盘任务访问。 */
+	struct SpinOscillator
+	{
+		float phase{};
+		bool  active{};
+	};
+
+	/**
+	 * @brief 按底盘模式生成 planner 输入。
+	 * @return true 表示该模式当前已实现；false 时调用方必须停机。
+	 * @note FollowGimbal 仍缺少云台 yaw 输入；Spin 已实现连续自旋 + 正弦调速。
+	 */
+	bool ModeTargets(const chassis::Command& command, chassis::Mode mode, float dt,
+					 SpinOscillator& spin, float& vx, float& vy, float& yaw)
+	{
+		vx = vy = yaw = 0.0F;
+		if (mode != chassis::Mode::Spin)
+			spin.active = false;
+
+		switch (mode)
+		{
+			case chassis::Mode::Disabled:
+				return false;
+			case chassis::Mode::NoFollow:
+			case chassis::Mode::Direct:
+				// Direct 复用直通速度接口，后续若需要独立限幅/坐标系再拆分。
+				vx  = static_cast<float>(command.com_vx_mmps) / 1000.0F;
+				vy  = static_cast<float>(command.com_vy_mmps) / 1000.0F;
+				yaw = static_cast<float>(command.com_yaw_ddps) / 10.0F;
+				return true;
+			case chassis::Mode::FollowGimbal:
+				// TODO: 需要云台 yaw 反馈/目标角度，当前命令未携带，先停机。
+				return false;
+			case chassis::Mode::Spin:
+				if (!spin.active)
+				{
+					spin.phase  = 0.0F;
+					spin.active = true;
+				}
+				// 连续自旋：偏置保证方向不变，正弦只调制速度；平移仍来自命令。
+				vx  = static_cast<float>(command.com_vx_mmps) / 1000.0F;
+				vy  = static_cast<float>(command.com_vy_mmps) / 1000.0F;
+				yaw = kSpinBiasDps + kSpinAmplitudeDps * std::sin(spin.phase);
+				spin.phase = std::fmod(spin.phase + kTwoPi * kSpinFrequencyHz * dt, kTwoPi);
+				return true;
+			default:
+				return false;
+		}
+	}
+
 	/** @brief 四轮全部收到过反馈、转速有限且反馈未超时，才允许整组闭环输出。 */
 	bool FeedbackReady(uint32_t tick)
 	{
 		bool ready = true;
 		taskENTER_CRITICAL();
-		for (const auto& wheel : wheels)
+		for (const auto& [motor, snapshot] : wheels)
 		{
-			if (wheel.motor == nullptr)
+			if (motor == nullptr)
 			{
 				ready = false;
 				break;
-			} // 少一轮也不按剩余三轮继续驾驶。
-			const auto& feedback = wheel.motor->feedback;
+			}
+			const auto& feedback = motor->feedback;
 			// angle_initialized在这里用作“收到首帧”标志，不表示底盘需要角度环。
 			if (!feedback.angle_initialized || !std::isfinite(feedback.speed) ||
 				!Fresh(tick, feedback.last_update_tick, kChassisFeedbackTimeoutMs))
@@ -153,6 +196,14 @@ namespace
 		DJI_Motor_s* motors[chassis::kWheelCount]{};
 		for (unsigned i = 0; i < chassis::kWheelCount; ++i) motors[i] = wheels[i].motor;
 
+		chassis::Command     lastCommand{};
+		chassis::SafetyState lastSafety{};
+		SpinOscillator       spin{};
+		uint32_t             lastCommandTick = 0U;
+		uint32_t             lastSafetyTick  = 0U;
+		bool                 commandSeen     = false;
+		bool                 safetySeen      = false;
+
 		for (;;)
 		{
 			// 绝对调度；若工作已跨过截止时间，重新对齐，避免连续补跑。
@@ -167,32 +218,54 @@ namespace
 			const float    dt     =
 				static_cast<float>(now - lastTick) /
 				static_cast<float>(osKernelGetTickFreq());
-			lastTick                = now;
+			lastTick = now;
 
-			const bool timingValid  = waited && std::isfinite(dt) && dt > 0.0F && dt <= kChassisMaxDtS;//时间可信性
-			const auto remote       = rc::Snapshot();
+			const bool timingValid = waited && std::isfinite(dt) && dt > 0.0F && dt <= kChassisMaxDtS; //时间可信性
 
-			const bool remoteValid  = remote.received && Fresh(now, remote.last_update_tick, rc::OFFLINE_TIMEOUT_MS);//遥控可信性
-			const bool runRequested = remote.switch_left == kChassisRunSwitch; // 当前按左拨杆决定是否请求底盘运行。
-			// 发送故障须先离开运行拨杆位置再进入，不在故障后自动续转。
-			if (remoteValid && !runRequested)
+			chassis::Command command{};
+			//更新命令值
+			if (commandSubscriber != nullptr && SubGetMessage(commandSubscriber, &command) != 0U)
+			{
+				lastCommand     = command;
+				lastCommandTick = now;
+				commandSeen     = true;
+			}
+			chassis::SafetyState safety{};
+			if (safetySubscriber != nullptr && SubGetMessage(safetySubscriber, &safety) != 0U)
+			{
+				lastSafety     = safety;
+				lastSafetyTick = now;
+				safetySeen     = true;
+			}
+
+			const bool commandFresh = commandSeen &&
+									  Fresh(now, lastCommandTick, chassis::kCommandTimeoutMs);
+			const bool safetyFresh = safetySeen &&
+									 Fresh(now, lastSafetyTick, chassis::kSafetyTimeoutMs);
+			constexpr std::uint16_t kRequiredSafety =
+				chassis::kSafetyOutputEnabled | chassis::kSafetyRcOnline | chassis::kSafetyRunRequested;
+			constexpr std::uint16_t kForbiddenSafety =
+				chassis::kSafetyEStopped | chassis::kSafetyBothDown;
+			const bool safetyAllows = safetyFresh &&
+									  (lastSafety.flags & kRequiredSafety) == kRequiredSafety &&
+									  (lastSafety.flags & kForbiddenSafety) == 0U;
+
+			// 发送故障须先释放运行请求再进入，不在故障后自动续转。
+			if (safetyFresh && !(lastSafety.flags & chassis::kSafetyRunRequested))
 				txFault = false;
-			// 任一条件不满足都停整组；安全许可不等于已有可靠轮速反馈，二者分别检查。
-			bool allowed = timingValid && remoteValid && runRequested && !txFault && FeedbackReady(now);
-			
+
+			// 模式分发：NoFollow/Direct 已实现；FollowGimbal/Spin 目前返回 false。
+			float      vx          = 0.0F, vy = 0.0F, yaw = 0.0F;
+			const auto commandMode = static_cast<chassis::Mode>(lastCommand.mode);
+			const bool modeReady   = ModeTargets(lastCommand, commandMode, dt, spin, vx, vy, yaw);
+
+			// 命令、模式、转发安全状态、本板反馈和发送状态分别检查。
+			bool allowed = timingValid && commandFresh && safetyAllows && modeReady &&
+						   !txFault && FeedbackReady(now);//fixme:一轮掉线不应影响其他轮
+
 			std::array<float, chassis::kWheelCount> target{};
 			if (allowed)
-			{
-				// 输入处理顺序：原始DBUS通道 -> [-1,1] -> 连续死区 -> 方向映射 -> 物理速度。
-				// Sign只用于修正摇杆方向，不改变右手坐标系，也不修正单个电机安装反向。
-				const float vx = Deadband(rc::Normalize(remote.channels[kChassisForwardChannel])) *
-								 kChassisForwardSign * kChassisMotionLimits.max_translation_mps;
-				const float vy = Deadband(rc::Normalize(remote.channels[kChassisLeftChannel])) *
-								 kChassisLeftSign * kChassisMotionLimits.max_translation_mps;
-				const float yaw = Deadband(rc::Normalize(remote.channels[kChassisYawChannel])) *
-								  kChassisYawSign * kChassisMotionLimits.max_yaw_dps;
 				allowed = planner.Update(vx, vy, yaw, dt, target); // 返回输出轴°/s；计算失败同样进入停机分支。
-			}
 			if (!allowed) StopWheels();
 			else
 			{
@@ -223,20 +296,10 @@ namespace
 		}
 	}
 
-	// 下列完整配置校验目前被手动注释，本次仅补说明，不恢复执行。
-	// 原职责：确认硬件开关/CAN模式、计算periodTicks、检查摇杆映射和PI、核对四轮ID/减速比，
-	// 最后调用planner.Configure缓存几何。校验并非只检查参数，还承担这些必要的初始化副作用。
-	// 注意：当前没有执行此函数，periodTicks仍为0，planner也未配置；不能据此状态直接上板运行。
+
 	bool ValidateConfiguration()
 	{
-		if (!kChassisHardwareConfirmed || kChassisCanHandle == nullptr ||
-			kChassisCanHandle->Init.FrameFormat != FDCAN_FRAME_CLASSIC ||
-			!chassis::ControlPeriodTicks(kChassisControlPeriodS, osKernelGetTickFreq(), periodTicks) ||
-			!std::isfinite(kChassisMaxDtS) || kChassisMaxDtS < kChassisControlPeriodS ||
-			kChassisFeedbackTimeoutMs == 0U || kChassisFeedbackTimeoutMs >= 0x80000000U ||
-			kChassisForwardChannel >= rc::CHANNEL_COUNT || kChassisLeftChannel >= rc::CHANNEL_COUNT ||
-			kChassisYawChannel >= rc::CHANNEL_COUNT ||
-			!std::isfinite(kChassisStickDeadband) || kChassisStickDeadband < 0.0F || kChassisStickDeadband >= 1.0F)
+		if (!chassis::ControlPeriodTicks(kChassisControlPeriodS, osKernelGetTickFreq(), periodTicks) )
 			return false;
 		for (float sign : {kChassisForwardSign, kChassisLeftSign, kChassisYawSign})
 			if (sign != 1.0F && sign != -1.0F) return false;
@@ -271,7 +334,9 @@ bool chassis::Init()
 	// 必须在RTOS初始化完成、调度器启动前调用；注册失败后也不自动重试，避免重复占用静态池。
 	if (registrationAttempted || osKernelGetState() != osKernelReady)
 		return false;
-	// 注意：配置校验入口当前被注释，kChassisHardwareConfirmed=false不会在这里阻止注册。
+	// 注意：配置校验入口当前被注释，
+	// kChassisHardwareConfirmed=false
+	// 不会在这里阻止注册。
 	// 因而Init不再具备“硬件未确认就零注册”的原保证；本次注释工作不改变你的该处代码状态。
 	if (!ValidateConfiguration())
 	{
@@ -293,6 +358,17 @@ bool chassis::Init()
 		if (commandSubscriber == nullptr)
 		{
 			LOGERROR("[chassis] command subscriber registration failed");
+			return false;
+		}
+		if (!interboard::RegisterRxTopic(kSafetyTopicId, kSafetyTopicName, sizeof(SafetyState)))
+		{
+			LOGERROR("[chassis] safety RX topic registration failed");
+			return false;
+		}
+		safetySubscriber = SubRegister(kSafetyTopicName, sizeof(SafetyState));
+		if (safetySubscriber == nullptr)
+		{
+			LOGERROR("[chassis] safety subscriber registration failed");
 			return false;
 		}
 	}

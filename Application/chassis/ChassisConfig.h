@@ -111,6 +111,20 @@ kChassisMotionLimits{
 	.yaw_acceleration_dps2         = 45
 };
 
+// 连续自旋：yaw = kSpinBiasDps + kSpinAmplitudeDps * sin(2π f t)。
+// 当前几何/轮速上限（50°/s 输出轴）下，纯 yaw 约 10.8°/s 就会触发四轮统一缩放；
+// 6+3=9°/s 保持在范围内，提高幅值前必须先核对轮速/电流能力。
+inline constexpr float kSpinAmplitudeDps = 3.0F;
+inline constexpr float kSpinBiasDps      = 6.0F;
+inline constexpr float kSpinFrequencyHz  = 0.2F;
+
+static_assert(kSpinAmplitudeDps >= 0.0F, "Spin amplitude must be non-negative");
+static_assert(kSpinFrequencyHz > 0.0F, "Spin frequency must be positive");
+static_assert(kSpinBiasDps >= kSpinAmplitudeDps,
+			  "Continuous spin bias must cover the amplitude");
+static_assert(kSpinBiasDps + kSpinAmplitudeDps <= kChassisMotionLimits.max_yaw_dps,
+			  "Spin yaw exceeds chassis max yaw");
+
 // todo:底盘运动映射到摇杆通道
 //  通道索引与rc::RC_Data_s.channels对应；当前定义被注释，不能认为Task已经有可用映射。
 //  恢复时逐项实测：前后、左右平移、左右旋转各自使用哪个物理摇杆轴。

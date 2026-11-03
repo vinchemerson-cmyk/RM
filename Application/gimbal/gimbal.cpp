@@ -16,6 +16,9 @@
 
 #include "gimbal.h"
 
+#include <algorithm>
+#include <cmath>
+
 #include "cmsis_os2.h"
 #include "FreeRTOS.h"
 #include "main.h"
@@ -26,11 +29,54 @@
 #include "safety/safety.h"
 
 #include "GimbalConfig.hpp"
+#include "RobotCommand.hpp"
+#include "RobotConfig.hpp"
+#include "chassis/ChassisConfig.h"
+#include "communication/interboard.h"
+#include "message_center/message_center.h"
 #include "motor/dm/dmmotor.h"
 
 namespace
 {
 	osThreadId_t taskHandle = nullptr;
+
+	Publisher_t* chassisCommandPublisher = nullptr;
+	Publisher_t* chassisSafetyPublisher  = nullptr;
+	uint16_t     chassisCommandSequence  = 0U;
+	uint16_t     chassisSafetySequence   = 0U;
+	uint32_t     lastChassisPublishTick  = 0U;
+
+	/** @brief 与底盘原有摇杆映射一致的连续死区。 */
+	float CommandDeadband(float stick)
+	{
+		if (std::fabs(stick) <= kChassisStickDeadband) return 0.0F;
+		return std::copysign((std::fabs(stick) - kChassisStickDeadband) /
+							 (1.0F - kChassisStickDeadband), stick);
+	}
+
+	/** @brief 物理量转 16 位定点，饱和而不是回绕。 */
+	std::int16_t QuantizeCommand(float value, float scale)
+	{
+		const long scaled = std::lround(static_cast<double>(value) * scale);
+		return static_cast<std::int16_t>(std::clamp(scaled, -32768L, 32767L));
+	}
+
+	/**
+	 * @brief 底盘模式触发占位。
+	 * @note 当前只有 NoFollow/Disabled 生效；FollowGimbal/Spin/Direct 的触发源
+	 *       尚未定义，确定拨杆、上位机或状态机后再在这里接入。
+	 */
+	chassis::Mode SelectChassisMode(const rc::RC_Data_s& remote, bool outputEnabled)
+	{
+		if (!outputEnabled) return chassis::Mode::Disabled;
+
+		// TODO: 在这里实现模式触发，例如：
+		// if (remote.switch_left == rc::Left_Switch_e::UP) return chassis::Mode::Spin;
+		// if (跟随云台条件) return chassis::Mode::FollowGimbal;
+		// if (直接速度入口) return chassis::Mode::Direct;
+		(void)remote;
+		return chassis::Mode::NoFollow;
+	}
 
 	DMMotorInstance* yawMotor   = nullptr;
 	DMMotorInstance* aimpitchMotor = nullptr;
@@ -51,16 +97,16 @@ namespace
 	/** @brief 角度目标在失联或重新使能时会同步到当前反馈。 */
 	MotorAngleTarget             yawTarget{};                //yaw的目标
 	MotorAngleTarget             aim_pitchTarget{};          //aimpitch的目标
-	MotorAngleTarget             folding_pitchTarget{};
+	MotorAngleTarget             folding_pitchTarget{};		//foldingpitch的目标
 	LQIController                yawLqi{};                   //yaw的lqi
 	LQIController                aim_pitchLqi{};             //aimpitch的lqi
-	LQIController					folding_pitchLqi{};
+	LQIController					folding_pitchLqi{};	//foldingpitch的lqi
 	AxisFeedback                 yawControlFeedback{};       //yaw的控制反馈
 	uint32_t                     yawControlTick{};           //yaw的控制滴答
 	float                        yawControlTargetSpeedDps{}; //位置模式下为摇杆给定的目标角度变化率，仅诊断。
 	serialTasks::EncoderSnapshot yawControlSnapshot{};       //yaw编码器快照
 	serialTasks::EncoderSnapshot aim_pitchControlSnapshot{}; //aimpitch编码器快照
-	serialTasks::EncoderSnapshot folding_pitchControlSnapshot{};//
+	serialTasks::EncoderSnapshot folding_pitchControlSnapshot{};//foldingpitch编码器快照
 	bool                         yawPulseArmed     = false;  //yaw测试脉冲就绪标志
 	bool                         yawPulseActive    = false;
 	uint32_t                     yawPulseStartTick = 0U;
@@ -231,7 +277,7 @@ namespace
 			StopAxis(*motor, target, lqi);
 			return;
 		}
-
+		
 		const uint32_t now           = osKernelGetTickCount();  // 只读一次
 		// 反馈不可信：撤转矩、保留目标与积分；长时间失联才重新锚定
 		if (!feedbackFresh)
@@ -434,6 +480,57 @@ namespace
 			const bool outputAllowed = timingValid &&
 									   rc::IsOnline() && safety::ShouldOutput();
 
+			if constexpr (InfantryInitialization::ENABLE_INTERBOARD)
+			{
+				if ((chassisCommandPublisher != nullptr || chassisSafetyPublisher != nullptr) &&
+					now - lastChassisPublishTick >= 10U)
+				{
+					lastChassisPublishTick = now;
+					constexpr bool kChassisOutputMode =
+						!kYawRemoteCommandTestEnabled && !kYawFixedTorqueTestEnabled;
+					const bool rcOnline     = rc::IsOnline();
+					const bool eStopped     = safety::IsEStopped();
+					const bool bothDown     = safety::BothDown();
+					const bool outputEnabled = kChassisOutputMode && safety::ShouldOutput();
+					const bool runRequested  = kChassisOutputMode &&
+											   remote.switch_left == kChassisRunSwitch;
+
+					float vx = 0.0F, vy = 0.0F, yaw = 0.0F;
+					if (outputEnabled)
+					{
+						vx = CommandDeadband(rc::Normalize(remote.channels[kChassisForwardChannel])) *
+							 kChassisForwardSign * kChassisMotionLimits.max_translation_mps;
+						vy = CommandDeadband(rc::Normalize(remote.channels[kChassisLeftChannel])) *
+							 kChassisLeftSign * kChassisMotionLimits.max_translation_mps;
+						yaw = CommandDeadband(rc::Normalize(remote.channels[kChassisYawChannel])) *
+							  kChassisYawSign * kChassisMotionLimits.max_yaw_dps;
+					}
+
+					if (chassisCommandPublisher != nullptr)
+					{
+						chassis::Command command{};
+						command.com_vx_mmps  = QuantizeCommand(vx, 1000.0F);
+						command.com_vy_mmps  = QuantizeCommand(vy, 1000.0F);
+						command.com_yaw_ddps = QuantizeCommand(yaw, 10.0F);
+						command.mode         = static_cast<std::uint8_t>(
+							SelectChassisMode(remote, outputEnabled));
+						command.sequence     = ++chassisCommandSequence;
+						(void)PubPushMessage(chassisCommandPublisher, &command);
+					}
+					if (chassisSafetyPublisher != nullptr)
+					{
+						chassis::SafetyState state{};
+						if (outputEnabled) state.flags |= chassis::kSafetyOutputEnabled;
+						if (rcOnline) state.flags |= chassis::kSafetyRcOnline;
+						if (eStopped) state.flags |= chassis::kSafetyEStopped;
+						if (bothDown) state.flags |= chassis::kSafetyBothDown;
+						if (runRequested) state.flags |= chassis::kSafetyRunRequested;
+						state.sequence = ++chassisSafetySequence;
+						(void)PubPushMessage(chassisSafetyPublisher, &state);
+					}
+				}
+			}
+
 			//对命令归一化
 			float yawStick   = rc::Normalize(remote.channels[0]); //yaw摇杆值
 			float pitchStick = rc::Normalize(remote.channels[1]); //pitch摇杆值
@@ -581,6 +678,26 @@ void gimbal::Init()
 		InitializeLqi("yaw", kYawLqiModel, kYawLqiConfig, yawLqi, kYawLqiGainSource);
 	if constexpr (kEnableAimPitch)
 		InitializeLqi("pitch", kAimPitchLqiModel, kAimPitchLqiConfig, aim_pitchLqi, kAimPitchLqiGainSource);
+
+	if constexpr (InfantryInitialization::ENABLE_INTERBOARD)
+	{
+		const bool commandTopic = interboard::RegisterTxTopic(
+			chassis::kCommandTopicId, chassis::kCommandTopicName, sizeof(chassis::Command));
+		if (commandTopic)
+			chassisCommandPublisher = PubRegister(chassis::kCommandTopicName, sizeof(chassis::Command));
+		else
+			LOGERROR("[gimbal] chassis command TX topic registration failed");
+
+		const bool safetyTopic = interboard::RegisterTxTopic(
+			chassis::kSafetyTopicId, chassis::kSafetyTopicName, sizeof(chassis::SafetyState));
+		if (safetyTopic)
+			chassisSafetyPublisher = PubRegister(chassis::kSafetyTopicName, sizeof(chassis::SafetyState));
+		else
+			LOGERROR("[gimbal] chassis safety TX topic registration failed");
+
+		if (chassisCommandPublisher == nullptr || chassisSafetyPublisher == nullptr)
+			LOGERROR("[gimbal] chassis command/safety publisher registration incomplete");
+	}
 
 	taskHandle = osThreadNew(Task, nullptr, &taskAttrs);
 	if (taskHandle == nullptr)

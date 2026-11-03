@@ -43,13 +43,13 @@ namespace InfantryInitialization
 	// ---------- 两板共有 ----------
 	inline constexpr bool ENABLE_USB_SERIAL    = true;  // USB CDC 虚拟串口
 	inline constexpr bool ENABLE_IMU           = true;  // BMI088 六轴采样与姿态解算
-	inline constexpr bool ENABLE_SAFETY        = true;  // 本地输出总闸门
-	inline constexpr bool ENABLE_INTERBOARD    = true; // 板间业务本阶段关闭
+	inline constexpr bool ENABLE_INTERBOARD    = true; // 板间业务
 	inline constexpr bool ENABLE_ENCODER_UART7 = true;  // 云台 pitch / 底盘四轮遥测
 	inline constexpr bool ENABLE_BUZZER        = false; // 两板共享开关
 
 	// ---------- 按角色装配 ----------
 	inline constexpr bool ENABLE_RC      = (kBoardRole == BoardRole::Gimbal);  // DR16 仅云台板
+	inline constexpr bool ENABLE_SAFETY  = (kBoardRole == BoardRole::Gimbal);  // 安全状态由云台板产生并转发
 	inline constexpr bool ENABLE_GIMBAL  = (kBoardRole == BoardRole::Gimbal);
 	inline constexpr bool ENABLE_SHOOT   = (kBoardRole == BoardRole::Gimbal);
 	inline constexpr bool ENABLE_CHASSIS = (kBoardRole == BoardRole::Chassis);
@@ -66,7 +66,8 @@ namespace InfantryInitialization
 				  "Chassis role mismatch");
 	static_assert(ENABLE_RC == (kBoardRole == BoardRole::Gimbal),
 				  "DR16 belongs to the gimbal board");
-	static_assert(ENABLE_SAFETY, "Both boards keep a local output gate");
+	static_assert(ENABLE_SAFETY == (kBoardRole == BoardRole::Gimbal),
+				  "Safety state is sourced from the gimbal board");
 }
 
 #endif
