@@ -107,7 +107,8 @@ void InfantryInit(void)
 	{
 		if constexpr (InfantryInitialization::kBoardRole == InfantryInitialization::BoardRole::Gimbal)
 		{
-			serialTasks::CreateEncoderSerialTask(gimbal::GetAimPitchControlSnapshot);
+			//serialTasks::CreateEncoderSerialTask(gimbal::GetAimPitchControlSnapshot);
+			serialTasks::CreateEncoderSerialTask(gimbal::GetFoldingPitchMotorFeedbackSnapshot);
 		}
 		else
 		{
