@@ -32,7 +32,7 @@ namespace
 			parser.Reset();
 		lastReceiveTick = now;
 		rc::RC_Data_s decoded{};
-		if (parser.Push(rx.rx_buffer.data(), size, decoded) != 0U)
+		if (parser.Push(rx.rx_buffer.data(), size, decoded) != 0U)//接受数据并解码,解码数据保存在decode
 		{
 			decoded.last_update_tick = now;
 			rc::RC                   = decoded;

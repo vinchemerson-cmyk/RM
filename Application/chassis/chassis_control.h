@@ -79,7 +79,11 @@ namespace chassis
 				configured_ = false; // 先撤销旧配置的有效标志，避免本次配置失败后仍按旧配置输出。
 				Reset();             // 清零车体速度斜坡的历史目标，不是清除机械参数或电机PI。
 				float reference = 0.0F;
-				for (const auto& [x_m, y_m, drive_direction_deg, radius_m, max_output_speed_dps] : geometry)
+				for (const auto& [x_m,
+						 y_m,
+						 drive_direction_deg,
+						 radius_m,
+						 max_output_speed_dps] : geometry)
 				{
 					//每个轮子安装位置到机器人底盘坐标原点的距离，
 					reference = std::fmax(reference, std::hypot(x_m, y_m));
@@ -91,7 +95,7 @@ namespace chassis
 				float gram[3][3]{};
 				for (unsigned i = 0; i < kWheelCount; ++i) //遍历所有轮子
 				{
-					const auto& w      = geometry[i]; //取出当前轮子的几何参数
+					const auto& w = geometry[i]; //取出当前轮子的几何参数
 
 					//把轮子的安装角度转化为二维平面上的单位方向向量（X和Y的分量）
 					const float theta  = std::remainder(w.drive_direction_deg, 360.0F) * kDegToRad;

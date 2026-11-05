@@ -138,9 +138,9 @@ inline constexpr float    kChassisForwardSign       = 1.0F;
 inline constexpr float    kChassisLeftSign          = 1.0F;
 inline constexpr float    kChassisYawSign           = 1.0F;
 
-inline constexpr float    kChassisStickDeadband     = 0.03F; // 归一化幅值死区，0.03表示中位附近3%；须小于1。
+inline constexpr float    kChassisStickDeadband     = 0.03F;                     // 归一化幅值死区，0.03表示中位附近3%；须小于1。
 inline constexpr auto     kChassisRunSwitch         = rc::Left_Switch_e::MIDDLE; // 当前用左拨杆中位请求运行，仍须安全总许可。
-inline constexpr uint32_t kChassisFeedbackTimeoutMs = 100U; // 任一轮反馈达到该年龄即整组撤输出，单位ms而非tick。
+inline constexpr uint32_t kChassisFeedbackTimeoutMs = 100U;                      // 任一轮反馈达到该年龄即整组撤输出，单位ms而非tick。
 
 /**
  * @brief 四轮速度 PI 的联调初值，尚未经过底盘负载验证。
