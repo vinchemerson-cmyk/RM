@@ -19,7 +19,7 @@
 | `ENABLE_GIMBAL` | true | false | 云台 DM 电机只在云台板注册 |
 | `ENABLE_SHOOT` | true | false | 摩擦轮/拨弹盘只在云台板注册 |
 | `ENABLE_CHASSIS` | false | true | 底盘 M3508 只在底盘板注册 |
-| `ENABLE_ENCODER_UART7` | true | true | 云台板输出折叠 pitch 快照；底盘板输出四轮十二通道 |
+| `ENABLE_ENCODER_UART7` | true | true | 云台板输出 aim pitch 轴快照；底盘板输出四轮十二通道 |
 | `ENABLE_INTERBOARD` | true | true | 两板都启动板间任务 |
 | `ENABLE_BUZZER` | 共享开关（当前 false） | 共享开关（当前 false） | 不按角色禁用 |
 
@@ -130,14 +130,15 @@
 
 - 云台 CAN 已切到 FDCAN3；
 - aim pitch 反馈 `0x205`，yaw 反馈 `0x206`；
-- folding pitch master `3`、反馈 `0x206`，但 `kEnableFoldingPitch=false`，当前不注册、不控制；
-- 折叠 pitch 反馈 ID 与 yaw 相同，启用前必须重新分配。
+- folding pitch master `3`、反馈 `0x207`，`kEnableFoldingPitch=true`，随云台初始化注册；
+- 折叠行程配置为 0..29°、7° 端点余量，但零点/方向与 min/max 计算尚未实车核对，启用前必须确认。
 
 `Modules/rc/rc.h`：遥控掉线判定为 **1000ms**。
 
 ## 7. UART7
 
-- 云台板：`Robot.cpp` 当前传入 `gimbal::GetFoldingPitchMotorFeedbackSnapshot`。折叠 pitch 处于禁用状态，该快照目前不会被写入，因此云台板 UART7 会输出零；旧的 aim pitch 行仍保留为注释。
+- 云台板：`Robot.cpp` 当前传入 `gimbal::GetAimPitchControlSnapshot`，输出单轴八通道（目标/实际位置、目标/实际速度、位置项/速度项转矩、指令/反馈转矩）。
+- 紧接着的 `GetYawControlSnapshot` 调用不会创建第二个任务：UART7 任务只接受一个 provider，因此 yaw 不会打印；折叠 pitch 的 provider 仍为注释。
 - 底盘板：`GetTelemetrySnapshot()` 输出 FL/FR/BL/BR ×（目标轮速、实际轮速、反馈电流），共 12 列；未初始化时为 0。
 
 ## 8. 构建与验证
@@ -157,11 +158,10 @@ cmake --build build/Debug-Chassis --parallel
 
 | 问题 | 影响 | 处理方向 |
 |---|---|---|
-| 拨弹盘 `kEnableFeeder=true`，反馈 ID `0x201` 与左摩擦轮重复 | 云台板 `shoot::Init()` 在调度器启动前 `Error_Handler()`，整板无法启动 | 确认拨弹盘实际 ID 或暂时关闭 `kEnableFeeder` |
-| 折叠 pitch 禁用，UART7 却取其快照 | 云台板 UART7 当前为 0，不能作为诊断依据 | 启用折叠 pitch 前先实现快照发布并核对反馈 ID |
+| 折叠 pitch 已启用，但零点/方向/限位未实测 | 0..29° 的 min/max 可能不可用，控制目标可能被拒绝或越界 | 先核对 `zero_raw`、方向与行程，再启用运动 |
+| 折叠 pitch 快照未发布，UART7 第二个 provider 无效 | 折叠/yaw 数据不会打印；UART7 只输出 aim pitch | 需要多轴诊断时扩展任务或轮询切换 provider |
 | `FollowGimbal` 模式未实现 | 底盘收到 mode=2 会停机 | 在命令中补充云台 yaw 反馈/目标后再实现 |
 | 安全状态只由云台板产生 | 板间链路中断或云台任务停摆时，底盘在 100ms 后停机 | 这是当前失效安全策略；如需本地降级，需另行设计 |
-| 折叠 pitch 反馈 ID 与 yaw 相同（0x206） | 同时注册时 DM 驱动会拒绝重复 ID | 启用折叠 pitch 前重新分配 |
 | 未做实物验证 | 电机方向、CAN 时序、轮速 PI、UART7 接线均未确认 | 按 `ChassisConfig.h`/`GimbalConfig.hpp` 逐项上板核对 |
 
 ## 10. 关键文件

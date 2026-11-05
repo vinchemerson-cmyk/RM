@@ -30,13 +30,13 @@
 
 | 子系统 | 状态 | 说明 |
 |---|---|---|
-| 云台 (DM4310, FDCAN3) | 🔶 配置完成 | aim pitch/yaw LQI 位置控制；folding pitch 禁用；参数未实车整定 |
+| 云台 (DM4310, FDCAN3) | 🔶 配置完成 | aim pitch/yaw LQI 位置控制；folding pitch 已启用（0x207），限位待实测 |
 | 底盘 (M3508×4, FDCAN1) | 🔶 已实现 | 板间命令驱动；电机 ID/减速比/限幅已填，方向与 PI 待上板核对 |
 | 板间链路 | ✅ 已启用 | 云台板 CAN1 / 底盘板 CAN2；命令 topic 1（10B）与安全 topic 2（4B），100ms 超时 |
-| UART7 | ✅ 已启用 | 云台板折叠 pitch 快照（折叠禁用时输出 0）；底盘板四轮 12 通道；10ms 周期 |
+| UART7 | ✅ 已启用 | 云台板 aim pitch 轴八通道；底盘板四轮 12 通道；10ms 周期 |
 | 遥控 | ✅ 已启用 | DBUS；掉线判定 1000ms |
 | 安全 | 🔶 跨板 | 云台板产生 SafetyState；底盘板不运行本地安全任务，100ms 超时停机 |
-| 发射 | 🔶 摩擦轮 | 双摩擦轮；拨弹盘 0x201 与左轮重复，`kEnableFeeder=true` 时启动会停机 |
+| 发射 | 🔶 摩擦轮 | 拨弹 0x201、右轮 0x202、左轮 0x203；ID 已不重复，方向/PID 待实测 |
 | DJI 驱动 | ✅ 已实现 | M3508/M2006；GM6020 已移除 |
 | PID / LQI | ✅ 已实现 | 条件积分抗饱和；云台 LQI 手填增益 |
 | IMU / USB / RTT | ✅ 已实现 | BMI088、USB CDC、RTT；IMU 加热尚未接入整车 |
@@ -79,9 +79,9 @@ openocd -f stm32h7_daplink.cfg -c "program build/Debug-Gimbal/infantry_H723.elf 
 - 首次上电前核对 `Application/RobotConfig.hpp`: 板卡角色 (`INFANTRY_BOARD_GIMBAL`) 与 FDCAN 分配; 云台参数核对清单见
   `Application/gimbal/GimbalConfig.hpp` 的注释。
 -
-当前双板状态：云台板 FDCAN3 控制 DM yaw/aim pitch，FDCAN1 为板间链路，FDCAN2 接双摩擦轮；云台板每 10ms 发布 `chassis/command` 与 `chassis/safety`。底盘板 FDCAN1 控制四轮 M3508，FDCAN2 接收板间命令/安全状态，100ms 超时即停机。云台板 UART7 当前取折叠 pitch 快照（折叠 pitch 禁用，输出为 0）；底盘板 UART7 输出四轮十二通道。
+当前双板状态：云台板 FDCAN3 控制 DM yaw/aim pitch/folding pitch，FDCAN1 为板间链路，FDCAN2 接双摩擦轮；云台板每 10ms 发布 `chassis/command` 与 `chassis/safety`。底盘板 FDCAN1 控制四轮 M3508，FDCAN2 接收板间命令/安全状态，100ms 超时即停机。云台板 UART7 当前输出 aim pitch 单轴八通道；底盘板 UART7 输出四轮十二通道。
 
-已知启动风险：`ShootConfig.hpp` 中 `kEnableFeeder=true`，拨弹盘反馈 ID `0x201` 与左摩擦轮重复，`shoot::Init()` 会在调度器启动前调用 `Error_Handler()`；上板前必须确认 ID 或关闭拨弹盘。操作见 [测试说明](Application/shoot/README.md)。
+已知风险：折叠 pitch 已启用（反馈 `0x207`），但零点、方向与 0..29° 限位尚未实车核对；UART7 的第二个 yaw provider 调用不会创建任务。上板前先确认折叠限位与 UART7 需求。操作见 [测试说明](Application/shoot/README.md)。
 
 ### 宿主机单元测试
 

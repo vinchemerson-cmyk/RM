@@ -1,8 +1,10 @@
 # 云台双轴与双摩擦轮遥控测试
 
+> 当前双板状态以 [docs/dual-board-isolation.md](../docs/dual-board-isolation.md) 为准。本文的 GM6020、FDCAN1 云台、100ms 掉线等段落属于历史记录；当前云台为 DM4310/FDCAN3，掉线判定 1000ms。
+
 当前目标为STM32H723VGT6。pitch/yaw均使用LQI位置保持（Manual）。`kYawLqiConfig`和`kPitchLqiConfig`
 独立完整声明，yaw不再复制pitch配置。保留用户当前yaw位置增益0.28 A/°、速度反馈增益0.0035 A/ (°/s)
-；pitch仍为0.1、0.01。Q/R、积分范围、±3A限幅和120°/s目标变化率不变。yaw保留连续旋转和原方向设置。BootSolve须分别填写每轴模型。UART7输出yaw八通道，CAN2双摩擦轮逻辑不变；拨弹与双板通信仍关闭。当前参数尚未上板验证，不代表高频振荡不会复现，须小幅试拨并准备双DOWN急停。
+；pitch仍为0.1、0.01。Q/R、积分范围、±3A限幅和120°/s目标变化率不变。yaw保留连续旋转和原方向设置。BootSolve须分别填写每轴模型。云台板 UART7 当前输出 aim pitch 轴八通道；拨弹与双板通信已启用。当前参数尚未上板验证，不代表高频振荡不会复现，须小幅试拨并准备双DOWN急停。
 
 ## UART7 yaw FireWater 诊断
 
@@ -59,12 +61,14 @@ CAN入队失败统计不改变原发送策略。入队成功不代表实际发�
 
 ## 接线与用户确认的 ID
 
+> pitch/yaw GM6020 两行为历史记录；当前云台为 DM4310，接 FDCAN3，参数见 `GimbalConfig.hpp`。
+
 | 部件                | 总线                    | 电调 ID | 反馈 ID | 指令帧槽位             |
 |---------------------|-------------------------|---------|---------|------------------------|
 | pitch GM6020        | FDCAN1，PD0 RX / PD1 TX | ID1     | 0x205   | 0x1FE 电流帧 DATA[0:1] |
 | yaw GM6020          | FDCAN1，PD0 RX / PD1 TX | ID2     | 0x206   | 0x1FE 电流帧 DATA[2:3] |
 | 右摩擦轮 M3508/C620 | FDCAN2，PB5 RX / PB6 TX | ID2     | 0x202   | 0x200 DATA[2:3]        |
-| 左摩擦轮 M3508/C620 | FDCAN2，PB5 RX / PB6 TX | ID1     | 0x201   | 0x200 DATA[0:1]        |
+| 左摩擦轮 M3508/C620 | FDCAN2，PB5 RX / PB6 TX | ID3     | 0x203   | 0x200 DATA[4:5]        |
 
 两路均为 Classic CAN、1Mbps。以上引脚是当前固件复用配置，板上 CAN
 插座对应关系须按实际板卡确认。CAN2的两轮合并一个0x200帧，DATA[4:7]保持零。标定模式下CAN1两个槽位均为零电流。
@@ -85,7 +89,7 @@ ID 不同应改 `../gimbal/GimbalConfig.hpp` 的 `kPitchMotorFeedbackId` 和 `Sh
 2. 确认 RTT 启动日志显示 LQI ready 后（当前 Manual
    不需要模型），左拨杆保持DOWN，右拨杆改UP解除急停。右摇杆上下推动pitch位置目标、左右推动yaw位置目标；两轴松杆保持位置。先小幅试拨，出现震颤或方向异常立即双DOWN，不要依赖松杆停止输出。
 3. 左拨杆UP，两轮共同爬升至转子1000RPM（用户当前配置1000RPM/s）；左拨杆MIDDLE或DOWN两轮同时关闭。
-4. 右拨杆保持 UP 即可测试；MIDDLE/DOWN 不会驱动拨弹，因为拨弹电机没有注册。
+4. 右拨杆保持 UP 即可测试摩擦轮；拨弹电机当前已注册（`kEnableFeeder=true`），具体触发以 `shoot_control.h` 为准。
 5. 双拨杆 DOWN 急停全部输出。遥控超过 100ms 无合法帧也立即禁止输出，恢复后重新执行解锁。
 
 ## 测试模式边界
@@ -95,7 +99,7 @@ ID 不同应改 `../gimbal/GimbalConfig.hpp` 的 `kPitchMotorFeedbackId` 和 `Sh
 - 遥控失联、解锁、双DOWN急停、限幅、非法数值/异常周期检查仍保留。pitch位置模式进入端点保护区后临时用速度环单向向内退回；yaw为连续位置保持。
 - 移除反馈超时重锚后，反馈中断期间转过半圈以上可能使累计角度失真，不适合直接验证单发位置精度。
 - 摩擦轮关闭后发送零电流，不执行受控减速。两轴当前用手填 K；切到 BootSolve 后求解失败不会自动回退到手填 K 或 PID。尚未进行板上整定。
-- yaw已启用；恢复拨弹需修改`kEnableFeeder`，旧拨弹ID1已被左轮占用，必须先选择其他拨弹ID，否则编译期校验会拒绝启用。还需重新确认CAN资源、拨盘参数与反馈保护。
+- yaw已启用；拨弹当前 `kEnableFeeder=true`，拨弹 `0x201`、左轮 `0x203`、右轮 `0x202`，ID 已不冲突。首次上板仍需确认拨弹方向、槽数与堵转保护。
 
 ## yaw 固定电流隔离测试（默认关闭）
 

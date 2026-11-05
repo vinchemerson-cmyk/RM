@@ -5,7 +5,7 @@
 - 角色装配由 `RobotConfig.hpp` 的 `BoardRole` 决定，`Robot.cpp` 使用 `if constexpr`。
 - 云台板：RC、SAFETY、GIMBAL、SHOOT；底盘板：CHASSIS、IMU、UART7、USB；两板都启用 interboard。
 - 云台板每 10ms 发布 `chassis/command`（10 字节）与 `chassis/safety`（4 字节）；底盘板订阅并检查 100ms 超时。
-- 云台板 UART7 当前取折叠 pitch 快照（折叠 pitch 禁用，输出 0）；底盘板 UART7 输出四轮 12 通道。
+- 云台板 UART7 输出 aim pitch 轴八通道；yaw 的第二次 provider 调用不会创建任务；底盘板 UART7 输出四轮 12 通道。
 - 本文以下历史章节中的 GM6020、六通道等旧描述已过时；当前架构以 [docs/dual-board-isolation.md](../docs/dual-board-isolation.md) 为准。
 
 Application 层是"整车业务"层: 决定 **这台机器人要做什么**。它向下调用 `Modules/` 提供的驱动与算法, 通过 `BSP/` 访问硬件,
@@ -26,7 +26,7 @@ Core/Src/main.c        外设初始化 (CubeMX 生成)
 | `RobotConfig.hpp`       | 板卡角色、FDCAN 分配、模块启停开关 (编译期) | 已实现                             |
 | `gimbal/`               | 云台控制及编码器快照                        | 两轴 LQI，当前手填 K，可选上电求解 |
 | `chassis/`              | 四轮 M3508 控制与板间命令/安全状态消费      | 已实现，硬件参数待实测             |
-| `shoot/`                | 摩擦轮 + 拨弹盘                             | 摩擦轮启用；拨弹盘 ID 冲突未确认   |
+| `shoot/`                | 摩擦轮 + 拨弹盘                             | 拨弹 0x201、右 0x202、左 0x203     |
 
 ## RobotConfig.hpp — 编译期配置
 
@@ -46,7 +46,7 @@ Core/Src/main.c        外设初始化 (CubeMX 生成)
 | 底盘板 | FDCAN3 | Classic，空闲 | — |
 
 `ENABLE_INTERBOARD=true` 两板都启动板间任务。云台板注册 TX 主题 `chassis/command`（10B）与 `chassis/safety`（4B）；底盘板注册对应 RX 主题并在 100ms 超时后停机。
-`ENABLE_ENCODER_UART7=true`：云台板输出折叠 pitch 快照（折叠禁用时为 0），底盘板输出四轮十二通道。RC 掉线判定为 1000ms。
+`ENABLE_ENCODER_UART7=true`：云台板输出 aim pitch 轴八通道（yaw 的第二次 provider 调用不生效），底盘板输出四轮十二通道。RC 掉线判定为 1000ms。
 
 ## gimbal — 云台控制 (已实现)
 
@@ -192,7 +192,7 @@ pitch零位893、当前代码配置上顶点120、下顶点1490；位置目标�
 
 操作、硬件默认值及堵转处理见 [shoot/README.md](shoot/README.md)。已实现摩擦轮、单发、连发及有限堵转反转，裁判热量管理尚未接入。
 
-注意：当前 `kEnableFeeder=true`，但拨弹盘反馈 ID `0x201` 与左摩擦轮重复；`shoot::Init()` 会在调度器启动前 `Error_Handler()`。上板前必须确认拨弹盘实际 ID 或关闭拨弹盘。
+注意：拨弹盘 `0x201`、右摩擦轮 `0x202`、左摩擦轮 `0x203`，ID 已不重复，`kEnableFeeder=true` 可以注册。首次上板仍需核对拨弹方向、槽数和堵转保护。
 
 ## 约定
 
