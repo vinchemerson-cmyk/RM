@@ -108,7 +108,7 @@ struct DMMotorInstance
 	DmCanInstance*       motor_can_instance{};                       //电机的FDCAN实例
 	dmProtocol::Limits   protocol_limits{};                          //DM电机参数限制
 	uint32_t             feedback_timeout_ms{100U};                  //反馈超时
-	int                  cycles_since_feedback{};                    //
+	int                  cycles_since_feedback{};                    //自从上次收到反馈后已经过去的DMMotorTask()轮数
 	int                  rx_init_flag{};                             //初始接收标志位
 	uint32_t             tx_enqueue_attempts{};                      //发送队列尝试
 	uint32_t             tx_enqueue_failures{};                      //如果该值过高请检查接线

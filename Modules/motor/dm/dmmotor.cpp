@@ -78,6 +78,7 @@ namespace
 		if (attribute == nullptr || attribute->module_handle == nullptr) return;
 		auto& motor = *static_cast<DMMotorInstance*>(attribute->module_handle);
 		if (motor.motor_can_instance == nullptr) return;
+
 		const auto&          [rx_len, rx_buffer] = motor.motor_can_instance->output;
 		dmProtocol::Feedback raw{};
 		if (!dmProtocol::Unpack(rx_buffer.data(), rx_len, motor.protocol_limits, raw) ||
@@ -87,21 +88,32 @@ namespace
 		const auto sign       = motor.motor_reverse_flag == MOTOR_DIRECTION_REVERSE ? -1.0F : 1.0F;//反转标志
 		const auto position   = sign * raw.position;
 		auto&       feedback   = motor.measure;
-		feedback.last_position = motor.rx_init_flag != 0 ? feedback.position : position;
 		const float span       = motor.protocol_limits.position_max - motor.protocol_limits.position_min;
-		if (position - feedback.last_position > span * 0.5F && feedback.total_round > INT32_MIN)
-			--feedback.total_round;
-		else if (position - feedback.last_position < -span * 0.5F && feedback.total_round < INT32_MAX)
-			++feedback.total_round;
-		feedback.position         = position;
-		feedback.total_position   = position + static_cast<float>(feedback.total_round) * span;
+
+		if (motor.rx_init_flag == 0)
+		{
+			feedback.position      = position;
+			feedback.last_position = position;
+			feedback.total_position = position;
+			motor.rx_init_flag     = 1;
+		}else
+		{
+			// 先把上一帧的值保存下来，再判断是否跨圈。
+			feedback.last_position = feedback.position;
+			if (position - feedback.last_position > span * 0.5F && feedback.total_round > INT32_MIN)
+				--feedback.total_round;
+			else if (position - feedback.last_position < -span * 0.5F && feedback.total_round < INT32_MAX)
+				++feedback.total_round;
+			feedback.position       = position;
+			feedback.total_position = position + static_cast<float>(feedback.total_round) * span;
+		}
 		feedback.velocity         = sign * raw.velocity;
 		feedback.torque           = sign * raw.torque;
 		feedback.state            = raw.state;
 		feedback.T_Mos            = raw.mos_temperature;
 		feedback.T_Rotor          = raw.rotor_temperature;
 		feedback.last_update_tick = osKernelGetTickCount();
-		motor.rx_init_flag        = 1;
+		
 		++motor.feedback_sequence;
 		motor.cycles_since_feedback             = 0;
 		motor.motor_can_instance->feedback_tick = feedback.last_update_tick;
