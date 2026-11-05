@@ -53,7 +53,8 @@ namespace
 		motor->motor_settings.speed           = speed;
 		motor->motor_settings.angle           = angle;
 		motor->motor_settings.angle_epoch     = epoch;
-		if (!motor->enabled) DJI_Motor_Enable(motor);
+		if (!motor->enabled)
+			DJI_Motor_Enable(motor);
 	}
 
 	void Task(void*)
@@ -69,7 +70,8 @@ namespace
 			Motor_Feedback_s feedback[3]{};
 			taskENTER_CRITICAL();
 			for (uint8_t i = 0U; i < 3U; ++i)
-				if (motors[i] != nullptr) feedback[i] = motors[i]->feedback;
+				if (motors[i] != nullptr)
+					feedback[i] = motors[i]->feedback;
 			taskEXIT_CRITICAL();
 			const shoot::Trigger trigger = remote.switch_right == rc::Right_Switch_e::MIDDLE
 											   ? shoot::Trigger::Single
@@ -109,5 +111,6 @@ void shoot::Init()
 	if (motors[0] == nullptr || motors[1] == nullptr || (kEnableFeeder && motors[2] == nullptr))
 		Error_Handler();
 	taskHandle = osThreadNew(Task, nullptr, &taskAttrs);
-	if (taskHandle == nullptr) Error_Handler();
+	if (taskHandle == nullptr)
+		Error_Handler();
 }

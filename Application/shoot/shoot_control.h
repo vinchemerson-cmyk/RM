@@ -5,6 +5,7 @@
 
 namespace shoot
 {
+	//扳机状态
 	enum class Trigger : uint8_t
 	{
 		Stop,//触发
@@ -28,7 +29,7 @@ namespace shoot
 		bool     enable_feeder{true};                // 测试双摩擦轮时可单独禁止拨弹。
 		float    wheel_speed_dps{36000.0F};          // 转子目标转速 6000 RPM
 		float    wheel_acceleration_dps2{12000.0F};  //转子加速度
-		float    wheel_ready_tolerance_dps{1500.0F}; //转子与目标速度容忍误差
+		float    wheel_ready_tolerance_dps{500.0F}; //转子与目标速度容忍误差
 		uint32_t wheel_ready_hold_ms{200U};          //就绪容忍时长
 
 		//拨弹与单发完成参数
@@ -112,7 +113,7 @@ namespace shoot
 										  wheel_ready_tolerance_dps;
 				if (!speedReached)
 					ready_tracking_ = false;
-				else if (!ready_tracking_)
+				else if (!ready_tracking_)//速度达标
 				{
 					ready_tracking_ = true;
 					ready_since_    = now;

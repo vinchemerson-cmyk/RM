@@ -11,7 +11,7 @@ namespace shoot
 	inline constexpr bool             kEnableFeeder      = true;  //测拨弹盘是否启用
 	inline constexpr uint32_t         kFeederFeedbackId  = 0x201U; // todo 拨弹盘电机	ID
 	inline constexpr uint32_t         kRightFeedbackId   = 0x202U; // todo M3508/C620 ID2
-	inline constexpr uint32_t         kLeftFeedbackId    = 0x201U; // todo M3508/C620 ID1
+	inline constexpr uint32_t         kLeftFeedbackId    = 0x203U; // todo M3508/C620 ID1
 	inline constexpr bool             kFeederReverse     = false;
 	inline constexpr bool             kRightReverse      = false;
 	inline constexpr bool             kLeftReverse       = true;
