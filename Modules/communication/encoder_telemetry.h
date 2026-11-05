@@ -15,42 +15,46 @@ namespace serialTasks
 	};
 
 	/**
-	 * @brief 编码器快照
+	 * @brief 单轴（Yaw / 瞄准Pitch / 折叠Pitch）运动、控制与通信快照
 	 */
-	struct EncoderSnapshot
+	struct AxisSnapshot
 	{
-		EncoderSample pitch{}, yaw{};
-		/** @brief GM6020 反馈帧 DATA[4:5] 换算后的实际转矩电流，单位 A。 */
-		float         pitch_current_a{};
-		/** @brief pitch 位置目标和反馈位置，相对水平零位，单位 °。 */
-		float         pitch_position_target_deg{};
-		float         pitch_position_actual_deg{};
-		/** @brief连续角度（°）、速度（°/s）和方向处理后的指令电流（A）。 */
-		float         yaw_position_target_deg{};
-		float         yaw_position_actual_deg{};
-		float         yaw_speed_dps{};
-		float         pitch_speed_dps{};
-		float         yaw_target_speed_dps{}; ///< 位置模式：摇杆给定的目标角度变化率；非独立速度环目标。
-		float         pitch_target_speed_dps{};
-		float         yaw_command_current_a{};
-		float         pitch_command_current_a{};
-		/** @brief 反馈转矩电流（A），与指令电流采用相同逻辑方向。 */
-		float         yaw_feedback_current_a{};
-		float         pitch_feedback_current_a{};
-		/** @brief 以下字段与目标/反馈一起在控制任务内发布，不重新采反馈。 */
-		uint32_t      control_tick{};
-		uint32_t      control_sequence{};
-		float         control_dt_s{};
-		float         yaw_position_current_a{};
-		float         pitch_position_current_a{};
-		float         yaw_speed_current_a{};
-		float         pitch_speed_current_a{};
-		bool          yaw_output_enabled{};
-		uint32_t      yaw_tx_attempts{};
-		uint32_t      yaw_tx_failures{};
+		EncoderSample encoder{};               ///< 原始编码器采样数据
+
+		/* ---- 运动学量 (单位: ° / °/s) ---- */
+		float position_target_deg{};           ///< 目标位置（相对零位）
+		float position_actual_deg{};           ///< 实际反馈位置
+		float speed_target_dps{};              ///< 目标角速度
+		float speed_actual_dps{};              ///< 实际角速度
+
+		/* ---- 力矩与环路输出 (单位: N·m) ---- */
+		float command_torque_nm{};             ///< 最终指令转矩
+		float feedback_torque_nm{};            ///< 实际反馈转矩（与指令同方向）
+		float position_loop_torque_nm{};       ///< 位置环输出分量
+		float speed_loop_torque_nm{};          ///< 速度环输出分量
+
+		/* ---- 链路状态与通信诊断 ---- */
+		uint32_t tx_attempts{};                ///< CAN/串口发送尝试次数
+		uint32_t tx_failures{};                ///< 发送失败计数
+		bool     output_enabled{false};        ///< 电机/控制输出使能状态
 	};
 
-	using EncoderProvider = EncoderSnapshot (*)();//PublishYawControlSnapshot()
+	/**
+	 * @brief 包含瞄准/折叠 Pitch 的三轴云台全局控制快照
+	 */
+	struct GimbalControlSnapshot
+	{
+		AxisSnapshot yaw{};                    ///< 航向轴 (Yaw)
+		AxisSnapshot aim_pitch{};              ///< 瞄准 Pitch 轴
+		AxisSnapshot folding_pitch{};          ///< 折叠 Pitch 轴
+
+		/* ---- 控制任务时序元数据 ---- */
+		uint32_t control_tick{};               ///< 系统控制周期 Tick
+		uint32_t control_sequence{};           ///< 帧序号
+		float    control_dt_s{};               ///< 本次控制周期（秒）
+	};
+
+	using AxisSnapshotProvider = AxisSnapshot (*)();
 
 	/** @brief 单轮 UART7 遥测值；不含时间戳，避免大 tick 被 decimal() 截断。 */
 	struct WheelTelemetrySample
@@ -66,7 +70,7 @@ namespace serialTasks
 		std::array<WheelTelemetrySample, 4U> wheels{};
 	};
 
-	using ChassisProvider = ChassisSnapshot (*)();
+	using ChassisSnapshotProvider = ChassisSnapshot (*)();
 
 
 	const auto decimal = [](float value, char (&text)[24])
@@ -79,54 +83,23 @@ namespace serialTasks
 	};
 
 
-	/** @brief 同步控制八通道：目标/实际位置、目标/实际速度、位置项、速度项、指令及反馈电流。 */
-	inline size_t FormatYawControlTelemetryLine(char*                  buffer, size_t capacity,
-												const EncoderSnapshot& sps, uint32_t /*now*/)
+	/** @brief 单轴八通道：目标/实际位置、目标/实际速度、位置项、速度项、指令及反馈力矩。 */
+	inline size_t FormatAxisTelemetryLine(char*                  buffer, size_t capacity,
+												  const AxisSnapshot& sps, uint32_t /*now*/)
 	{
 		if (buffer == nullptr || capacity == 0U) return 0U;
 		// 保持无浮点 printf 依赖；格式化仅影响串口显示。
 
 		char        v[8][24]{};
 		const float values[]{
-			sps.yaw_position_target_deg,
-			sps.yaw_position_actual_deg,
-			sps.yaw_target_speed_dps,
-			sps.yaw_speed_dps,
-			sps.yaw_position_current_a,
-			sps.yaw_speed_current_a,
-			sps.yaw_command_current_a,
-			sps.yaw_feedback_current_a
-		};
-		for (size_t i = 0; i < 8U; ++i) decimal(values[i], v[i]);
-		const int count = std::snprintf(buffer, capacity,
-										"%s,%s,%s,%s,%s,%s,%s,%s\n",
-										v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7]);
-		if (count <= 0 || static_cast<size_t>(count) >= capacity)
-		{
-			buffer[0] = '\0';
-			return 0U;
-		}
-		return static_cast<size_t>(count);
-	}
-
-
-
-	inline size_t FormatPitchControlTelemetryLine(char*                  buffer, size_t capacity,
-												  const EncoderSnapshot& sps, uint32_t /*now*/)
-	{
-		if (buffer == nullptr || capacity == 0U) return 0U;
-		// 保持无浮点 printf 依赖；格式化仅影响串口显示。
-
-		char        v[8][24]{};
-		const float values[]{
-			sps.pitch_position_target_deg,
-			sps.pitch_position_actual_deg,
-			sps.pitch_target_speed_dps,
-			sps.pitch_speed_dps,
-			sps.pitch_position_current_a,
-			sps.pitch_speed_current_a,
-			sps.pitch_command_current_a,
-			sps.pitch_feedback_current_a
+			sps.position_target_deg,
+			sps.position_actual_deg,
+			sps.speed_target_dps,
+			sps.speed_actual_dps,
+			sps.position_loop_torque_nm,
+			sps.speed_loop_torque_nm,
+			sps.command_torque_nm,
+			sps.feedback_torque_nm
 		};
 		for (size_t i = 0; i < 8U; ++i) decimal(values[i], v[i]);
 		const int count = std::snprintf(buffer, capacity,
@@ -154,7 +127,7 @@ namespace serialTasks
 			sps.wheels[2].target_speed_dps, sps.wheels[2].actual_speed_dps, sps.wheels[2].feedback_current_a,
 			sps.wheels[3].target_speed_dps, sps.wheels[3].actual_speed_dps, sps.wheels[3].feedback_current_a
 		};
-		static_assert(sizeof(values) / sizeof(values[0]) == 12U, "Chassis telemetry requires 12 channels");
+		static_assert(std::size(values) == 12U, "Chassis telemetry requires 12 channels");
 		for (size_t i = 0; i < 12U; ++i) decimal(values[i], v[i]);
 		const int count = std::snprintf(buffer, capacity,
 										"%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",

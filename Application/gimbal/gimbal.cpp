@@ -78,8 +78,8 @@ namespace
 		return chassis::Mode::NoFollow;
 	}
 
-	DMMotorInstance* yawMotor   = nullptr;
-	DMMotorInstance* aimpitchMotor = nullptr;
+	DMMotorInstance* yawMotor          = nullptr;
+	DMMotorInstance* aimpitchMotor     = nullptr;
 	DMMotorInstance* foldingpitchMotor = nullptr;
 
 	//单轴反馈数据结构体
@@ -95,23 +95,26 @@ namespace
 	};
 
 	/** @brief 角度目标在失联或重新使能时会同步到当前反馈。 */
-	MotorAngleTarget             yawTarget{};                //yaw的目标
-	MotorAngleTarget             aim_pitchTarget{};          //aimpitch的目标
-	MotorAngleTarget             folding_pitchTarget{};		//foldingpitch的目标
-	LQIController                yawLqi{};                   //yaw的lqi
-	LQIController                aim_pitchLqi{};             //aimpitch的lqi
-	LQIController					folding_pitchLqi{};	//foldingpitch的lqi
-	AxisFeedback                 yawControlFeedback{};       //yaw的控制反馈
-	uint32_t                     yawControlTick{};           //yaw的控制滴答
-	float                        yawControlTargetSpeedDps{}; //位置模式下为摇杆给定的目标角度变化率，仅诊断。
-	serialTasks::EncoderSnapshot yawControlSnapshot{};       //yaw编码器快照
-	serialTasks::EncoderSnapshot aim_pitchControlSnapshot{}; //aimpitch编码器快照
-	serialTasks::EncoderSnapshot folding_pitchControlSnapshot{};//foldingpitch编码器快照
-	bool                         yawPulseArmed     = false;  //yaw测试脉冲就绪标志
-	bool                         yawPulseActive    = false;
-	uint32_t                     yawPulseStartTick = 0U;
-	float                        yawPulseDirection = 0.0F;
-	gimbal::yawonetest           remoteCommandTest{};
+	MotorAngleTarget          yawTarget{};                    //yaw的目标
+	MotorAngleTarget          aim_pitchTarget{};              //aimpitch的目标
+	MotorAngleTarget          folding_pitchTarget{};          //foldingpitch的目标
+	LQIController             yawLqi{};                       //yaw的lqi
+	LQIController             aim_pitchLqi{};                 //aimpitch的lqi
+	LQIController             folding_pitchLqi{};             //foldingpitch的lqi
+	AxisFeedback              yawControlFeedback{};           //yaw的控制反馈
+	AxisFeedback              aimControlFeedback{};				//
+	AxisFeedback              foldingControlFeedback{};
+	float                     yawControlTargetSpeedDps{};     //位置模式下为摇杆给定的目标角度变化率，仅诊断。
+	float                     aimControlTargetSpeedDps{};
+	float						foldingControlTargetSpeedDps{};
+	serialTasks::AxisSnapshot yawControlSnapshot{};           //yaw控制快照
+	serialTasks::AxisSnapshot aim_pitchControlSnapshot{};     //aimpitch控制快照
+	serialTasks::AxisSnapshot folding_pitchControlSnapshot{}; //foldingpitch控制快照
+	bool                      yawPulseArmed     = false;      //yaw测试脉冲就绪标志
+	bool                      yawPulseActive    = false;
+	uint32_t                  yawPulseStartTick = 0U;
+	float                     yawPulseDirection = 0.0F;
+	gimbal::yawonetest        remoteCommandTest{};
 	static_assert(!kYawRemoteCommandTestEnabled || !kYawFixedTorqueTestEnabled,
 				  "Remote command test and fixed torque test are mutually exclusive");
 
@@ -265,7 +268,6 @@ namespace
 		if (motor == yawMotor)
 		{
 			yawControlFeedback       = feedback;
-			yawControlTick           = osKernelGetTickCount();
 			yawControlTargetSpeedDps = 0.0F;
 		}
 
@@ -277,14 +279,14 @@ namespace
 			StopAxis(*motor, target, lqi);
 			return;
 		}
-		
-		const uint32_t now           = osKernelGetTickCount();  // 只读一次
+
+		const uint32_t now = osKernelGetTickCount(); // 只读一次
 		// 反馈不可信：撤转矩、保留目标与积分；长时间失联才重新锚定
 		if (!feedbackFresh)
 		{
 			if (OutputRequested(*motor))
-				DMMotorStop(motor);  // 避免每 1ms 重复发零帧
-			if (now - feedback.last_update_tick > 500)  // 如 500ms
+				DMMotorStop(motor);                    // 避免每 1ms 重复发零帧
+			if (now - feedback.last_update_tick > 500) // 如 500ms
 			{
 				target.Reset();
 				lqi.Reset();
@@ -365,7 +367,7 @@ namespace
 										: 0.0F;
 		const float torqueNm = lqi.Update(targetAngleDeg, feedback.total_angle_deg,
 										  feedback.speed_dps, dt_s, feedforwardNm);
-		DMMotorSetMITTorque(motor, torqueNm);//设置扭矩
+		DMMotorSetMITTorque(motor, torqueNm); //设置扭矩
 		EnableAxis(motor);
 	}
 
@@ -379,7 +381,6 @@ namespace
 		}
 		const auto feedback      = FeedbackSnapshot(*yawMotor);
 		yawControlFeedback       = feedback;
-		yawControlTick           = osKernelGetTickCount();
 		yawControlTargetSpeedDps = 0.0F;
 		const bool feedbackFresh = feedback.angle_initialized &&
 								   now - feedback.last_update_tick <= yawMotor->feedback_timeout_ms;
@@ -425,42 +426,68 @@ namespace
 	}
 
 	/** @brief 使用本次计算反馈发布诊断；禁止在此重新读取最新电机反馈。 */
-	void PublishYawControlSnapshot(float dt_s)
+	void PublishYawControlSnapshot()
 	{
-		if (yawMotor == nullptr) return;
-		serialTasks::EncoderSnapshot snapshot{};
-		snapshot.control_tick     = yawControlTick;
-		snapshot.control_sequence = yawControlSnapshot.control_sequence + 1U;
-		snapshot.control_dt_s     = dt_s;
-		snapshot.yaw              = {
-			.raw  = static_cast<uint16_t>(yawControlFeedback.raw_angle),
-			.seen = yawControlFeedback.angle_initialized, .last_update_tick = yawControlFeedback.last_update_tick
+		if (yawMotor == nullptr)
+			return;
+		serialTasks::AxisSnapshot snapshot{};
+		snapshot.encoder = {
+			.raw              = yawControlFeedback.raw_angle,
+			.seen             = yawControlFeedback.angle_initialized,
+			.last_update_tick = yawControlFeedback.last_update_tick
 		};
-		const bool outputRequested       = OutputRequested(*yawMotor);
-		snapshot.yaw_position_actual_deg = yawControlFeedback.total_angle_deg;
-		snapshot.yaw_position_target_deg = yawTarget.Ready()
-											   ? yawTarget.Target()
-											   : yawControlFeedback.total_angle_deg;
-		snapshot.yaw_speed_dps          = yawControlFeedback.speed_dps;
-		snapshot.yaw_target_speed_dps   = outputRequested ? yawControlTargetSpeedDps : 0.0F;
-		// 保留旧遥测字段名以兼容串口协议；DM 迁移后这些字段携带 N·m，而非 A。
-		snapshot.yaw_feedback_current_a = yawControlFeedback.torque_nm;
-		snapshot.yaw_output_enabled     = outputRequested;
-		snapshot.yaw_command_current_a  = outputRequested ? yawMotor->MIT_controller.ref_torque : 0.0F;
-		snapshot.yaw_position_current_a = outputRequested ? yawLqi.PositionCurrent() : 0.0F;
-		snapshot.yaw_speed_current_a    = outputRequested ? yawLqi.SpeedCurrent() : 0.0F;
-		snapshot.yaw_tx_attempts        = yawMotor->tx_enqueue_attempts;
-		snapshot.yaw_tx_failures        = yawMotor->tx_enqueue_failures;
+		const bool outputRequested   = OutputRequested(*yawMotor);
+		snapshot.position_actual_deg = yawControlFeedback.total_angle_deg;
+		snapshot.position_target_deg = yawTarget.Ready()
+										   ? yawTarget.Target()
+										   : yawControlFeedback.total_angle_deg;
+		snapshot.speed_actual_dps        = yawControlFeedback.speed_dps;
+		snapshot.speed_target_dps        = outputRequested ? yawControlTargetSpeedDps : 0.0F;
+		snapshot.feedback_torque_nm      = yawControlFeedback.torque_nm;
+		snapshot.output_enabled          = outputRequested;
+		snapshot.command_torque_nm       = outputRequested ? yawMotor->MIT_controller.ref_torque : 0.0F;
+		snapshot.position_loop_torque_nm = outputRequested ? yawLqi.PositionCurrent() : 0.0F;
+		snapshot.speed_loop_torque_nm    = outputRequested ? yawLqi.SpeedCurrent() : 0.0F;
+		snapshot.tx_attempts             = yawMotor->tx_enqueue_attempts;
+		snapshot.tx_failures             = yawMotor->tx_enqueue_failures;
 		taskENTER_CRITICAL();
 		yawControlSnapshot = snapshot;
 		taskEXIT_CRITICAL();
 	}
 
+	void PublishAimPitchControlSnapshot()
+	{
+		if (aimpitchMotor == nullptr)
+			return;
+		serialTasks::AxisSnapshot snapshot{};
+		snapshot.encoder = {
+		.raw              = aimControlFeedback.raw_angle,
+		.seen             = aimControlFeedback.angle_initialized,
+		.last_update_tick = aimControlFeedback.last_update_tick
+		};
+		const bool outputRequested   = OutputRequested(*aimpitchMotor);
+		snapshot.position_actual_deg = aimControlFeedback.total_angle_deg;
+		snapshot.position_target_deg = aim_pitchTarget.Ready()
+										   ? aim_pitchTarget.Target()
+										   : aimControlFeedback.total_angle_deg;
+		snapshot.speed_actual_dps        = aimControlFeedback.speed_dps;
+		snapshot.speed_target_dps        = outputRequested ? aimControlTargetSpeedDps : 0.0F;
+		snapshot.feedback_torque_nm      = aimControlFeedback.torque_nm;
+		snapshot.output_enabled          = outputRequested;
+		snapshot.command_torque_nm       = outputRequested ? aimpitchMotor->MIT_controller.ref_torque : 0.0F;
+		snapshot.position_loop_torque_nm = outputRequested ? aim_pitchLqi.PositionCurrent() : 0.0F;
+		snapshot.speed_loop_torque_nm    = outputRequested ? aim_pitchLqi.SpeedCurrent() : 0.0F;
+		snapshot.tx_attempts             = aimpitchMotor->tx_enqueue_attempts;
+		snapshot.tx_failures             = aimpitchMotor->tx_enqueue_failures;
+		taskENTER_CRITICAL();
+		yawControlSnapshot = snapshot;
+		taskEXIT_CRITICAL();
+	}
+	//todo:publishfoldingpitchcontrolsnapshot()
 	/** @brief 云台控制任务：读取遥控器、更新两轴目标，并推进 DM MIT 发送。 */
 	void Task(void*)
 	{
 		uint32_t lastTick = osKernelGetTickCount();
-
 		for (;;)
 		{
 			const uint32_t now  = osKernelGetTickCount();
@@ -485,12 +512,12 @@ namespace
 				if ((chassisCommandPublisher != nullptr || chassisSafetyPublisher != nullptr) &&
 					now - lastChassisPublishTick >= 10U)
 				{
-					lastChassisPublishTick = now;
+					lastChassisPublishTick            = now;
 					constexpr bool kChassisOutputMode =
 						!kYawRemoteCommandTestEnabled && !kYawFixedTorqueTestEnabled;
-					const bool rcOnline     = rc::IsOnline();
-					const bool eStopped     = safety::IsEStopped();
-					const bool bothDown     = safety::BothDown();
+					const bool rcOnline      = rc::IsOnline();
+					const bool eStopped      = safety::IsEStopped();
+					const bool bothDown      = safety::BothDown();
 					const bool outputEnabled = kChassisOutputMode && safety::ShouldOutput();
 					const bool runRequested  = kChassisOutputMode &&
 											   remote.switch_left == kChassisRunSwitch;
@@ -514,7 +541,7 @@ namespace
 						command.com_yaw_ddps = QuantizeCommand(yaw, 10.0F);
 						command.mode         = static_cast<std::uint8_t>(
 							SelectChassisMode(remote, outputEnabled));
-						command.sequence     = ++chassisCommandSequence;
+						command.sequence = ++chassisCommandSequence;
 						(void)PubPushMessage(chassisCommandPublisher, &command);
 					}
 					if (chassisSafetyPublisher != nullptr)
@@ -548,18 +575,19 @@ namespace
 			}
 			if constexpr (kYawFixedTorqueTestEnabled)
 				UpdateYawFixedTorqueTest(outputAllowed && kEnableYaw, yawStick, now);
-			else//更新三轴目标
+			else //更新三轴目标
 				UpdateAxis(yawMotor, yawTarget, yawLqi, outputAllowed && kEnableYaw,
 						   kYawAngleLimits, yawStick,
 						   kYawPositionMode ? kYawTargetRateDps : kYawSpeedTestMaxDps,
 						   dt_s, kYawPositionMode);
 			UpdateAxis(aimpitchMotor, aim_pitchTarget, aim_pitchLqi, outputAllowed && kEnableAimPitch,
 					   kAimPitchAngleLimits, pitchStick, kAimPitchTargetRateDps, dt_s);
-			UpdateAxis(foldingpitchMotor,folding_pitchTarget,folding_pitchLqi, outputAllowed && kEnableFoldingPitch,
-				kFoldingPitchAngleLimits, pitchStick, kFoldingPitchTargetRateDps, dt_s);
+			UpdateAxis(foldingpitchMotor, folding_pitchTarget, folding_pitchLqi, outputAllowed && kEnableFoldingPitch,
+					   kFoldingPitchAngleLimits, pitchStick, kFoldingPitchTargetRateDps, dt_s);
 
 			DMMotorTask();
-			PublishYawControlSnapshot(dt_s);//todo:read
+			PublishYawControlSnapshot(); //todo:read
+			PublishAimPitchControlSnapshot();
 
 			const uint32_t next = now + 1U;
 			if (static_cast<int32_t>(next - osKernelGetTickCount()) > 0)
@@ -575,60 +603,103 @@ void gimbal::Update()
 	// 控制逻辑集中在云台任务中执行; 保留此入口供后续由统一调度器调用。
 }
 
-serialTasks::EncoderSnapshot gimbal::GetEncoderSnapshot()
+serialTasks::GimbalControlSnapshot gimbal::GetEncoderSnapshot()
 {
-	serialTasks::EncoderSnapshot snapshot{};
+	serialTasks::GimbalControlSnapshot snapshot{};
 	taskENTER_CRITICAL();
+	snapshot.control_tick = osKernelGetTickCount();
+
 	if (aimpitchMotor != nullptr)
 	{
+		auto&              axis     = snapshot.aim_pitch;
 		const AxisFeedback feedback = FeedbackSnapshot(*aimpitchMotor);
-		snapshot.pitch              = {
+		const bool         enabled  = OutputRequested(*aimpitchMotor);
+		axis.encoder                = {
 			.raw              = feedback.raw_angle,
 			.seen             = feedback.angle_initialized,
 			.last_update_tick = feedback.last_update_tick
 		};
-		snapshot.pitch_current_a = feedback.torque_nm; // 兼容字段名，实际单位为 N·m。
-		snapshot.pitch_speed_dps = feedback.speed_dps;
+		axis.feedback_torque_nm      = feedback.torque_nm;
+		axis.speed_actual_dps        = feedback.speed_dps;
+		axis.output_enabled          = enabled;
+		axis.command_torque_nm       = enabled ? aimpitchMotor->MIT_controller.ref_torque : 0.0F;
+		axis.position_loop_torque_nm = enabled ? aim_pitchLqi.PositionCurrent() : 0.0F;
+		axis.speed_loop_torque_nm    = enabled ? aim_pitchLqi.SpeedCurrent() : 0.0F;
+		axis.tx_attempts             = aimpitchMotor->tx_enqueue_attempts;
+		axis.tx_failures             = aimpitchMotor->tx_enqueue_failures;
 		if (feedback.angle_initialized)
 		{
 			const bool  reverse     = aimpitchMotor->motor_reverse_flag == MOTOR_DIRECTION_REVERSE;
 			const float positionDeg = static_cast<float>(MotorEncoderDelta(kAimPitchZeroRaw,
 																		   feedback.raw_angle)) *
 									  (360.0F / 8192.0F) * (reverse ? -1.0F : 1.0F);
-			snapshot.pitch_position_actual_deg = positionDeg;
-			if (OutputRequested(*aimpitchMotor) && aim_pitchTarget.Ready() &&
+			axis.position_actual_deg = positionDeg;
+			if (enabled && aim_pitchTarget.Ready() &&
 				aim_pitchTarget.Epoch() == feedback.angle_epoch)
-				snapshot.pitch_position_target_deg = aim_pitchTarget.Target() -
-													 feedback.total_angle_deg + positionDeg;
-			snapshot.pitch_command_current_a = OutputRequested(*aimpitchMotor)
-												   ? aimpitchMotor->MIT_controller.ref_torque
-												   : 0.0F;
+				axis.position_target_deg = aim_pitchTarget.Target() -
+										   feedback.total_angle_deg + positionDeg;
 		}
 	}
-	if (yawMotor != nullptr)
+
+	if (foldingpitchMotor != nullptr)
 	{
-		const AxisFeedback feedback = FeedbackSnapshot(*yawMotor);
-		snapshot.yaw                = {
+		auto&              axis     = snapshot.folding_pitch;
+		const AxisFeedback feedback = FeedbackSnapshot(*foldingpitchMotor);
+		const bool         enabled  = OutputRequested(*foldingpitchMotor);
+		axis.encoder                = {
 			.raw              = feedback.raw_angle,
 			.seen             = feedback.angle_initialized,
 			.last_update_tick = feedback.last_update_tick
 		};
-		snapshot.yaw_position_actual_deg = feedback.total_angle_deg;
-		snapshot.yaw_position_target_deg = yawTarget.Ready()
-											   ? yawTarget.Target()
-											   : feedback.total_angle_deg;
-		snapshot.yaw_speed_dps          = feedback.speed_dps;
-		snapshot.yaw_feedback_current_a = feedback.torque_nm;
-		snapshot.yaw_target_speed_dps   = OutputRequested(*yawMotor) ? yawControlTargetSpeedDps : 0.0F;
-		snapshot.yaw_command_current_a  = OutputRequested(*yawMotor)
-											  ? yawMotor->MIT_controller.ref_torque
-											  : 0.0F;
+		axis.feedback_torque_nm      = feedback.torque_nm;
+		axis.speed_actual_dps        = feedback.speed_dps;
+		axis.output_enabled          = enabled;
+		axis.command_torque_nm       = enabled ? foldingpitchMotor->MIT_controller.ref_torque : 0.0F;
+		axis.position_loop_torque_nm = enabled ? folding_pitchLqi.PositionCurrent() : 0.0F;
+		axis.speed_loop_torque_nm    = enabled ? folding_pitchLqi.SpeedCurrent() : 0.0F;
+		axis.tx_attempts             = foldingpitchMotor->tx_enqueue_attempts;
+		axis.tx_failures             = foldingpitchMotor->tx_enqueue_failures;
+		if (feedback.angle_initialized)
+		{
+			const bool  reverse     = foldingpitchMotor->motor_reverse_flag == MOTOR_DIRECTION_REVERSE;
+			const float positionDeg = static_cast<float>(MotorEncoderDelta(kFoldingPitchZeroRaw,
+																		   feedback.raw_angle)) *
+									  (360.0F / 8192.0F) * (reverse ? -1.0F : 1.0F);
+			axis.position_actual_deg = positionDeg;
+			if (enabled && folding_pitchTarget.Ready() &&
+				folding_pitchTarget.Epoch() == feedback.angle_epoch)
+				axis.position_target_deg = folding_pitchTarget.Target() -
+										   feedback.total_angle_deg + positionDeg;
+		}
+	}
+
+	if (yawMotor != nullptr)
+	{
+		auto&              axis     = snapshot.yaw;
+		const AxisFeedback feedback = FeedbackSnapshot(*yawMotor);
+		const bool         enabled  = OutputRequested(*yawMotor);
+		axis.encoder                = {
+			.raw              = feedback.raw_angle,
+			.seen             = feedback.angle_initialized,
+			.last_update_tick = feedback.last_update_tick
+		};
+		axis.position_actual_deg     = feedback.total_angle_deg;
+		axis.position_target_deg     = yawTarget.Ready() ? yawTarget.Target() : feedback.total_angle_deg;
+		axis.speed_actual_dps        = feedback.speed_dps;
+		axis.speed_target_dps        = enabled ? yawControlTargetSpeedDps : 0.0F;
+		axis.feedback_torque_nm      = feedback.torque_nm;
+		axis.output_enabled          = enabled;
+		axis.command_torque_nm       = enabled ? yawMotor->MIT_controller.ref_torque : 0.0F;
+		axis.position_loop_torque_nm = enabled ? yawLqi.PositionCurrent() : 0.0F;
+		axis.speed_loop_torque_nm    = enabled ? yawLqi.SpeedCurrent() : 0.0F;
+		axis.tx_attempts             = yawMotor->tx_enqueue_attempts;
+		axis.tx_failures             = yawMotor->tx_enqueue_failures;
 	}
 	taskEXIT_CRITICAL();
 	return snapshot;
 }
 
-serialTasks::EncoderSnapshot gimbal::GetYawControlSnapshot() //若要打印电机数据,Robot.cpp调用这个函数
+serialTasks::AxisSnapshot gimbal::GetYawControlSnapshot() //若要打印电机数据,Robot.cpp调用这个函数
 {
 	taskENTER_CRITICAL();
 	const auto snapshot = yawControlSnapshot;
@@ -636,22 +707,20 @@ serialTasks::EncoderSnapshot gimbal::GetYawControlSnapshot() //若要打印电�
 	return snapshot;
 }
 
-serialTasks::EncoderSnapshot gimbal::GetAimPitchControlSnapshot() //或者这个
+serialTasks::AxisSnapshot gimbal::GetAimPitchControlSnapshot() //或者这个
 {
 	taskENTER_CRITICAL();
 	const auto aimpitchsnapshot = aim_pitchControlSnapshot;
-	// const auto snapshot = folding_pitchControlSnapshot;
 	taskEXIT_CRITICAL();
 	return aimpitchsnapshot;
 }
 
-serialTasks::EncoderSnapshot gimbal::GetFoldingPitchMotorFeedbackSnapshot() //或者这个
+serialTasks::AxisSnapshot gimbal::GetFoldingPitchMotorFeedbackSnapshot() //或者这个
 {
 	taskENTER_CRITICAL();
-	const auto aimpitchsnapshot = folding_pitchControlSnapshot;
-	// const auto snapshot = folding_pitchControlSnapshot;
+	const auto foldingpitchsnapshot = folding_pitchControlSnapshot;
 	taskEXIT_CRITICAL();
-	return aimpitchsnapshot;
+	return foldingpitchsnapshot;
 }
 
 void gimbal::Init()
@@ -665,31 +734,41 @@ void gimbal::Init()
 	const MIT_Init_Config_s aimpitchConfig = MakeMotorConfig(
 															 dm4310, kAimPitchMotorMasterId, kAimPitchMotorFeedbackId,
 															 kAimPitchMotorReverse);
-
+	const MIT_Init_Config_s foldingpitchConfig = MakeMotorConfig(
+																 dm4340, kFoldingPitchMotorMasterId,
+																 kFoldingPitchMotorFeedbackId,
+																 kFoldingPitchMotorReverse
+																);
 	if constexpr (kEnableYaw || kReadYawEncoder)
 		yawMotor = MITMotorInit(&yawConfig);
 	if constexpr (kEnableAimPitch)
 		aimpitchMotor = MITMotorInit(&aimpitchConfig);
+	if constexpr (kEnableFoldingPitch)
+		foldingpitchMotor = MITMotorInit(&foldingpitchConfig);
 	if (((kEnableYaw || kReadYawEncoder) && yawMotor == nullptr) ||
-		(kEnableAimPitch && aimpitchMotor == nullptr))
+		(kEnableAimPitch && aimpitchMotor == nullptr)|| (kEnableFoldingPitch && foldingpitchMotor == nullptr))
 		Error_Handler();
 
 	if constexpr (kEnableYaw)
 		InitializeLqi("yaw", kYawLqiModel, kYawLqiConfig, yawLqi, kYawLqiGainSource);
 	if constexpr (kEnableAimPitch)
-		InitializeLqi("pitch", kAimPitchLqiModel, kAimPitchLqiConfig, aim_pitchLqi, kAimPitchLqiGainSource);
+		InitializeLqi("aimpitch", kAimPitchLqiModel, kAimPitchLqiConfig, aim_pitchLqi, kAimPitchLqiGainSource);
+	if constexpr (kEnableFoldingPitch)
+		InitializeLqi("foldingpitch", kFoldingPitchLqiModel,kFoldingPitchLqiConfig,folding_pitchLqi, kFoldingPitchLqiGainSource);
 
 	if constexpr (InfantryInitialization::ENABLE_INTERBOARD)
 	{
 		const bool commandTopic = interboard::RegisterTxTopic(
-			chassis::kCommandTopicId, chassis::kCommandTopicName, sizeof(chassis::Command));
+															  chassis::kCommandTopicId, chassis::kCommandTopicName,
+															  sizeof(chassis::Command));
 		if (commandTopic)
 			chassisCommandPublisher = PubRegister(chassis::kCommandTopicName, sizeof(chassis::Command));
 		else
 			LOGERROR("[gimbal] chassis command TX topic registration failed");
 
 		const bool safetyTopic = interboard::RegisterTxTopic(
-			chassis::kSafetyTopicId, chassis::kSafetyTopicName, sizeof(chassis::SafetyState));
+															 chassis::kSafetyTopicId, chassis::kSafetyTopicName,
+															 sizeof(chassis::SafetyState));
 		if (safetyTopic)
 			chassisSafetyPublisher = PubRegister(chassis::kSafetyTopicName, sizeof(chassis::SafetyState));
 		else

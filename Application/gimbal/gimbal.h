@@ -38,12 +38,12 @@ namespace gimbal
      */
 	void Update();
 
-	/** @brief 读取编码器反馈和 pitch 相对水平零位的位置目标、实际位置与转矩。 */
-	serialTasks::EncoderSnapshot GetEncoderSnapshot();
+	/** @brief 读取三轴实时反馈并汇总为云台控制快照。 */
+	serialTasks::GimbalControlSnapshot GetEncoderSnapshot();
 	/** @brief 同一控制周期目标/反馈/输出快照，供 UART 诊断。 */
-	serialTasks::EncoderSnapshot GetYawControlSnapshot();
-	serialTasks::EncoderSnapshot GetAimPitchControlSnapshot();
-	serialTasks::EncoderSnapshot GetFoldingPitchMotorFeedbackSnapshot();
+	serialTasks::AxisSnapshot GetYawControlSnapshot();
+	serialTasks::AxisSnapshot GetAimPitchControlSnapshot();
+	serialTasks::AxisSnapshot GetFoldingPitchMotorFeedbackSnapshot();
 } // namespace gimbal
 
 #endif // INFANTRY_H723_GIMBAL_H

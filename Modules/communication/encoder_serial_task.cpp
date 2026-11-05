@@ -8,8 +8,8 @@
 namespace
 {
 	osThreadId_t                 taskHandle       = nullptr;
-	serialTasks::EncoderProvider feedbackProvider = nullptr;
-	serialTasks::ChassisProvider chassisProvider  = nullptr;
+	serialTasks::AxisSnapshotProvider feedbackProvider = nullptr;
+	serialTasks::ChassisSnapshotProvider chassisProvider = nullptr;
 	constexpr osThreadAttr_t     taskAttrs{
 		.name = "EncoderSerialTask", .stack_size = 2048U, .priority = osPriorityNormal,
 	};
@@ -37,10 +37,10 @@ namespace
 				tx.tx_len = static_cast<uint32_t>(serialTasks::FormatChassisTelemetryLine(
 					reinterpret_cast<char*>(tx.tx_buffer.data()), tx.tx_buffer.size(), snapshot, now));
 			}
-			else
+			else if (feedbackProvider != nullptr)
 			{
 				const auto snapshot = feedbackProvider();
-				tx.tx_len = static_cast<uint32_t>(serialTasks::FormatPitchControlTelemetryLine(
+				tx.tx_len = static_cast<uint32_t>(serialTasks::FormatAxisTelemetryLine(
 					reinterpret_cast<char*>(tx.tx_buffer.data()), tx.tx_buffer.size(), snapshot, now));
 			}
 			if (tx.tx_len != 0U)
@@ -50,16 +50,18 @@ namespace
 	}
 }
 
-void serialTasks::CreateEncoderSerialTask(EncoderProvider provider)
+void serialTasks::CreateAxisSerialTask(AxisSnapshotProvider provider)
 {
 	if (taskHandle != nullptr) return;
-	if (provider == nullptr) Error_Handler();
+	if (provider == nullptr)
+		Error_Handler();
 	feedbackProvider = provider;
 	taskHandle       = osThreadNew(Task, nullptr, &taskAttrs);
-	if (taskHandle == nullptr) Error_Handler();
+	if (taskHandle == nullptr)
+		Error_Handler();
 }
 
-void serialTasks::CreateChassisSerialTask(ChassisProvider provider)
+void serialTasks::CreateChassisSerialTask(ChassisSnapshotProvider provider)
 {
 	if (taskHandle != nullptr) return;
 	if (provider == nullptr) Error_Handler();

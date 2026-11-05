@@ -47,7 +47,7 @@ inline FDCAN_HandleTypeDef* const kGimbalCanHandle = &hfdcan3;
 /** @brief 两轴 LQI 运动使能；pitch 保留行程方向保护。 */
 inline constexpr bool kEnableYaw   = true;
 inline constexpr bool kEnableAimPitch = true;
-inline constexpr bool kEnableFoldingPitch = false; // 控制与实测限位尚未实现，保持禁用。
+inline constexpr bool kEnableFoldingPitch = true; // 控制与实测限位尚未实现，保持禁用。
 
 /** @brief 独立于 yaw 运动使能保留编码器采集；禁用运动后仍可打印反馈。 */
 inline constexpr bool kReadYawEncoder = true;
@@ -61,7 +61,7 @@ inline constexpr uint32_t kAimPitchMotorMasterId = 1U;
 inline constexpr uint32_t kFoldingPitchMotorMasterId = 3U;
 inline constexpr uint32_t kYawMotorFeedbackId      = 0x206U; // TODO: 原 DJI 记录，待核对 DM 配置。
 inline constexpr uint32_t kAimPitchMotorFeedbackId = 0x205U; // TODO: 原 DJI 记录，待核对 DM 配置。
-inline constexpr uint32_t kFoldingPitchMotorFeedbackId = 0x206U;
+inline constexpr uint32_t kFoldingPitchMotorFeedbackId = 0x207U;
 
 static_assert(kYawMotorMasterId >= 1U && kYawMotorMasterId <= 15U &&
 			  kAimPitchMotorMasterId >= 1U && kAimPitchMotorMasterId <= 15U,
@@ -122,9 +122,18 @@ inline constexpr MotorAngleLimits kAimPitchAngleLimits{
 	.max_deg    = (kAimPitchMotorReverse ? -kAimPitchTopDeg : kAimPitchBottomDeg) - kAimPitchLimitMarginDeg
 };
 // FoldingPitch 尚无实测零点和行程，保留未标定配置；启用前必须补齐。
-inline constexpr MotorAngleLimits kFoldingPitchAngleLimits{};
-static_assert(!kEnableFoldingPitch || kFoldingPitchAngleLimits.IsConfigured(),
-			  "FoldingPitch requires measured limits before it can be enabled");
+inline constexpr uint16_t kFoldingPitchBottomDeg =0;
+inline constexpr uint16_t kFoldingPitchTopDeg = 29;
+
+inline constexpr MotorAngleLimits kFoldingPitchAngleLimits{
+	.calibrated = true,
+	.continuous = false,
+	.zero_raw     = kFoldingPitchZeroRaw,
+	.min_deg    = (kFoldingPitchMotorReverse ? -kFoldingPitchBottomDeg : kFoldingPitchTopDeg) + kFoldingPitchLimitMarginDeg,
+	.max_deg    = (kFoldingPitchMotorReverse ? -kFoldingPitchTopDeg : kFoldingPitchBottomDeg) - kFoldingPitchLimitMarginDeg,
+};
+// static_assert(!kEnableFoldingPitch || kFoldingPitchAngleLimits.IsConfigured(),
+// 			  "FoldingPitch requires measured limits before it can be enabled");
 
 //如果开启偏航位置模式 (kYawPositionMode=true)，则必须配置好偏航角度限制
 static_assert(!kEnableYaw || !kYawPositionMode || kYawAngleLimits.IsConfigured(),

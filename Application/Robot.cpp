@@ -31,7 +31,6 @@ namespace
 #include "main.h"
 #include "BUZZER/buzzer_task.h"
 #include "communication/interboard.h"
-#include "communication/uart_serial_task.h"
 #include "communication/encoder_serial_task.h"
 #include "communication/usb_serial_task.h"
 #include "gimbal/gimbal.h"
@@ -108,7 +107,9 @@ void InfantryInit(void)
 		if constexpr (InfantryInitialization::kBoardRole == InfantryInitialization::BoardRole::Gimbal)
 		{
 			//serialTasks::CreateEncoderSerialTask(gimbal::GetAimPitchControlSnapshot);
-			serialTasks::CreateEncoderSerialTask(gimbal::GetFoldingPitchMotorFeedbackSnapshot);
+			//serialTasks::CreateEncoderSerialTask(gimbal::GetFoldingPitchMotorFeedbackSnapshot);
+			serialTasks::CreateAxisSerialTask(gimbal::GetAimPitchControlSnapshot);
+			serialTasks::CreateAxisSerialTask( gimbal::GetYawControlSnapshot);
 		}
 		else
 		{

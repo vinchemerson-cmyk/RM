@@ -5,8 +5,8 @@
 namespace serialTasks
 {
 	/** @brief 创建 UART7 TX-only 任务；provider 提供同步反馈快照，UART7 不得再注册回环任务。 */
-	void CreateEncoderSerialTask(EncoderProvider provider);
+	void CreateAxisSerialTask(AxisSnapshotProvider provider);
 
-	/** @brief 创建 UART7 底盘遥测任务；与 CreateEncoderSerialTask 共用同一个任务句柄。 */
-	void CreateChassisSerialTask(ChassisProvider provider);
+	/** @brief 创建 UART7 底盘遥测任务；与 CreateAxisSerialTask 共用同一个任务句柄。 */
+	void CreateChassisSerialTask(ChassisSnapshotProvider provider);
 }
